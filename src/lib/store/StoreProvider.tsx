@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState, type ReactNode } from "react";
 import type { ParsedFile } from "../dryrun/types";
 import { initialState, reducer, revive, STORAGE_KEY, type Action, type State } from "./state";
 
@@ -32,25 +32,28 @@ function save(state: State) {
   }
 }
 
+type Box = { state: State; hydrated: boolean };
+type BoxAction = Action | { type: "loaded"; saved: State | null };
+
+// Wraps the pure reducer with whether saved state has been read yet. The
+// server and the first client render both use the seed, so hydration matches.
+function boxReducer(box: Box, action: BoxAction): Box {
+  if (action.type === "loaded") return { state: action.saved ?? box.state, hydrated: true };
+  return { ...box, state: reducer(box.state, action) };
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, initialState);
+  const [box, dispatchBox] = useReducer(boxReducer, undefined, () => ({ state: initialState(), hydrated: false }));
+  const { state, hydrated } = box;
+  const dispatch = useCallback((action: Action) => dispatchBox(action), []);
   const [uploads, setUploads] = useState<ParsedFile[]>([]);
-  const [hydrated, setHydrated] = useState(false);
-  const skipSave = useRef(true);
 
   useEffect(() => {
-    const saved = load();
-    if (saved) dispatch({ type: "hydrate", state: saved });
-    setHydrated(true);
+    dispatchBox({ type: "loaded", saved: load() });
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
-    if (skipSave.current) {
-      skipSave.current = false;
-      return;
-    }
-    save(state);
+    if (hydrated) save(state);
   }, [state, hydrated]);
 
   const addUpload = useCallback((file: ParsedFile) => {
@@ -63,11 +66,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } catch {}
     setUploads([]);
     dispatch({ type: "reset" });
-  }, []);
+  }, [dispatch]);
 
   const value = useMemo(
     () => ({ state, dispatch, uploads, addUpload, resetDemo, hydrated }),
-    [state, uploads, addUpload, resetDemo, hydrated],
+    [state, dispatch, uploads, addUpload, resetDemo, hydrated],
   );
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

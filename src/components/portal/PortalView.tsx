@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import type { Profile } from "@/lib/dryrun/explain";
-import type { ParsedFile } from "@/lib/dryrun/types";
+import type { ParsedFile, Session } from "@/lib/dryrun/types";
 import { DEPLOYMENTS, deploymentById, seedFile, SEED_ACCOUNTS, type Deployment } from "@/lib/seed";
 import { useStore } from "@/lib/store/StoreProvider";
 import { Env, PageTitle, Panel } from "@/components/ui/kit";
@@ -54,19 +54,12 @@ export function PortalView() {
   const d = params.get("d") ?? DEFAULT_DEPLOYMENT;
   const upload = d.startsWith(UPLOAD_PREFIX) ? uploads.find((u) => u.source === d.slice(UPLOAD_PREFIX.length)) : undefined;
   const deployment = upload ? undefined : deploymentById(d) ?? deploymentById(DEFAULT_DEPLOYMENT);
-  const file: ParsedFile = useMemo(() => upload ?? seedFile(deployment!.id), [upload, deployment]);
+  const file: ParsedFile = upload ?? seedFile(deployment!.id);
   const profile = profileOf(deployment);
   const account = deployment ? SEED_ACCOUNTS.find((a) => a.id === deployment.account) : undefined;
 
   const sDate = params.get("s");
   const session = file.sessions.find((s) => s.date === sDate) ?? file.sessions[file.sessions.length - 1];
-
-  const [selected, setSelected] = useState<number | null>(null);
-  const [filter, setFilter] = useState<TapeFilter>(emptyFilter);
-  useEffect(() => {
-    setSelected(null);
-    setFilter(emptyFilter());
-  }, [file, session?.date]);
 
   const go = (next: { d?: string; s?: string | null }) => {
     const q = new URLSearchParams(params.toString());
@@ -174,27 +167,38 @@ export function PortalView() {
       ) : (
         <div className="flex flex-col gap-4">
           <SessionStrip sessions={file.sessions} current={session.date} onPick={(s) => go({ s })} />
-          <SessionClock session={session} selected={selected} onSelect={(line) => setSelected(line)} />
-          <EventCounts session={session} />
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-            <div className="flex min-w-0 flex-col gap-4 xl:col-span-8">
-              <WhySummary
-                session={session}
-                profile={profile}
-                activeGroup={filter.group}
-                onGroup={(group) => setFilter({ ...emptyFilter(), group })}
-              />
-              <Panel title="Order tape" aside="Tap a row for the raw line and the explanation">
-                <OrderTape session={session} profile={profile} selected={selected} onSelect={setSelected} filter={filter} setFilter={setFilter} />
-              </Panel>
-            </div>
-            <div className="flex min-w-0 flex-col gap-4 xl:col-span-4">
-              <NetShares session={session} />
-              <Readiness file={file} profile={profile} />
-            </div>
-          </div>
+          <SessionView key={`${file.source}:${session.date}`} file={file} session={session} profile={profile} />
         </div>
       )}
     </DropZone>
+  );
+}
+
+/** Everything for one session. Keyed by file and date, so selection and filters reset on a switch. */
+function SessionView({ file, session, profile }: { file: ParsedFile; session: Session; profile: Profile | null }) {
+  const [selected, setSelected] = useState<number | null>(null);
+  const [filter, setFilter] = useState<TapeFilter>(emptyFilter);
+  return (
+    <>
+      <SessionClock session={session} selected={selected} onSelect={(line) => setSelected(line)} />
+      <EventCounts session={session} />
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <div className="flex min-w-0 flex-col gap-4 xl:col-span-8">
+          <WhySummary
+            session={session}
+            profile={profile}
+            activeGroup={filter.group}
+            onGroup={(group) => setFilter({ ...emptyFilter(), group })}
+          />
+          <Panel title="Order tape" aside="Tap a row for the raw line and the explanation">
+            <OrderTape session={session} profile={profile} selected={selected} onSelect={setSelected} filter={filter} setFilter={setFilter} />
+          </Panel>
+        </div>
+        <div className="flex min-w-0 flex-col gap-4 xl:col-span-4">
+          <NetShares session={session} />
+          <Readiness file={file} profile={profile} />
+        </div>
+      </div>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { explain, type Profile } from "@/lib/dryrun/explain";
 import { cancelledIds, sideOf, whyGroups } from "@/lib/dryrun/metrics";
 import { formatMinute } from "@/lib/dryrun/time";

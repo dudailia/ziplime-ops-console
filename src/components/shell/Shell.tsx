@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Suspense, useEffect, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useAiStatus } from "@/lib/ai/useAiStatus";
 import { useStore } from "@/lib/store/StoreProvider";
 import { useNavBadges } from "@/lib/store/selectors";
@@ -106,24 +106,34 @@ function PhoneNav() {
 
 type Theme = "auto" | "light" | "dark";
 const THEME_KEY = "ziplime-ops-console:theme";
+const THEME_EVENT = "ziplime-theme";
+
+// The inline script in layout.tsx sets data-theme before first paint; this
+// reads it back, so the toggle never disagrees with what's on screen.
+function readTheme(): Theme {
+  const t = document.documentElement.dataset.theme;
+  return t === "light" || t === "dark" ? t : "auto";
+}
+
+function applyTheme(next: Theme) {
+  const root = document.documentElement;
+  if (next === "auto") root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", next);
+  try {
+    if (next === "auto") window.localStorage.removeItem(THEME_KEY);
+    else window.localStorage.setItem(THEME_KEY, next);
+  } catch {}
+  window.dispatchEvent(new Event(THEME_EVENT));
+}
+
+function subscribeTheme(cb: () => void) {
+  window.addEventListener(THEME_EVENT, cb);
+  return () => window.removeEventListener(THEME_EVENT, cb);
+}
 
 function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("auto");
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(THEME_KEY);
-      if (saved === "light" || saved === "dark") setTheme(saved);
-    } catch {}
-  }, []);
-  const choose = (next: Theme) => {
-    setTheme(next);
-    if (next === "auto") delete document.documentElement.dataset.theme;
-    else document.documentElement.dataset.theme = next;
-    try {
-      if (next === "auto") window.localStorage.removeItem(THEME_KEY);
-      else window.localStorage.setItem(THEME_KEY, next);
-    } catch {}
-  };
+  const theme = useSyncExternalStore(subscribeTheme, readTheme, () => "auto" as Theme);
+  const choose = applyTheme;
   return (
     <div role="radiogroup" aria-label="Theme" className="flex rounded-sm border border-rule text-[12px]">
       {(["auto", "light", "dark"] as const).map((t) => (
@@ -195,7 +205,7 @@ function AiLine() {
 
 function Brand() {
   return (
-    <Link href="/" className="block leading-none">
+    <Link href="/" className="block whitespace-nowrap leading-none">
       <span className="t-wide text-[19px] font-[800] tracking-tight text-ink">ziplime</span>
       <span className="t-cond ml-1.5 text-[15px] font-medium text-ink-2">Ops Console</span>
     </Link>
@@ -221,17 +231,17 @@ export function Shell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="flex min-h-dvh min-w-0 flex-col">
-        <div className="flex items-center gap-3 border-b border-rule bg-sunk px-4 py-1.5 lg:px-8">
-          <div className="lg:hidden">
-            <Brand />
+        <div className="flex items-center gap-3 border-b border-rule bg-surface px-4 py-2.5 lg:hidden">
+          <Brand />
+          <div className="ml-auto">
+            <ResetDemo compact />
           </div>
+        </div>
+        <div className="border-b border-rule bg-sunk px-4 py-1.5 lg:px-8">
           <p className="t-semi text-[12px] font-semibold text-ink-2">
             <span className="mr-1.5 inline-block size-2 rounded-[1px] border border-ink-2 align-[-1px]" />
             Sample data. Fictional accounts.
           </p>
-          <div className="ml-auto lg:hidden">
-            <ResetDemo compact />
-          </div>
         </div>
         <main className="min-w-0 flex-1 px-4 pb-28 pt-6 lg:px-8 lg:pb-10">{children}</main>
         <footer className="border-t border-rule px-4 pb-24 pt-4 text-[12px] text-ink-3 lg:px-8 lg:pb-5">

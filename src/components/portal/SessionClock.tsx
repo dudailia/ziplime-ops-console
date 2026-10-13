@@ -11,7 +11,8 @@ const GUTTER = 64;
 const RIGHT = 16;
 const TOP = 30;
 const LANE = 30;
-const MIN_WIDTH = 680;
+// Wide enough that the 9:30 and 10:00 labels never touch.
+const MIN_WIDTH = 820;
 
 function describe(e: DryRunEvent): string {
   const time = formatMinute(e.clock.minuteET);
@@ -90,6 +91,7 @@ export function SessionClock({
         <h2 className="t-title text-[30px] text-ink sm:text-[38px]">{sessionLabel(session.date, true)}</h2>
         <p className="text-[13px] text-ink-2">
           09:30 to 16:00 ET. Buys tick up from the line, sells tick down.
+          <span className="sm:hidden"> Scroll sideways for the full day.</span>
         </p>
       </div>
       <div ref={frame} className="relative overflow-x-auto overscroll-x-contain">

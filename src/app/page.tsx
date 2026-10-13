@@ -15,7 +15,7 @@ export default function Home() {
       <h1 className="t-title max-w-[22ch] text-[34px] text-ink sm:text-[46px]">Would it have traded, and if not, why?</h1>
       <div className="mt-5 flex max-w-[68ch] flex-col gap-3 text-[15px] text-ink">
         <p>
-          ziplime is Limex's open-source trading engine: Zipline rebuilt on Polars, with live trading through Lime. Its dry-run mode (issue #5)
+          ziplime is Limex&apos;s open-source trading engine: Zipline rebuilt on Polars, with live trading through Lime. Its dry-run mode (issue #5)
           runs every order through the same checks as live trading, then writes it to a file instead of sending it to the broker.
         </p>
         <p>
