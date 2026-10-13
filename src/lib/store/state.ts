@@ -1,12 +1,29 @@
 // The demo's mutable state: everything a person can change. Seed data stays
 // in lib/seed and is never copied in here. Pure reducer, so it is testable.
 
+import type { Account } from "../seed";
+
 export const STORAGE_KEY = "ziplime-ops-console:v1";
+
+export type ActivityKind = "automation" | "intake" | "ticket" | "note";
+
+export type Activity = {
+  id: string;
+  accountId: string;
+  /** ISO timestamp. */
+  at: string;
+  kind: ActivityKind;
+  text: string;
+  by: string;
+};
 
 export type State = {
   v: 1;
   /** Claude's answers for reasons with no built-in rule, keyed by reason string. */
   explainCache: Record<string, string>;
+  /** Accounts created by approving a Beta signup. */
+  extraAccounts: Account[];
+  activity: Activity[];
 };
 
 export type Action =
@@ -15,7 +32,7 @@ export type Action =
   | { type: "explain/cache"; reason: string; text: string };
 
 export function initialState(): State {
-  return { v: 1, explainCache: {} };
+  return { v: 1, explainCache: {}, extraAccounts: [], activity: [] };
 }
 
 export function reducer(state: State, action: Action): State {

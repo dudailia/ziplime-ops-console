@@ -7,3 +7,9 @@ export function useNavBadges(): { intake: number; inbox: number } {
   useStore();
   return { intake: 0, inbox: 0 };
 }
+
+/** Open tickets per account id. */
+export function useOpenTicketCounts(): Record<string, number> {
+  useStore();
+  return {};
+}
