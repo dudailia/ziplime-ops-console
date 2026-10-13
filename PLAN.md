@@ -1,6 +1,6 @@
 # ziplime Ops Console: plan
 
-A Next.js app that shows what Limex could run on top of the ziplime dry-run feature (issue #5, branch `feat/dry-run-orders`, commit `7e5c119b`). A trader sees why their strategy would or would not have traded. The Limex team sees which accounts need help, and answers them with drafts grounded in the account's own dry-run file.
+A Next.js app that shows what Limex could run on top of the ziplime dry-run feature (issue #5, branch `feat/dry-run-orders`; the commit the seed ran against is recorded in `data/seed/manifest.json`). A trader sees why their strategy would or would not have traded. The Limex team sees which accounts need help, and answers them with drafts grounded in the account's own dry-run file.
 
 Nothing in this project imports, edits or installs into `../ziplime`. The seed script only runs it.
 
@@ -211,8 +211,15 @@ Subject: an order blotter for strategies that haven't gone live yet. Audience: a
 
 Then I stop and ask before any deploy. No pushes to any remote.
 
-## 13. Decisions for you
+## 13. Decisions (resolved 2026-10-13)
 
-1. **Plan names.** limex.com today shows one plan, "Beta" at $0 (free during the US beta, no card), and three locked tiers named Bronze, Silver and Gold, "Coming soon", no prices. There's no Starter, Pro or Premium on the site. My default: use what the site shows (Beta, plus Bronze, Silver and Gold marked "not yet priced"), because a Limex reviewer will notice made-up tiers. Or I use your four names as stated. Which?
-2. **Claude model.** Default to the current Sonnet for drafts (fast, cheap, good enough for a reply). Say if you want Opus.
-3. **Seed clock shim.** The script swaps the engine's wall clock so `recorded_at` matches the simulated session. Everything else is the real code path. If you'd rather have zero patching, `recorded_at` becomes the generation time and cancels lose their place on the clock. I recommend the shim.
+1. **Plan names**: one constant, `src/lib/plans.ts`, exactly as the live limex.com pricing section showed on 2026-10-13 at 15:03 ET: Beta at $0 ("Full access during the US beta", "No card required"), and Bronze, Silver and Gold locked, "Coming soon", "Available after beta", no prices. Every seeded account is on Beta. No invented prices anywhere.
+2. **Model**: current Sonnet, read from `ANTHROPIC_MODEL`, with that as the default.
+3. **Clock shim**: yes. The README says so plainly.
+
+## 14. Corrections found while building
+
+- **Order count limit.** `_order_attempt_count` goes up only after the symbol, quantity, sell and limit-notional checks pass. An order refused by one of those does not count. One refused later (market notional, broker validation, deadline) does. The `max-orders` explanation says this, not "refused ones included".
+- **Rounded amounts.** On a `place` line `requested_amount` is the amount after lot rounding (the engine sets `order.amount = int(quantity)` before submitting). A dropped remainder like the 0.4 in 12.4 is not in the file. Only a whole sub-lot order shows up, as a `skip`.
+- **Invocation.** In the seed, one exchange instance runs one session, so `ZIPLIME_MAX_ORDERS_PER_INVOCATION` caps orders per session. On Limex's Lambda workers an invocation may be shorter; the explanation names the setting and doesn't assume which.
+- **Health.** An unexplained reason makes an account amber ("needs a look"), not red. Red stays for refusal rate and repeated broker rejections.

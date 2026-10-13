@@ -1,0 +1,95 @@
+{
+  "_note": "Fictional sample accounts. Names, companies, emails and account numbers are invented. Every account is on Beta, the only open plan.",
+  "accounts": [
+    {
+      "id": "harbor-lane",
+      "trader": "Dana Okafor",
+      "company": "Harbor Lane Capital",
+      "email": "dana@harborlane.example",
+      "accountNumber": "LX-40217",
+      "plan": "beta",
+      "joined": "2026-07-14"
+    },
+    {
+      "id": "priya-raman",
+      "trader": "Priya Raman",
+      "company": null,
+      "email": "priya.r@example.com",
+      "accountNumber": "LX-40388",
+      "plan": "beta",
+      "joined": "2026-08-02"
+    },
+    {
+      "id": "tomas-ibarra",
+      "trader": "Tomás Ibarra",
+      "company": "Ibarra Quant",
+      "email": "tomas@ibarraquant.example",
+      "accountNumber": "LX-40451",
+      "plan": "beta",
+      "joined": "2026-07-29"
+    },
+    {
+      "id": "wen-li",
+      "trader": "Wen Li",
+      "company": null,
+      "email": "wen.li@example.com",
+      "accountNumber": "LX-40502",
+      "plan": "beta",
+      "joined": "2026-08-19"
+    },
+    {
+      "id": "greta-lindqvist",
+      "trader": "Greta Lindqvist",
+      "company": "Nordvik Systematic",
+      "email": "greta@nordvik.example",
+      "accountNumber": "LX-40566",
+      "plan": "beta",
+      "joined": "2026-08-07"
+    },
+    {
+      "id": "kofi-mensah",
+      "trader": "Kofi Mensah",
+      "company": null,
+      "email": "kofi.m@example.com",
+      "accountNumber": "LX-40613",
+      "plan": "beta",
+      "joined": "2026-09-01"
+    },
+    {
+      "id": "sofia-marchetti",
+      "trader": "Sofia Marchetti",
+      "company": null,
+      "email": "sofia.marchetti@example.com",
+      "accountNumber": "LX-40690",
+      "plan": "beta",
+      "joined": "2026-08-25"
+    },
+    {
+      "id": "aaron-feld",
+      "trader": "Aaron Feld",
+      "company": "Feld & Rowe",
+      "email": "aaron@feldrowe.example",
+      "accountNumber": "LX-40734",
+      "plan": "beta",
+      "joined": "2026-09-08"
+    },
+    {
+      "id": "nadia-haddad",
+      "trader": "Nadia Haddad",
+      "company": null,
+      "email": "nadia.h@example.com",
+      "accountNumber": "LX-40789",
+      "plan": "beta",
+      "joined": "2026-08-12"
+    },
+    {
+      "id": "jonas-weber",
+      "trader": "Jonas Weber",
+      "company": "Weber Signal Lab",
+      "email": "jonas@webersignal.example",
+      "accountNumber": "LX-40845",
+      "plan": "beta",
+      "joined": "2026-07-21"
+    }
+  ]
+}
