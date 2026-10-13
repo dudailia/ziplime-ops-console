@@ -174,6 +174,35 @@ Every page: a top band "Sample data. Fictional accounts." and the footer "Unoffi
   - Returns each hit with category, matched text and position; the editor highlights them. Tests cover each category, case-insensitivity, word boundaries (so "guaranteed" hits but "guardrail" doesn't), and the clean case.
 - The guard is a phrase check, not a compliance system. The UI says that under the report.
 
+## 8b. Beta intake (`/ops/intake`)
+
+A person at Limex reads every signup by hand. This queue helps them do it faster without taking the decision away from them.
+
+**What limex.com actually collects** (live bundle `index-3zRYaaTq.js`, checked 2026-10-13 15:30 ET). The copy says "Tell us how you trade and we'll tailor your access, and your spot in what ships next" and "No card. We read every single answer." Step 1 is an email field. Step 2, "One more thing, 30 seconds", is optional and is all buttons, no text box:
+
+| key | question | options (multi-select) |
+|---|---|---|
+| `trade` | What do you trade? | Stocks, Options, Futures, Crypto |
+| `style` | How do you trade? | Day trading, Swing, Part-time, Just starting |
+| `funded` | Funded / prop account? | Trading one now, Working toward it, Not my thing |
+| `pain` | Biggest frustrations today? | Manual entry, No real insight, My own psychology, Price, Privacy, Other |
+
+Plus a toggle "I have a track record and want to hear about Trading Pod. (invite-only)". The row posted to `/api/leads` is `{email, source, wants_call, wants_pod, trade, style, funded, pain, answers, page, ts}`, with multi-select values joined by ", ".
+
+**Data model** (`lib/intake/types.ts`), mirroring that row: `Signup { id, email, ts, trade[], style[], funded[], pain[], wantsPod, note? }`. `note` is the one field limex.com doesn't have (decision 4 in section 13).
+
+**Seed**: 30 fictional signups in `data/seed/signups.json`, `.example` emails, varied: beginners, part-timers, day traders, options sellers, futures, crypto-only, prop traders, quants, some who skipped step 2 entirely (it's optional, so an email-only row is realistic).
+
+**Triage** (`lib/intake/triage.ts`), the same fields from rules or from Claude:
+- trader type, assets (from `trade`, plus the note), priority with its reasons, suggested Workspace, welcome email draft.
+- **Likely broker**, from the six brokers limex.com lists as connected via SnapTrade: Robinhood, Charles Schwab, Fidelity, E*TRADE, Interactive Brokers, Coinbase ("+ 19 more via SnapTrade US"). Always tagged `stated` (the note names it), `inferred` (for example crypto only, so Coinbase is a guess), or `unknown`. The form doesn't ask for a broker, so most rows are `unknown`, and the UI says so rather than guessing confidently.
+- **Priority, deterministic**: high if `wants_pod` or funded "Trading one now"; low if step 2 was skipped and there's no note; normal otherwise. Claude can't override priority, only explain it.
+- **Rules first**: keyword and option rules always run and need no key. "Triage with Claude" (`POST /api/triage`, structured JSON output, Sonnet from `ANTHROPIC_MODEL`) refines type, assets, broker and the email, and the UI shows what changed from the rules version. Without a key: "AI drafting is off", and the rules version is the whole triage.
+
+**Review**: `new → triaged → in review | flagged → approved | dismissed`. The welcome email goes through the same guard as support drafts, plus one intake check: no promise of Trading Pod access (it's invite-only) and no ship dates. Approve is disabled while the guard reports anything. Approving creates a CRM account on Beta with no deployments (health grey, "no sessions yet") and an activity entry "approved from intake by <reviewer>".
+
+Tests: rules triage per persona, broker tags (`stated` beats `inferred`, nothing beats nothing), priority boundaries, guard on welcome emails, approval creating exactly one account.
+
 ## 9. Automation rules (`lib/automations.ts`)
 
 Pure functions over (seed data, current state) returning effects, so they're testable and the run log shows exactly what each run did.
@@ -205,9 +234,10 @@ Subject: an order blotter for strategies that haven't gone live yet. Audience: a
 2. Seed script + generated data + seed parse test.
 3. Client portal.
 4. Ops CRM: accounts list and detail.
-5. Support inbox, AI drafting, guard + tests.
-6. Automation rules + tests.
-7. Polish: production build, all tests, every page in a browser at desktop and 390 px, light and dark, README with screenshots and a 3-minute demo script.
+5. Beta intake: signups, rules triage, Claude triage, the guard (built here first) + tests, approve into CRM.
+6. Support inbox and AI drafting, reusing the guard.
+7. Automation rules + tests.
+8. Polish: production build, all tests, every page in a browser at desktop and 390 px, light and dark, README with screenshots and a 3-minute demo script.
 
 Then I stop and ask before any deploy. No pushes to any remote.
 
@@ -216,6 +246,9 @@ Then I stop and ask before any deploy. No pushes to any remote.
 1. **Plan names**: one constant, `src/lib/plans.ts`, exactly as the live limex.com pricing section showed on 2026-10-13 at 15:03 ET: Beta at $0 ("Full access during the US beta", "No card required"), and Bronze, Silver and Gold locked, "Coming soon", "Available after beta", no prices. Every seeded account is on Beta. No invented prices anywhere.
 2. **Model**: current Sonnet, read from `ANTHROPIC_MODEL`, with that as the default.
 3. **Clock shim**: yes. The README says so plainly.
+
+4. **Signup shape** (2026-10-13): mirror the real limex.com lead row (the four optional multi-select questions and the Trading Pod toggle), plus one optional free-text `note`. The UI labels it "Proposed field, not on limex.com today".
+5. **Workspaces**: one config constant with plain descriptive names (Getting started, Options, Crypto, Swing setups, Day trading, Prop / funded). The UI says "Placeholder names; limex.com doesn't list its Workspaces yet".
 
 ## 14. Corrections found while building
 
