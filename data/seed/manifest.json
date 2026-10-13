@@ -53,12 +53,12 @@
         "2026-10-09",
         "2026-10-12"
       ],
-      "lines": 50,
+      "lines": 49,
       "counts": {
-        "place": 44,
+        "place": 46,
         "refuse": 0,
         "skip": 0,
-        "cancel": 6
+        "cancel": 3
       }
     },
     {

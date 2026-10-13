@@ -1,26 +1,163 @@
 @import "tailwindcss";
 
+/* Tokens from PLAN.md section 11. Event colours carry meaning and nothing else uses them. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --ground: #e9edf1;
+  --surface: #ffffff;
+  --sunk: #f3f5f8;
+  --ink: #15202b;
+  --ink-2: #4e5d6c;
+  --ink-3: #7d8a97;
+  --rule: #cfd7df;
+  --rule-strong: #9eabb8;
+  --place: #2557d6;
+  --refuse: #c8322b;
+  --skip: #b7791f;
+  --cancel: #6b7887;
+  --place-soft: #e3eafb;
+  --refuse-soft: #fbe6e4;
+  --skip-soft: #f8eedd;
+  --accent: #155e63;
+  --accent-soft: #dcefef;
+  --ok: #1d7a4e;
+  --warn: #8a5a00;
+  --bad: #a3242b;
+  --none: #7d8a97;
+  --focus: #155e63;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --ground: #0f1823;
+    --surface: #16222f;
+    --sunk: #121c27;
+    --ink: #dce3ea;
+    --ink-2: #9fb0c0;
+    --ink-3: #6f8295;
+    --rule: #263544;
+    --rule-strong: #3d5064;
+    --place: #6e97ff;
+    --refuse: #ff6b5f;
+    --skip: #e3a94a;
+    --cancel: #8797a8;
+    --place-soft: #1b2b4a;
+    --refuse-soft: #3a1f22;
+    --skip-soft: #33291a;
+    --accent: #5cc4c9;
+    --accent-soft: #163538;
+    --ok: #4cc38a;
+    --warn: #e0b45a;
+    --bad: #ff7a72;
+    --none: #6f8295;
+    --focus: #5cc4c9;
+    color-scheme: dark;
   }
 }
 
+:root[data-theme="dark"] {
+  --ground: #0f1823;
+  --surface: #16222f;
+  --sunk: #121c27;
+  --ink: #dce3ea;
+  --ink-2: #9fb0c0;
+  --ink-3: #6f8295;
+  --rule: #263544;
+  --rule-strong: #3d5064;
+  --place: #6e97ff;
+  --refuse: #ff6b5f;
+  --skip: #e3a94a;
+  --cancel: #8797a8;
+  --place-soft: #1b2b4a;
+  --refuse-soft: #3a1f22;
+  --skip-soft: #33291a;
+  --accent: #5cc4c9;
+  --accent-soft: #163538;
+  --ok: #4cc38a;
+  --warn: #e0b45a;
+  --bad: #ff7a72;
+  --none: #6f8295;
+  --focus: #5cc4c9;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-sunk: var(--sunk);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-place: var(--place);
+  --color-refuse: var(--refuse);
+  --color-skip: var(--skip);
+  --color-cancel: var(--cancel);
+  --color-place-soft: var(--place-soft);
+  --color-refuse-soft: var(--refuse-soft);
+  --color-skip-soft: var(--skip-soft);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --color-none: var(--none);
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+html {
+  background: var(--ground);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Archivo's width axis does the typographic work. */
+.t-cond {
+  font-stretch: 80%;
+}
+.t-semi {
+  font-stretch: 90%;
+}
+.t-wide {
+  font-stretch: 118%;
+}
+.t-title {
+  font-stretch: 118%;
+  font-weight: 760;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.strike {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+/* Guard highlights inside the draft preview. */
+mark.guard-hit {
+  background: var(--refuse-soft);
+  color: var(--refuse);
+  border-bottom: 2px solid var(--refuse);
+  padding: 0 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }

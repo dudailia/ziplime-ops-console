@@ -238,7 +238,8 @@ DEPLOYMENTS: list[Deployment] = [
         symbols={"SPY": 571.2, "QQQ": 489.4, "AAPL": 227.4, "MSFT": 418.1},
         risk=fail_closed(max_quantity=100, max_notional=25000, max_orders=8,
                          allowed=["SPY", "QQQ", "AAPL", "MSFT"]),
-        orders_per_session=(3, 5),
+        # Steady by design: the one deployment meant to pass every readiness check.
+        orders_per_session=(4, 5),
         quantity=(5, 40),
         limit_share=0.85,
         cancel_share=0.15,

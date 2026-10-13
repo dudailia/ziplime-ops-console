@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   turbopack: {
     rules: {
+      // Seed dry-run files load as plain text: import.meta.glob(..., { query: "?raw" }).
+      "*.jsonl": { condition: { query: "?raw" }, type: "text" },
       "*.css": {
         loaders: ["@tailwindcss/turbopack"],
         as: "*.css",
