@@ -9,7 +9,8 @@ import { planByKey } from "@/lib/plans";
 import { useAccountSummaries } from "@/lib/store/useAccounts";
 import { useOpenTicketCounts } from "@/lib/store/selectors";
 import { Chip, PageTitle } from "@/components/ui/kit";
-import { HEALTH_TEXT, HealthBadge, HealthDot } from "./HealthBadge";
+import { CountUp } from "@/components/ui/CountUp";
+import { HEALTH_FILL, HEALTH_TEXT, HealthBadge, HealthDot } from "./HealthBadge";
 
 type SortKey = "health" | "trader" | "last" | "deployments" | "tickets";
 
@@ -75,22 +76,35 @@ export function AccountsView() {
         sub={`Health from each deployment's last 5 dry-run sessions, as of ${sessionLabel(CALENDAR.asOf, true)}. The worst deployment sets the colour.`}
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-px border border-rule bg-rule sm:grid-cols-4">
-        {(["red", "amber", "green", "grey"] as const).map((l) => (
-          <button
-            key={l}
-            type="button"
-            aria-pressed={level === l}
-            onClick={() => setLevel(level === l ? "all" : l)}
-            className={`flex flex-col items-start bg-surface px-4 py-3 text-left hover:bg-sunk ${level === l ? "outline-2 -outline-offset-2 outline-ink" : ""}`}
-          >
-            <span className="inline-flex items-center gap-1.5 text-[12px] text-ink-2">
-              <HealthDot level={l} />
-              {HEALTH_LABEL[l]}
-            </span>
-            <span className={`t-wide text-[30px] font-[750] leading-tight tabular-nums ${counts[l] ? HEALTH_TEXT[l] : "text-ink-3"}`}>{counts[l]}</span>
-          </button>
-        ))}
+      {/* The health mix as one proportional bar, and four counts that filter the table. */}
+      <div className="mb-4 overflow-hidden rounded-panel border border-rule bg-surface">
+        <div className="flex h-1.5 gap-px bg-surface" aria-hidden>
+          {(["red", "amber", "green", "grey"] as const).map((l) =>
+            counts[l] ? <span key={l} className={HEALTH_FILL[l]} style={{ flexGrow: counts[l] }} /> : null,
+          )}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4">
+          {(["red", "amber", "green", "grey"] as const).map((l, i) => (
+            <button
+              key={l}
+              type="button"
+              aria-pressed={level === l}
+              onClick={() => setLevel(level === l ? "all" : l)}
+              className={`relative flex flex-col items-start gap-1 border-rule px-4 py-3 text-left transition-colors duration-150 hover:bg-sunk ${
+                i % 2 ? "border-l" : ""
+              } ${i > 1 ? "border-t sm:border-t-0" : ""} ${i === 2 ? "sm:border-l" : ""} ${level === l ? "bg-sunk" : ""}`}
+            >
+              {level === l && <span aria-hidden className="absolute inset-x-4 bottom-0 h-[3px] rounded-t-sm bg-accent-ink" />}
+              <span className="inline-flex items-center gap-1.5 text-[12px] text-ink-2">
+                <HealthDot level={l} />
+                {HEALTH_LABEL[l]}
+              </span>
+              <span className={`t-wide text-[28px] font-[750] leading-none tabular-nums ${counts[l] ? HEALTH_TEXT[l] : "text-ink-3"}`}>
+                <CountUp value={counts[l]} />
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -104,11 +118,11 @@ export function AccountsView() {
           placeholder="Name, company, account number"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="ml-auto w-full rounded-sm border border-rule bg-surface px-2 py-1.5 text-[13px] placeholder:text-ink-3 sm:w-64"
+          className="ml-auto w-full rounded-[4px] border border-rule bg-surface px-2 py-1.5 text-[13px] placeholder:text-ink-3 sm:w-64"
         />
       </div>
 
-      <div className="border border-rule bg-surface">
+      <div className="overflow-hidden rounded-panel border border-rule bg-surface">
         <table className="w-full text-[13px]">
           <thead className="hidden border-b border-rule text-left text-[12px] text-ink-3 md:table-header-group">
             <tr>
@@ -131,7 +145,12 @@ export function AccountsView() {
             {rows.map((s) => {
               const open = tickets[s.account.id] ?? 0;
               return (
-                <tr key={s.account.id} className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 border-b border-rule px-4 py-3 last:border-b-0 hover:bg-sunk md:table-row md:p-0">
+                <tr
+                  key={s.account.id}
+                  data-account={s.account.id}
+                  data-health={s.health.level}
+                  className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 border-b border-rule px-4 py-3 transition-colors duration-150 last:border-b-0 hover:bg-sunk md:table-row md:p-0"
+                >
                   <td className="md:px-3 md:py-2.5">
                     <Link href={`/ops/accounts/${s.account.id}`} className="font-semibold text-ink underline-offset-2 hover:underline">
                       {s.account.trader}
@@ -143,7 +162,7 @@ export function AccountsView() {
                   </td>
                   <td className="t-cond text-right text-ink-2 md:px-3 md:py-2.5 md:text-left">
                     {planByKey(s.account.plan).name}
-                    {s.account.fromIntake && <div className="text-[11px] text-accent">From intake</div>}
+                    {s.account.fromIntake && <div className="text-[11px] font-semibold text-accent-ink">New from intake</div>}
                   </td>
                   <td className="t-cond hidden tabular-nums md:table-cell md:px-3 md:py-2.5 md:text-right">{s.deployments.length}</td>
                   <td className="t-cond text-[12px] text-ink-2 md:px-3 md:py-2.5 md:text-[13px] md:text-ink">

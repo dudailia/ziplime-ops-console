@@ -86,7 +86,7 @@ export function SessionClock({
   const counts = session.counts;
 
   return (
-    <div className="border border-rule bg-surface">
+    <div className="overflow-hidden rounded-panel border border-rule bg-surface">
       <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 pb-1 pt-3">
         <h2 className="t-title text-[30px] text-ink sm:text-[38px]">{sessionLabel(session.date, true)}</h2>
         <p className="text-[13px] text-ink-2">

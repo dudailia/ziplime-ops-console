@@ -22,7 +22,7 @@ import { HealthBadge } from "./HealthBadge";
 
 const STATUS_TONE: Record<TicketStatus, string> = {
   "needs-reply": "font-semibold text-ink",
-  "in-review": "text-accent",
+  "in-review": "font-semibold text-ink-2",
   flagged: "font-semibold text-refuse",
   replied: "text-ink-3",
 };
@@ -180,10 +180,10 @@ function Detail({ ticket }: { ticket: Ticket }) {
   const messages = thread(state, ticket);
   return (
     <div className="flex flex-col gap-4">
-      <div className="border border-rule bg-surface px-4 py-3">
+      <div className="overflow-hidden rounded-panel border border-rule bg-surface px-4 py-3">
         <div className="text-[12px] text-ink-3">
           {ticket.id}, opened {stampET(ticket.createdAt)}
-          {ticket.rule && <span className="text-accent">. Opened by automation: {ticket.rule.trigger}</span>}
+          {ticket.rule && <span className="text-ink-2">. Opened by automation: {ticket.rule.trigger}</span>}
         </div>
         <h2 className="t-semi mt-0.5 text-[18px] font-semibold text-ink">{ticket.subject}</h2>
         {account && summary && (
@@ -289,7 +289,7 @@ export function InboxView() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="min-w-0 lg:col-span-4">
-          <ul className="border border-rule bg-surface">
+          <ul className="overflow-hidden rounded-panel border border-rule bg-surface">
             {shown.length === 0 && <li className="px-4 py-6 text-[13px] text-ink-2">No tickets here.</li>}
             {shown.map(({ t, status, account }) => (
               <li key={t.id} className="border-b border-rule last:border-b-0">
@@ -297,7 +297,7 @@ export function InboxView() {
                   type="button"
                   aria-current={t.id === selectedId ? "true" : undefined}
                   onClick={() => pick(t.id)}
-                  className={`flex w-full flex-col px-4 py-2.5 text-left hover:bg-sunk ${t.id === selectedId ? "bg-sunk shadow-[inset_3px_0_0_var(--ink)]" : ""}`}
+                  className={`flex w-full flex-col px-4 py-2.5 text-left hover:bg-sunk ${t.id === selectedId ? "bg-sunk shadow-[inset_3px_0_0_var(--accent-ink)]" : ""}`}
                 >
                   <span className="flex items-baseline gap-2 text-[12px]">
                     <span className="t-cond text-ink-3">{t.id}</span>
@@ -305,7 +305,7 @@ export function InboxView() {
                     <span className={`t-cond ml-auto shrink-0 ${STATUS_TONE[status]}`}>{TICKET_STATUS_LABEL[status]}</span>
                   </span>
                   <span className="text-[13px] font-semibold text-ink">{t.subject}</span>
-                  {t.rule && <span className="text-[11px] text-accent">Opened by a rule</span>}
+                  {t.rule && <span className="text-[11px] text-ink-3">Opened by a rule</span>}
                 </button>
               </li>
             ))}

@@ -5,36 +5,49 @@ import type { Profile } from "@/lib/dryrun/explain";
 import { netShares, readiness, RECENT_SESSIONS, whyGroups, worstEvent } from "@/lib/dryrun/metrics";
 import type { ParsedFile, Session } from "@/lib/dryrun/types";
 import { pct, plural, shortDate } from "@/lib/format";
-import { Env, EVENT_TEXT, EVENT_WORD, EventGlyph, Panel, Stat } from "@/components/ui/kit";
+import { CountUp } from "@/components/ui/CountUp";
+import { Env, EVENT_TEXT, EVENT_WORD, EventGlyph, Panel } from "@/components/ui/kit";
 
-const CELL_TONE = {
-  refuse: "border-refuse bg-refuse-soft",
-  skip: "border-skip bg-skip-soft",
-  cancel: "border-rule-strong bg-sunk",
-  place: "border-place bg-place-soft",
+const TICK = {
+  refuse: "bg-refuse",
+  skip: "bg-skip",
+  cancel: "bg-cancel",
+  place: "bg-place",
 } as const;
 
+/**
+ * One cell per session. Calm by default: the count of orders that would have
+ * gone out, plus a 3 px tick in the colour of the worst event. The selected
+ * session carries the lime marker.
+ */
 export function SessionStrip({ sessions, current, onPick }: { sessions: Session[]; current: string; onPick: (date: string) => void }) {
   return (
-    <div className="overflow-x-auto">
-      <ol className="flex min-w-max gap-1.5" aria-label="Sessions">
+    <div className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0" data-tour="sessions">
+      <ol className="grid min-w-max auto-cols-[minmax(76px,1fr)] grid-flow-col gap-px overflow-hidden rounded-panel border border-rule bg-rule lg:min-w-0" aria-label="Sessions">
         {sessions.map((s) => {
           const worst = worstEvent(s);
           const active = s.date === current;
           return (
-            <li key={s.date}>
+            <li key={s.date} className="flex">
               <button
                 type="button"
                 aria-current={active ? "date" : undefined}
                 onClick={() => onPick(s.date)}
-                className={`flex w-[76px] flex-col items-start border-t-[3px] px-2 py-1.5 text-left ${
-                  worst ? CELL_TONE[worst] : "border-rule bg-surface"
-                } ${active ? "outline-2 outline-offset-0 outline-ink" : "hover:outline hover:outline-1 hover:outline-rule-strong"}`}
+                className={`relative flex w-full flex-col items-start px-2.5 pb-2 pt-2.5 text-left transition-colors duration-150 ${
+                  active ? "bg-surface" : "bg-sunk hover:bg-surface"
+                }`}
               >
-                <span className="t-cond text-[12px] text-ink-2">{shortDate(s.date)}</span>
+                <span aria-hidden className={`absolute inset-x-0 top-0 h-[3px] ${active ? "bg-accent-ink" : worst ? `${TICK[worst]} opacity-70` : ""}`} />
+                <span className={`t-cond text-[12px] ${active ? "font-semibold text-ink" : "text-ink-2"}`}>{shortDate(s.date)}</span>
                 <span className="t-wide text-[17px] font-[750] leading-tight tabular-nums text-ink">{s.counts.place}</span>
                 <span className="t-cond text-[11px] text-ink-2">
-                  {s.counts.refuse > 0 ? <span className="font-semibold text-refuse">{s.counts.refuse} refused</span> : s.counts.skip > 0 ? `${s.counts.skip} skipped` : "clean"}
+                  {s.counts.refuse > 0 ? (
+                    <span className="font-semibold text-refuse">{s.counts.refuse} refused</span>
+                  ) : s.counts.skip > 0 ? (
+                    `${s.counts.skip} skipped`
+                  ) : (
+                    <span className="text-ink-3">clean</span>
+                  )}
                 </span>
               </button>
             </li>
@@ -45,25 +58,29 @@ export function SessionStrip({ sessions, current, onPick }: { sessions: Session[
   );
 }
 
+/** The session's four counts and its refusal rate, as one ledger line. */
 export function EventCounts({ session }: { session: Session }) {
   const c = session.counts;
   return (
-    <div className="grid grid-cols-2 gap-x-6 gap-y-4 border border-rule bg-surface px-4 py-3 sm:grid-cols-5">
+    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-rule bg-rule sm:grid-cols-5">
       {(["place", "refuse", "skip", "cancel"] as const).map((k) => (
-        <Stat
-          key={k}
-          label={
-            <span className="inline-flex items-center gap-1.5">
-              <EventGlyph kind={k} size={11} />
-              {EVENT_WORD[k]}
-            </span>
-          }
-          value={c[k]}
-          tone={c[k] > 0 ? EVENT_TEXT[k] : "text-ink-3"}
-        />
+        <div key={k} className="flex items-baseline justify-between gap-3 bg-surface px-4 py-2.5 sm:flex-col sm:justify-start sm:gap-0.5">
+          <dt className="inline-flex items-center gap-1.5 text-[12px] text-ink-2">
+            <EventGlyph kind={k} size={11} />
+            {EVENT_WORD[k]}
+          </dt>
+          <dd className={`t-wide text-[24px] font-[750] leading-none tabular-nums ${c[k] > 0 ? EVENT_TEXT[k] : "text-ink-3"}`}>
+            <CountUp value={c[k]} />
+          </dd>
+        </div>
       ))}
-      <Stat label="Refusal rate" value={pct(session.refusalRate)} note="refused of (sent + refused). Skips don't count." />
-    </div>
+      <div className="col-span-2 flex items-baseline justify-between gap-3 bg-surface px-4 py-2.5 sm:col-span-1 sm:flex-col sm:justify-start sm:gap-0.5">
+        <dt className="text-[12px] text-ink-2" title="Refused out of sent plus refused. Skips don't count.">
+          Refusal rate
+        </dt>
+        <dd className="t-wide text-[24px] font-[750] leading-none tabular-nums text-ink">{pct(session.refusalRate)}</dd>
+      </div>
+    </dl>
   );
 }
 
@@ -176,11 +193,11 @@ export function Readiness({ file, profile }: { file: ParsedFile; profile: Profil
       aside={
         <span className="inline-flex items-center gap-1.5">
           Last
-          <button type="button" aria-label="Fewer sessions" className="size-6 rounded-sm border border-rule leading-none hover:border-ink" onClick={() => setN(Math.max(1, n - 1))}>
+          <button type="button" aria-label="Fewer sessions" className="size-6 rounded-[4px] border border-rule leading-none hover:border-ink" onClick={() => setN(Math.max(1, n - 1))}>
             −
           </button>
           <span className="t-cond w-4 text-center font-semibold tabular-nums text-ink">{n}</span>
-          <button type="button" aria-label="More sessions" className="size-6 rounded-sm border border-rule leading-none hover:border-ink" onClick={() => setN(Math.min(10, n + 1))}>
+          <button type="button" aria-label="More sessions" className="size-6 rounded-[4px] border border-rule leading-none hover:border-ink" onClick={() => setN(Math.min(10, n + 1))}>
             +
           </button>
           sessions

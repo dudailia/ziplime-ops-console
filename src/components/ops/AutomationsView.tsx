@@ -54,7 +54,7 @@ export function AutomationsView() {
       </PageTitle>
 
       {last && justRan === last.id && (
-        <p className="mb-4 border border-rule bg-surface px-4 py-2.5 text-[13px] text-ink" role="status">
+        <p className="mb-4 overflow-hidden rounded-panel border border-rule bg-surface px-4 py-2.5 text-[13px] text-ink" role="status">
           {done > 0 ? `Run finished: ${done} new effect${done === 1 ? "" : "s"}` : "Run finished: nothing new"}
           {last.lines.length - done > 0 ? `, ${last.lines.length - done} skipped because they already happened` : ""}.{" "}
           {last.lines.some((l) => l.rule === "refusal-streak" && !l.skipped) && (

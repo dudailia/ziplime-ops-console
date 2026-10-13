@@ -32,3 +32,10 @@ export const HEALTH_TEXT: Record<HealthLevel, string> = {
   green: "text-ok",
   grey: "text-ink-2",
 };
+
+export const HEALTH_FILL: Record<HealthLevel, string> = {
+  red: "bg-bad",
+  amber: "bg-warn",
+  green: "bg-ok",
+  grey: "bg-none",
+};

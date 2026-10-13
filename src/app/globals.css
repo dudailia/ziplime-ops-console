@@ -1,83 +1,102 @@
 @import "tailwindcss";
 
-/* Tokens from PLAN.md section 11. Event colours carry meaning and nothing else uses them. */
+/* Tokens: DESIGN.md. Event and health colours carry meaning and nothing else uses them.
+   The accent is lime, used as a fill (with on-accent text) or a 2px line (accent-ink). */
 :root {
-  --ground: #e9edf1;
+  --ground: #eef0f2;
   --surface: #ffffff;
-  --sunk: #f3f5f8;
-  --ink: #15202b;
-  --ink-2: #4e5d6c;
-  --ink-3: #7d8a97;
-  --rule: #cfd7df;
-  --rule-strong: #9eabb8;
-  --place: #2557d6;
-  --refuse: #c8322b;
-  --skip: #b7791f;
-  --cancel: #6b7887;
-  --place-soft: #e3eafb;
-  --refuse-soft: #fbe6e4;
-  --skip-soft: #f8eedd;
-  --accent: #155e63;
-  --accent-soft: #dcefef;
-  --ok: #1d7a4e;
+  --sunk: #f5f6f8;
+  --ink: #12181c;
+  --ink-2: #4a5761;
+  --ink-3: #5f6b75;
+  --rule: #dde1e5;
+  --rule-strong: #b3bcc4;
+  --place: #2453cc;
+  --refuse: #c22f29;
+  --skip: #925c0e;
+  --cancel: #5f6b75;
+  --place-soft: #e6ecfb;
+  --refuse-soft: #fbe9e7;
+  --skip-soft: #f7efe1;
+  --accent: #c5ef3a;
+  --accent-ink: #4c7300;
+  --on-accent: #12181c;
+  --accent-edge: #9cc21c;
+  --accent-soft: #f1fbd3;
+  --ok: #17794f;
   --warn: #8a5a00;
-  --bad: #a3242b;
-  --none: #7d8a97;
-  --focus: #155e63;
+  --bad: #a8252b;
+  --none: #5f6b75;
+  --focus: #12181c;
+  --focus-halo: #c5ef3a;
+  --scrim: rgb(13 18 21 / 0.45);
+  --lift: 0 12px 32px -8px rgb(13 18 21 / 0.28), 0 2px 6px rgb(13 18 21 / 0.12);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ground: #0f1823;
-    --surface: #16222f;
-    --sunk: #121c27;
-    --ink: #dce3ea;
-    --ink-2: #9fb0c0;
-    --ink-3: #6f8295;
-    --rule: #263544;
-    --rule-strong: #3d5064;
-    --place: #6e97ff;
-    --refuse: #ff6b5f;
-    --skip: #e3a94a;
-    --cancel: #8797a8;
-    --place-soft: #1b2b4a;
-    --refuse-soft: #3a1f22;
-    --skip-soft: #33291a;
-    --accent: #5cc4c9;
-    --accent-soft: #163538;
-    --ok: #4cc38a;
+    --ground: #0d1215;
+    --surface: #141a1e;
+    --sunk: #10161a;
+    --ink: #e4e9ec;
+    --ink-2: #a4b0b8;
+    --ink-3: #7a8790;
+    --rule: #232c32;
+    --rule-strong: #3a464e;
+    --place: #7ea3ff;
+    --refuse: #ff6f64;
+    --skip: #e2aa4c;
+    --cancel: #8b98a1;
+    --place-soft: #18233d;
+    --refuse-soft: #34191a;
+    --skip-soft: #2e2416;
+    --accent: #c5ef3a;
+    --accent-ink: #c5ef3a;
+    --on-accent: #0d1215;
+  --accent-edge: #c5ef3a;
+    --accent-soft: #1f2a10;
+    --ok: #49c38f;
     --warn: #e0b45a;
     --bad: #ff7a72;
-    --none: #6f8295;
-    --focus: #5cc4c9;
+    --none: #7a8790;
+    --focus: #c5ef3a;
+  --focus-halo: transparent;
+    --scrim: rgb(0 0 0 / 0.55);
+    --lift: 0 16px 40px -8px rgb(0 0 0 / 0.6), 0 2px 8px rgb(0 0 0 / 0.4);
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --ground: #0f1823;
-  --surface: #16222f;
-  --sunk: #121c27;
-  --ink: #dce3ea;
-  --ink-2: #9fb0c0;
-  --ink-3: #6f8295;
-  --rule: #263544;
-  --rule-strong: #3d5064;
-  --place: #6e97ff;
-  --refuse: #ff6b5f;
-  --skip: #e3a94a;
-  --cancel: #8797a8;
-  --place-soft: #1b2b4a;
-  --refuse-soft: #3a1f22;
-  --skip-soft: #33291a;
-  --accent: #5cc4c9;
-  --accent-soft: #163538;
-  --ok: #4cc38a;
+  --ground: #0d1215;
+  --surface: #141a1e;
+  --sunk: #10161a;
+  --ink: #e4e9ec;
+  --ink-2: #a4b0b8;
+  --ink-3: #7a8790;
+  --rule: #232c32;
+  --rule-strong: #3a464e;
+  --place: #7ea3ff;
+  --refuse: #ff6f64;
+  --skip: #e2aa4c;
+  --cancel: #8b98a1;
+  --place-soft: #18233d;
+  --refuse-soft: #34191a;
+  --skip-soft: #2e2416;
+  --accent: #c5ef3a;
+  --accent-ink: #c5ef3a;
+  --on-accent: #0d1215;
+  --accent-edge: #c5ef3a;
+  --accent-soft: #1f2a10;
+  --ok: #49c38f;
   --warn: #e0b45a;
   --bad: #ff7a72;
-  --none: #6f8295;
-  --focus: #5cc4c9;
+  --none: #7a8790;
+  --focus: #c5ef3a;
+  --focus-halo: transparent;
+  --scrim: rgb(0 0 0 / 0.55);
+  --lift: 0 16px 40px -8px rgb(0 0 0 / 0.6), 0 2px 8px rgb(0 0 0 / 0.4);
   color-scheme: dark;
 }
 
@@ -99,6 +118,10 @@
   --color-skip-soft: var(--skip-soft);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-on-accent: var(--on-accent);
+  --color-accent-edge: var(--accent-edge);
+  --radius-panel: 6px;
   --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-bad: var(--bad);
@@ -140,6 +163,27 @@ body {
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--focus-halo);
+}
+
+/* Browser surfaces carry the palette too. */
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+html {
+  caret-color: var(--accent-ink);
+  accent-color: var(--accent-ink);
+  scrollbar-color: var(--rule-strong) transparent;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+}
+a {
+  text-underline-offset: 0.18em;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-3);
 }
 
 .strike {
@@ -160,4 +204,9 @@ mark.guard-hit {
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* Press feedback on every button-like control. */
+.press:active:not(:disabled) {
+  transform: scale(0.97);
 }

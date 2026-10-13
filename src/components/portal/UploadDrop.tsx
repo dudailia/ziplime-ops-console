@@ -80,7 +80,7 @@ export function DropZone({ onLoaded, children }: { onLoaded: (file: ParsedFile) 
 export function ParseReport({ file }: { file: ParsedFile }) {
   if (file.errors.length === 0 && file.warnings.length === 0) return null;
   return (
-    <section className="border border-refuse bg-surface" aria-label="Lines that couldn't be read">
+    <section className="overflow-hidden rounded-panel border border-refuse bg-surface" aria-label="Lines that couldn't be read">
       {file.errors.length > 0 && (
         <>
           <header className="border-b border-rule px-4 py-2.5">

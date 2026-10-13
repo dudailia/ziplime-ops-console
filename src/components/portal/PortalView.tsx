@@ -93,7 +93,7 @@ export function PortalView() {
           <select
             value={upload ? d : deployment!.id}
             onChange={(ev) => go({ d: ev.target.value })}
-            className="max-w-[min(80vw,340px)] rounded-sm border border-rule-strong bg-surface px-2 py-1.5 text-[13px] font-semibold text-ink"
+            className="max-w-[min(80vw,340px)] rounded-[4px] border border-rule-strong bg-surface px-2 py-1.5 text-[13px] font-semibold text-ink"
           >
             {uploads.length > 0 && (
               <optgroup label="Opened in this tab">
@@ -119,12 +119,12 @@ export function PortalView() {
       </PageTitle>
 
       {missingUpload && (
-        <p className="mb-4 border border-rule bg-surface px-4 py-3 text-[13px] text-ink-2">
+        <p className="mb-4 overflow-hidden rounded-panel border border-rule bg-surface px-4 py-3 text-[13px] text-ink-2">
           That file was opened in another tab or before a reload. Opened files stay in memory only. Showing a seeded deployment instead.
         </p>
       )}
 
-      <div className="mb-4 flex flex-col gap-3 border border-rule bg-surface px-4 py-3 lg:flex-row lg:items-start lg:gap-8">
+      <div className="mb-4 flex flex-col gap-3 overflow-hidden rounded-panel border border-rule bg-surface px-4 py-3 lg:flex-row lg:items-start lg:gap-8">
         <div className="min-w-0 lg:w-[34%]">
           <div className="t-semi text-[17px] font-semibold text-ink">{deployment ? deployment.strategy : file.source}</div>
           <p className="text-[13px] text-ink-2">

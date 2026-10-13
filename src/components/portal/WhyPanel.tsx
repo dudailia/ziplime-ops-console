@@ -56,8 +56,8 @@ function AskClaude({ event, profile }: { event: RefuseEvent | SkipEvent; profile
 
   if (cached) {
     return (
-      <div className="border-l-2 border-accent bg-accent-soft/50 px-3 py-2">
-        <div className="text-[12px] font-semibold text-accent">Claude&apos;s reading. Not a built-in rule, so check it.</div>
+      <div className="rounded-[4px] border border-rule bg-sunk px-3 py-2">
+        <div className="text-[12px] font-semibold text-ink-2">Claude&apos;s reading. Not a built-in rule, so check it.</div>
         <p className="mt-1 max-w-[70ch] text-[13px] text-ink">{cached}</p>
       </div>
     );

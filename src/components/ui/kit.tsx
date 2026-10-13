@@ -45,7 +45,7 @@ export function Panel({
   id?: string;
 }) {
   return (
-    <section id={id} className={`min-w-0 border border-rule bg-surface ${className}`}>
+    <section id={id} className={`min-w-0 overflow-hidden rounded-panel border border-rule bg-surface ${className}`}>
       {(title || aside) && (
         <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-rule px-4 py-2.5">
           {title && <h2 className="t-semi text-[15px] font-semibold text-ink">{title}</h2>}
@@ -90,10 +90,12 @@ export function Button({
   title?: string;
   className?: string;
 }) {
+  // Primary is the one lime control on a screen: the next thing to do.
   const styles = {
-    primary: "bg-ink text-surface hover:opacity-90 disabled:bg-rule disabled:text-ink-3",
-    secondary: "border border-rule-strong bg-surface text-ink hover:border-ink disabled:border-rule disabled:text-ink-3",
-    quiet: "text-ink-2 underline underline-offset-2 hover:text-ink disabled:text-ink-3 disabled:no-underline",
+    primary:
+      "border border-accent-edge bg-accent text-on-accent hover:brightness-[1.04] disabled:border-rule disabled:bg-sunk disabled:text-ink-3 disabled:hover:brightness-100",
+    secondary: "border border-rule-strong bg-surface text-ink hover:border-ink hover:bg-sunk disabled:border-rule disabled:bg-surface disabled:text-ink-3",
+    quiet: "text-ink-2 underline hover:text-ink disabled:text-ink-3 disabled:no-underline",
   }[kind];
   return (
     <button
@@ -101,7 +103,7 @@ export function Button({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={`rounded-sm px-3 py-1.5 text-[13px] font-semibold disabled:cursor-not-allowed ${styles} ${className}`}
+      className={`press rounded-[4px] px-3 py-1.5 text-[13px] font-semibold transition-[background-color,border-color,filter,transform] duration-150 disabled:cursor-not-allowed ${styles} ${className}`}
     >
       {children}
     </button>
@@ -124,8 +126,8 @@ export function Chip({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`t-cond inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-[13px] ${
-        active ? "border-ink bg-surface font-semibold text-ink" : "border-rule bg-sunk text-ink-3 hover:border-rule-strong hover:text-ink"
+      className={`t-cond inline-flex items-center gap-1.5 rounded-[4px] border px-2 py-1 text-[13px] transition-colors duration-150 ${
+        active ? "border-ink bg-surface font-semibold text-ink" : "border-rule bg-sunk text-ink-2 hover:border-rule-strong hover:text-ink"
       } ${className}`}
     >
       {children}

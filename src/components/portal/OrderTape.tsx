@@ -127,7 +127,7 @@ export function OrderTape({
             aria-label="Symbol"
             value={filter.symbol}
             onChange={(ev) => setFilter({ ...filter, symbol: ev.target.value })}
-            className="rounded-sm border border-rule bg-surface px-2 py-1 text-[13px] text-ink"
+            className="rounded-[4px] border border-rule bg-surface px-2 py-1 text-[13px] text-ink"
           >
             <option value="">All symbols</option>
             {symbols.map((s) => (
@@ -138,7 +138,7 @@ export function OrderTape({
             aria-label="Side"
             value={filter.side}
             onChange={(ev) => setFilter({ ...filter, side: ev.target.value as TapeFilter["side"] })}
-            className="rounded-sm border border-rule bg-surface px-2 py-1 text-[13px] text-ink"
+            className="rounded-[4px] border border-rule bg-surface px-2 py-1 text-[13px] text-ink"
           >
             <option value="">Buys and sells</option>
             <option value="buy">Buys</option>
@@ -150,7 +150,7 @@ export function OrderTape({
             placeholder="Order id or line"
             value={filter.query}
             onChange={(ev) => setFilter({ ...filter, query: ev.target.value })}
-            className="min-w-0 flex-1 rounded-sm border border-rule bg-surface px-2 py-1 text-[13px] text-ink placeholder:text-ink-3 sm:w-40 sm:flex-none"
+            className="min-w-0 flex-1 rounded-[4px] border border-rule bg-surface px-2 py-1 text-[13px] text-ink placeholder:text-ink-3 sm:w-40 sm:flex-none"
           />
         </div>
         {filter.group && (

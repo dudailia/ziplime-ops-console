@@ -46,14 +46,15 @@ function RailNav() {
                   <Link
                     href={item.href}
                     aria-current={active ? "page" : undefined}
-                    className={`flex items-center gap-2.5 border-l-2 px-3 py-1.5 text-[14px] ${
-                      active ? "border-ink bg-sunk font-semibold text-ink" : "border-transparent text-ink-2 hover:bg-sunk hover:text-ink"
+                    className={`relative flex items-center gap-2.5 px-3 py-1.5 text-[14px] transition-colors duration-150 ${
+                      active ? "bg-sunk font-semibold text-ink" : "text-ink-2 hover:bg-sunk hover:text-ink"
                     }`}
                   >
+                    {active && <span aria-hidden className="absolute inset-y-1 left-0 w-[3px] rounded-r-sm bg-accent-ink" />}
                     <item.icon />
                     <span className="flex-1">{item.label}</span>
                     {badge > 0 && (
-                      <span className="t-cond min-w-5 rounded-sm bg-ink px-1 text-center text-[12px] font-semibold text-surface tabular-nums">
+                      <span className="t-cond min-w-5 rounded-[4px] bg-ink px-1 text-center text-[12px] font-semibold text-surface tabular-nums">
                         {badge}
                       </span>
                     )}
@@ -91,11 +92,11 @@ function PhoneNav() {
                   active ? "font-semibold text-ink" : "text-ink-2"
                 }`}
               >
-                <span className={`absolute inset-x-3 top-0 h-0.5 ${active ? "bg-ink" : ""}`} />
+                <span aria-hidden className={`absolute inset-x-4 top-0 h-[3px] rounded-b-sm ${active ? "bg-accent-ink" : ""}`} />
                 <item.icon />
                 <span className="t-cond">{item.short}</span>
                 {badge > 0 && (
-                  <span className="t-cond absolute right-[22%] top-1 min-w-4 rounded-sm bg-ink px-1 text-center text-[10px] font-semibold text-surface">
+                  <span className="t-cond absolute right-[22%] top-1 min-w-4 rounded-[4px] bg-ink px-1 text-center text-[10px] font-semibold text-surface">
                     {badge}
                   </span>
                 )}
@@ -139,7 +140,7 @@ function ThemeToggle() {
   const theme = useSyncExternalStore(subscribeTheme, readTheme, () => "auto" as Theme);
   const choose = applyTheme;
   return (
-    <div role="radiogroup" aria-label="Theme" className="flex rounded-sm border border-rule text-[12px]">
+    <div role="radiogroup" aria-label="Theme" className="flex overflow-hidden rounded-[4px] border border-rule text-[12px]">
       {(["auto", "light", "dark"] as const).map((t) => (
         <button
           key={t}
@@ -171,7 +172,7 @@ function ResetDemo({ compact = false }: { compact?: boolean }) {
         <span className="text-ink-2">{compact ? "Reset?" : "Clear every change?"}</span>
         <button
           type="button"
-          className="rounded-sm bg-ink px-2 py-0.5 font-semibold text-surface"
+          className="rounded-[4px] bg-ink px-2 py-0.5 font-semibold text-surface"
           onClick={() => {
             resetDemo();
             setAsking(false);
@@ -190,7 +191,7 @@ function ResetDemo({ compact = false }: { compact?: boolean }) {
     <button
       type="button"
       onClick={() => setAsking(true)}
-      className="rounded-sm border border-rule px-2 py-1 text-[12px] text-ink-2 hover:border-rule-strong hover:text-ink"
+      className="rounded-[4px] border border-rule px-2 py-1 text-[12px] text-ink-2 hover:border-rule-strong hover:text-ink"
     >
       {done ? "Demo reset" : "Reset demo"}
     </button>
@@ -207,11 +208,26 @@ function AiLine() {
   );
 }
 
+/** The console's own mark: three session-clock ticks, the last one would send. Not a Limex logo. */
+export function BrandMark({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" aria-hidden className="shrink-0">
+      <rect x="0.5" y="0.5" width="19" height="19" rx="4" fill="#12181c" stroke="var(--rule-strong)" strokeOpacity="0.6" />
+      <rect x="4.5" y="9" width="2.4" height="6.5" rx="0.6" fill="#e4e9ec" opacity="0.55" />
+      <rect x="8.8" y="6.5" width="2.4" height="9" rx="0.6" fill="#e4e9ec" opacity="0.8" />
+      <rect x="13.1" y="4" width="2.4" height="11.5" rx="0.6" fill="#c5ef3a" />
+    </svg>
+  );
+}
+
 function Brand() {
   return (
-    <Link href="/" className="block whitespace-nowrap leading-none">
-      <span className="t-wide text-[19px] font-[800] tracking-tight text-ink">ziplime</span>
-      <span className="t-cond ml-1.5 text-[15px] font-medium text-ink-2">Ops Console</span>
+    <Link href="/" className="flex items-center gap-2 whitespace-nowrap leading-none">
+      <BrandMark />
+      <span>
+        <span className="t-wide text-[17px] font-[800] tracking-[-0.01em] text-ink">ziplime</span>
+        <span className="t-cond ml-1 text-[15px] font-medium text-ink-2">Ops Console</span>
+      </span>
     </Link>
   );
 }
@@ -251,8 +267,9 @@ export function Shell({ children }: { children: ReactNode }) {
             Sample data. Fictional accounts.
           </p>
         </div>
-        <main className="min-w-0 flex-1 px-4 pb-28 pt-6 lg:px-8 lg:pb-10">{children}</main>
-        <footer className="border-t border-rule px-4 pb-24 pt-4 text-[12px] text-ink-3 lg:px-8 lg:pb-5">
+        <main className="min-w-0 flex-1 px-4 pb-10 pt-6 lg:px-8">{children}</main>
+        {/* On a phone the footer clears the fixed tab bar (52 px plus the safe area). */}
+        <footer className="border-t border-rule px-4 pb-[calc(76px+env(safe-area-inset-bottom))] pt-4 text-[12px] text-ink-3 lg:px-8 lg:pb-5">
           <p>
             Unofficial concept built on the open-source{" "}
             <a className="underline hover:text-ink" href="https://github.com/Limex-com/ziplime">

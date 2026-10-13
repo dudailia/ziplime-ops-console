@@ -32,7 +32,7 @@ function Answers({ s }: { s: Signup }) {
               return (
                 <span
                   key={o}
-                  className={`t-cond rounded-sm border px-1.5 py-0.5 text-[12px] ${on ? "border-ink bg-ink font-semibold text-surface" : "border-rule text-ink-3"}`}
+                  className={`t-cond rounded-[4px] border px-1.5 py-0.5 text-[12px] ${on ? "border-ink bg-ink font-semibold text-surface" : "border-rule text-ink-3"}`}
                 >
                   {o}
                 </span>
@@ -68,7 +68,7 @@ function Row({ label, value, rules, why }: { label: string; value: string; rules
       <dd className="min-w-0">
         <div className="text-[13px] font-semibold text-ink">
           {value}
-          {changed && <span className="ml-2 text-[11px] font-normal text-accent">Claude changed this. Rules said: {rules}</span>}
+          {changed && <span className="ml-2 text-[11px] font-normal text-ink-2">Claude changed this. Rules said: {rules}</span>}
         </div>
         {why && <div className="text-[12px] text-ink-2">{why}</div>}
       </dd>
@@ -290,7 +290,7 @@ export function IntakeView() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="min-w-0 lg:col-span-5">
-          <div className="border border-rule bg-surface">
+          <div className="overflow-hidden rounded-panel border border-rule bg-surface">
             <ul className="lg:max-h-[calc(100dvh-220px)] lg:overflow-y-auto">
               {shown.length === 0 && <li className="px-4 py-6 text-[13px] text-ink-2">Nothing here. Pick another filter.</li>}
               {shown.map(({ s, status, t }) => (
@@ -299,7 +299,7 @@ export function IntakeView() {
                     type="button"
                     aria-current={s.id === selectedId ? "true" : undefined}
                     onClick={() => pick(s.id)}
-                    className={`grid w-full grid-cols-[1fr_auto] gap-x-3 px-4 py-2 text-left hover:bg-sunk ${s.id === selectedId ? "bg-sunk shadow-[inset_3px_0_0_var(--ink)]" : ""}`}
+                    className={`grid w-full grid-cols-[1fr_auto] gap-x-3 px-4 py-2 text-left hover:bg-sunk ${s.id === selectedId ? "bg-sunk shadow-[inset_3px_0_0_var(--accent-ink)]" : ""}`}
                   >
                     <span className="min-w-0 truncate text-[13px] font-semibold text-ink">{s.email}</span>
                     <span className={`t-cond text-[12px] font-semibold capitalize ${PRIORITY_TONE[t.priority.level]}`}>{t.priority.level}</span>
