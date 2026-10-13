@@ -3,6 +3,7 @@
 
 import { otherClients } from "../crm";
 import { guard } from "../guard";
+import type { RuleId, Run } from "../automations";
 import { SEED_TICKETS, type Message, type ReplySource, type Ticket } from "../inbox";
 import { accountFromSignup, signupById, SIGNUPS } from "../intake";
 import type { Triage } from "../intake/triage";
@@ -50,6 +51,9 @@ export type State = {
   replies: Record<string, Reply | null>;
   /** Approved replies, appended to each ticket's thread. */
   sent: Record<string, Message[]>;
+  rules: Record<RuleId, boolean>;
+  /** Automation runs, newest first. */
+  runs: Run[];
 };
 
 export type Action =
@@ -66,10 +70,15 @@ export type Action =
   | { type: "reply/discard"; ticketId: string }
   | { type: "reply/approve"; ticketId: string; by: string; at: string }
   | { type: "tickets/create"; tickets: Ticket[]; activity: Activity[] }
-  | { type: "activity/add"; entries: Activity[] };
+  | { type: "activity/add"; entries: Activity[] }
+  | { type: "rules/toggle"; rule: RuleId }
+  | { type: "rules/run"; run: Run; tickets: Ticket[]; activity: Activity[] };
 
 export function initialState(): State {
-  return { v: 1, explainCache: {}, extraAccounts: [], activity: [], intake: {}, createdTickets: [], replies: {}, sent: {} };
+  return { v: 1, explainCache: {}, extraAccounts: [], activity: [], intake: {}, createdTickets: [], replies: {}, sent: {},
+    rules: { "refusal-streak": true, "broker-rejection": true, stale: true, "ready-for-live": true },
+    runs: [],
+  };
 }
 
 export function reducer(state: State, action: Action): State {
@@ -106,6 +115,18 @@ export function reducer(state: State, action: Action): State {
       const known = new Set(allTickets(state).map((t) => t.id));
       const fresh = action.tickets.filter((t) => !known.has(t.id));
       return { ...state, createdTickets: [...state.createdTickets, ...fresh], activity: [...state.activity, ...action.activity] };
+    }
+    case "rules/toggle":
+      return { ...state, rules: { ...state.rules, [action.rule]: !state.rules[action.rule] } };
+    case "rules/run": {
+      const known = new Set(allTickets(state).map((t) => t.id));
+      const seen = new Set(state.activity.map((a) => a.id));
+      return {
+        ...state,
+        createdTickets: [...state.createdTickets, ...action.tickets.filter((t) => !known.has(t.id))],
+        activity: [...state.activity, ...action.activity.filter((a) => !seen.has(a.id))],
+        runs: [action.run, ...state.runs].slice(0, 20),
+      };
     }
     case "activity/add":
       return { ...state, activity: [...state.activity, ...action.entries] };
