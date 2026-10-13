@@ -3,6 +3,7 @@
 
 import { otherClients } from "../crm";
 import { guard } from "../guard";
+import { SEED_TICKETS, type Message, type ReplySource, type Ticket } from "../inbox";
 import { accountFromSignup, signupById, SIGNUPS } from "../intake";
 import type { Triage } from "../intake/triage";
 import { SEED_ACCOUNTS, type Account } from "../seed";
@@ -33,6 +34,8 @@ export type IntakeRecord = {
 
 export const REVIEWER = "Demo reviewer";
 
+export type Reply = { text: string; source: ReplySource; by: string; updatedAt: string };
+
 export type State = {
   v: 1;
   /** Claude's answers for reasons with no built-in rule, keyed by reason string. */
@@ -41,6 +44,12 @@ export type State = {
   extraAccounts: Account[];
   activity: Activity[];
   intake: Record<string, IntakeRecord>;
+  /** Tickets opened by automation rules. */
+  createdTickets: Ticket[];
+  /** The reply being drafted per ticket. A seeded draft shows until this is set. */
+  replies: Record<string, Reply | null>;
+  /** Approved replies, appended to each ticket's thread. */
+  sent: Record<string, Message[]>;
 };
 
 export type Action =
@@ -52,10 +61,15 @@ export type Action =
   | { type: "intake/edit"; id: string; subject: string; body: string }
   | { type: "intake/approve"; id: string; by: string; at: string; email: { subject: string; body: string } }
   | { type: "intake/dismiss"; id: string; by: string; at: string }
-  | { type: "intake/reopen"; id: string };
+  | { type: "intake/reopen"; id: string }
+  | { type: "reply/set"; ticketId: string; text: string; source: ReplySource; by: string; at: string }
+  | { type: "reply/discard"; ticketId: string }
+  | { type: "reply/approve"; ticketId: string; by: string; at: string }
+  | { type: "tickets/create"; tickets: Ticket[]; activity: Activity[] }
+  | { type: "activity/add"; entries: Activity[] };
 
 export function initialState(): State {
-  return { v: 1, explainCache: {}, extraAccounts: [], activity: [], intake: {} };
+  return { v: 1, explainCache: {}, extraAccounts: [], activity: [], intake: {}, createdTickets: [], replies: {}, sent: {} };
 }
 
 export function reducer(state: State, action: Action): State {
@@ -79,6 +93,22 @@ export function reducer(state: State, action: Action): State {
       if (rec?.decision) return state;
       return patchIntake(state, action.id, { decision: { kind: "dismissed", by: action.by, at: action.at } });
     }
+    case "reply/set":
+      return {
+        ...state,
+        replies: { ...state.replies, [action.ticketId]: { text: action.text, source: action.source, by: action.by, updatedAt: action.at } },
+      };
+    case "reply/discard":
+      return { ...state, replies: { ...state.replies, [action.ticketId]: null } };
+    case "reply/approve":
+      return approveReply(state, action);
+    case "tickets/create": {
+      const known = new Set(allTickets(state).map((t) => t.id));
+      const fresh = action.tickets.filter((t) => !known.has(t.id));
+      return { ...state, createdTickets: [...state.createdTickets, ...fresh], activity: [...state.activity, ...action.activity] };
+    }
+    case "activity/add":
+      return { ...state, activity: [...state.activity, ...action.entries] };
     case "intake/reopen": {
       const rec = state.intake[action.id];
       if (rec?.decision?.kind !== "dismissed") return state;
@@ -135,4 +165,59 @@ export function revive(raw: string | null): State | null {
   } catch {
     return null;
   }
+}
+
+export function allTickets(state: State): Ticket[] {
+  return [...SEED_TICKETS, ...state.createdTickets];
+}
+
+/** The draft on a ticket: this session's reply, else a seeded draft, else nothing. */
+export function currentReply(state: State, ticket: Ticket): Reply | null {
+  if (ticket.id in state.replies) return state.replies[ticket.id];
+  if (ticket.draft) return { text: ticket.draft.text, source: "human", by: ticket.draft.by, updatedAt: ticket.createdAt };
+  return null;
+}
+
+export function replyHits(state: State, ticket: Ticket, text: string) {
+  return guard(text, { otherClients: otherClients(ticket.accountId, allAccounts(state)) }).hits;
+}
+
+export function thread(state: State, ticket: Ticket): Message[] {
+  return [...ticket.messages, ...(state.sent[ticket.id] ?? [])];
+}
+
+/** Waiting on Limex: the last message is the client's. */
+export function needsReply(state: State, ticket: Ticket): boolean {
+  const t = thread(state, ticket);
+  return t.length > 0 && t[t.length - 1].from === "client";
+}
+
+// Only a human click lands here, and only for a draft the guard passes.
+function approveReply(state: State, action: Extract<Action, { type: "reply/approve" }>): State {
+  const ticket = allTickets(state).find((t) => t.id === action.ticketId);
+  if (!ticket) return state;
+  const reply = currentReply(state, ticket);
+  if (!reply || replyStatusOf(state, ticket, reply.text) !== "in_review") return state;
+  const message: Message = { from: "limex", author: "The Limex team", at: action.at, body: reply.text, approvedBy: action.by, source: reply.source };
+  return {
+    ...state,
+    sent: { ...state.sent, [ticket.id]: [...(state.sent[ticket.id] ?? []), message] },
+    replies: { ...state.replies, [ticket.id]: null },
+    activity: [
+      ...state.activity,
+      {
+        id: `act-${ticket.id}-${state.sent[ticket.id]?.length ?? 0}`,
+        accountId: ticket.accountId,
+        at: action.at,
+        kind: "ticket",
+        text: `Reply on ${ticket.id} approved by ${action.by} and marked as sent.`,
+        by: action.by,
+      },
+    ],
+  };
+}
+
+function replyStatusOf(state: State, ticket: Ticket, text: string) {
+  if (text.trim() === "") return "empty";
+  return replyHits(state, ticket, text).length > 0 ? "flagged" : "in_review";
 }

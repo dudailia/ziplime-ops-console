@@ -1,0 +1,114 @@
+{
+  "_note": "Seven fictional support tickets. Linked ids are real ziplime_order_id values from the seed dry-run files.",
+  "tickets": [
+    {
+      "id": "T-1041",
+      "accountId": "priya-raman",
+      "subject": "TSLA orders never show up",
+      "createdAt": "2026-10-12T16:20:00-04:00",
+      "messages": [
+        {
+          "from": "client",
+          "author": "Priya Raman",
+          "at": "2026-10-12T16:20:00-04:00",
+          "body": "My growth rotation keeps wanting TSLA but nothing ever gets written as a place in the dry-run file. Same with AMD last week. Is the dry run broken for some symbols?"
+        }
+      ],
+      "links": [{ "deployment": "priya-growth", "ids": ["4f55a0a8a90f963e5ee2", "1c41b2326ceb1d2d0ebc", "a70adc5bb1f7ed951f86"] }]
+    },
+    {
+      "id": "T-1042",
+      "accountId": "tomas-ibarra",
+      "subject": "Half the mean-reversion orders refused",
+      "createdAt": "2026-10-12T17:05:00-04:00",
+      "messages": [
+        {
+          "from": "client",
+          "author": "Tomás Ibarra",
+          "at": "2026-10-12T17:05:00-04:00",
+          "body": "Today V, MSFT and MA were all refused with 'order notional exceeds the configured risk limit'. Which limit, and what number is it comparing against?"
+        }
+      ],
+      "links": [{ "deployment": "tomas-meanrev", "ids": ["c8568b9fba335b61ffd9", "c22eee65b7fd742c0034", "89c71bbf2f05a330117e"] }]
+    },
+    {
+      "id": "T-1043",
+      "accountId": "sofia-marchetti",
+      "subject": "'Insufficient buying power' but the account is funded",
+      "createdAt": "2026-10-12T12:30:00-04:00",
+      "messages": [
+        {
+          "from": "client",
+          "author": "Sofia Marchetti",
+          "at": "2026-10-12T12:30:00-04:00",
+          "body": "I keep getting 'Lime rejected order during validation: insufficient buying power' on META and NFLX. There's money in the account. What's going on?"
+        }
+      ],
+      "links": [{ "deployment": "sofia-swing", "ids": ["5a64a776ad39265ef26b", "0bb5ddd1342066ea38d9", "eecae72351dd444c117b"] }],
+      "draft": {
+        "by": "Alex (support)",
+        "text": "Hi Sofia,\n\nDon't worry, this is guaranteed to clear up once you add funds, and your swing setup will make money once it's live. Priya Raman had the same issue last week.\n\nYou should buy NVDA instead of META for now.\n\nThe Limex team"
+      }
+    },
+    {
+      "id": "T-1044",
+      "accountId": "jonas-weber",
+      "subject": "What does 'price is outside the allowed band' mean?",
+      "createdAt": "2026-10-09T16:40:00-04:00",
+      "messages": [
+        {
+          "from": "client",
+          "author": "Jonas Weber",
+          "at": "2026-10-09T16:40:00-04:00",
+          "body": "Last order of the day on SMH was rejected by Lime with 'price is outside the allowed band for this symbol'. I've never seen that one. Is my limit price wrong?"
+        }
+      ],
+      "links": [{ "deployment": "jonas-etf", "ids": ["bb1820406cd2abfd22f1"] }]
+    },
+    {
+      "id": "T-1045",
+      "accountId": "aaron-feld",
+      "subject": "Ten clean sessions. Can we go live?",
+      "createdAt": "2026-10-12T16:55:00-04:00",
+      "messages": [
+        {
+          "from": "client",
+          "author": "Aaron Feld",
+          "at": "2026-10-12T16:55:00-04:00",
+          "body": "Trend following has run ten sessions in dry run with zero refusals. Feels ready. Anything stopping us from switching it to live?"
+        }
+      ],
+      "links": [{ "deployment": "aaron-trend", "ids": ["2696847351fd89336f01", "517d473b533aa0bb6a8f"] }]
+    },
+    {
+      "id": "T-1046",
+      "accountId": "kofi-mensah",
+      "subject": "Lots of skipped orders, is something broken?",
+      "createdAt": "2026-10-12T16:10:00-04:00",
+      "messages": [
+        {
+          "from": "client",
+          "author": "Kofi Mensah",
+          "at": "2026-10-12T16:10:00-04:00",
+          "body": "My rebalancer shows a lot of 'skip' lines for BND and VXUS. Should I be worried?"
+        }
+      ],
+      "links": [{ "deployment": "kofi-rebal", "ids": ["608219061b33c4788598", "ee12125598a79ad4084b", "8db240bcffc66a5e7a64"] }]
+    },
+    {
+      "id": "T-1047",
+      "accountId": "greta-lindqvist",
+      "subject": "Order count limit on busy days",
+      "createdAt": "2026-10-08T15:30:00-04:00",
+      "messages": [
+        {
+          "from": "client",
+          "author": "Greta Lindqvist",
+          "at": "2026-10-08T15:30:00-04:00",
+          "body": "XLU and XLY were refused today for 'order count exceeds the per-invocation risk limit'. We only sent six orders. Does a refused order count?"
+        }
+      ],
+      "links": [{ "deployment": "greta-sector", "ids": ["fd0d59a2dcc4fac3f1e3", "7a3cf6f433cf13d21e3e", "5c35f1e5575ec2ca96e9"] }]
+    }
+  ]
+}
