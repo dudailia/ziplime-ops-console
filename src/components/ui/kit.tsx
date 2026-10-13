@@ -37,15 +37,18 @@ export function Panel({
   children,
   className = "",
   id,
+  tour,
 }: {
   title?: ReactNode;
   aside?: ReactNode;
   children: ReactNode;
   className?: string;
   id?: string;
+  /** Marks the panel as a tour target. */
+  tour?: string;
 }) {
   return (
-    <section id={id} className={`min-w-0 overflow-hidden rounded-panel border border-rule bg-surface ${className}`}>
+    <section id={id} data-tour={tour} className={`min-w-0 overflow-hidden rounded-panel border border-rule bg-surface ${className}`}>
       {(title || aside) && (
         <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-rule px-4 py-2.5">
           {title && <h2 className="t-semi text-[15px] font-semibold text-ink">{title}</h2>}
@@ -81,6 +84,7 @@ export function Button({
   type = "button",
   title,
   className = "",
+  tour,
 }: {
   children: ReactNode;
   onClick?: () => void;
@@ -89,6 +93,7 @@ export function Button({
   type?: "button" | "submit";
   title?: string;
   className?: string;
+  tour?: string;
 }) {
   // Primary is the one lime control on a screen: the next thing to do.
   const styles = {
@@ -103,6 +108,7 @@ export function Button({
       onClick={onClick}
       disabled={disabled}
       title={title}
+      data-tour={tour}
       className={`press rounded-[4px] px-3 py-1.5 text-[13px] font-semibold transition-[background-color,border-color,filter,transform] duration-150 disabled:cursor-not-allowed ${styles} ${className}`}
     >
       {children}

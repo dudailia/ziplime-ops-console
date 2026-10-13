@@ -106,3 +106,19 @@ describe("health of the seeded accounts", () => {
     expect(seedHealth("kofi-mensah").reasons[0].level).toBe("green");
   });
 });
+
+describe("front door numbers", async () => {
+  const { frontDoorNumbers } = await import("./crm");
+  const { DEPLOYMENTS, SEED_ACCOUNTS } = await import("./seed");
+  it("counts orders, refusals and accounts that need help from the seed", () => {
+    expect(frontDoorNumbers(SEED_ACCOUNTS, DEPLOYMENTS)).toEqual({
+      orders: 487,
+      sessions: 135,
+      deployments: 14,
+      refused: 69,
+      explained: 68,
+      needHelp: 5,
+      accounts: 10,
+    });
+  });
+});

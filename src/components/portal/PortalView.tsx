@@ -167,16 +167,38 @@ export function PortalView() {
       ) : (
         <div className="flex flex-col gap-4">
           <SessionStrip sessions={file.sessions} current={session.date} onPick={(s) => go({ s })} />
-          <SessionView key={`${file.source}:${session.date}`} file={file} session={session} profile={profile} />
+          <SessionView
+            key={`${file.source}:${session.date}`}
+            file={file}
+            session={session}
+            profile={profile}
+            initialLine={lineParam(params.get("l"), session)}
+          />
         </div>
       )}
     </DropZone>
   );
 }
 
+/** `?l=<line>` opens that line in the tape, if it belongs to the session shown. */
+function lineParam(raw: string | null, session: Session): number | null {
+  const n = raw ? Number(raw) : NaN;
+  return Number.isInteger(n) && session.events.some((e) => e.line === n) ? n : null;
+}
+
 /** Everything for one session. Keyed by file and date, so selection and filters reset on a switch. */
-function SessionView({ file, session, profile }: { file: ParsedFile; session: Session; profile: Profile | null }) {
-  const [selected, setSelected] = useState<number | null>(null);
+function SessionView({
+  file,
+  session,
+  profile,
+  initialLine,
+}: {
+  file: ParsedFile;
+  session: Session;
+  profile: Profile | null;
+  initialLine: number | null;
+}) {
+  const [selected, setSelected] = useState<number | null>(initialLine);
   const [filter, setFilter] = useState<TapeFilter>(emptyFilter);
   return (
     <>

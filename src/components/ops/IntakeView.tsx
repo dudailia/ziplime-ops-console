@@ -146,6 +146,7 @@ function Detail({ s }: { s: Signup }) {
       </Panel>
 
       <Panel
+        tour="triage"
         title="Triage"
         aside={activeTriage(s, rec).source === "claude" ? "Claude's version, checked against the rules" : "Rules version: keyword and answer rules, no AI"}
       >
@@ -215,6 +216,7 @@ function Detail({ s }: { s: Signup }) {
             <>
               <Button
                 kind="primary"
+                tour="approve-signup"
                 disabled={status === "flagged"}
                 title={status === "flagged" ? "The guard flagged the email. Edit it first." : undefined}
                 onClick={() => dispatch({ type: "intake/approve", id: s.id, by: REVIEWER, at: new Date().toISOString(), email })}

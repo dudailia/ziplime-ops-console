@@ -31,6 +31,7 @@
   --focus-halo: #c5ef3a;
   --scrim: rgb(13 18 21 / 0.45);
   --lift: 0 12px 32px -8px rgb(13 18 21 / 0.28), 0 2px 6px rgb(13 18 21 / 0.12);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   color-scheme: light;
 }
 
@@ -209,4 +210,41 @@ mark.guard-hit {
 /* Press feedback on every button-like control. */
 .press:active:not(:disabled) {
   transform: scale(0.97);
+}
+
+/* Tour: the spotlight dims everything else and rings the target in lime. It
+   never takes pointer events, so the page stays usable under it. */
+.tour-spotlight {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 0 0 9999px var(--scrim);
+  /* Tracks the target every frame, so it fades in once and never lags behind a scroll. */
+  animation: fade-in 200ms var(--ease-out) both;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+.tour-card {
+  animation: card-in 180ms var(--ease-out) both;
+}
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+kbd.kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 0.35em;
+  border: 1px solid var(--rule-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--sunk);
+  color: var(--ink-2);
+  font: 600 11px/1.5 var(--font-sans);
+  text-align: center;
 }

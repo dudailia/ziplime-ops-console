@@ -66,7 +66,7 @@ export function GuardReport({ text, hits, blocked = false }: { text: string; hit
   const counts = new Map<string, number>();
   for (const h of hits) counts.set(CATEGORY_LABEL[h.category], (counts.get(CATEGORY_LABEL[h.category]) ?? 0) + 1);
   return (
-    <div className="overflow-hidden rounded-panel border border-refuse bg-surface" role="status">
+    <div className="overflow-hidden rounded-panel border border-refuse bg-surface" role="status" data-tour="guard">
       <div className="border-b border-rule px-3 py-2 text-[13px]">
         <span className="font-semibold text-refuse">Guard blocked approval.</span>{" "}
         <span className="text-ink-2">

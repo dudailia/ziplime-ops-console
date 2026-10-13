@@ -6,6 +6,9 @@ import { Suspense, useEffect, useState, useSyncExternalStore, type ReactNode } f
 import { useAiStatus } from "@/lib/ai/useAiStatus";
 import { useStore } from "@/lib/store/StoreProvider";
 import { useNavBadges } from "@/lib/store/selectors";
+import { TourLayer } from "@/components/tour/TourLayer";
+import { useTour } from "@/components/tour/tourStore";
+import { TOUR } from "@/lib/tour";
 import { IconAccounts, IconInbox, IconIntake, IconReview, IconRules } from "./icons";
 
 type NavItem = { href: string; label: string; short: string; icon: () => ReactNode; badge?: "intake" | "inbox" };
@@ -198,6 +201,22 @@ function ResetDemo({ compact = false }: { compact?: boolean }) {
   );
 }
 
+/** Shown while a tour is paused, so it can be picked up from any page. */
+function ResumeTour() {
+  const { tour, act } = useTour();
+  if (tour.status !== "paused") return null;
+  return (
+    <button
+      type="button"
+      onClick={() => act({ type: "resume" })}
+      className="press flex items-center gap-2 rounded-[4px] border border-rule-strong bg-surface px-2 py-1 text-left text-[12px] font-semibold text-ink hover:bg-sunk"
+    >
+      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent-ink" />
+      Resume tour, step {tour.step + 1} of {TOUR.length}
+    </button>
+  );
+}
+
 function AiLine() {
   const status = useAiStatus();
   return (
@@ -247,6 +266,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <RailNav />
           </Suspense>
           <div className="mt-auto flex flex-col gap-3 px-3">
+            <ResumeTour />
             <AiLine />
             <ThemeToggle />
             <ResetDemo />
@@ -261,11 +281,14 @@ export function Shell({ children }: { children: ReactNode }) {
             <ResetDemo compact />
           </div>
         </div>
-        <div className="border-b border-rule bg-sunk px-4 py-1.5 lg:px-8">
+        <div className="flex items-center gap-3 border-b border-rule bg-sunk px-4 py-1.5 lg:px-8">
           <p className="t-semi text-[12px] font-semibold text-ink-2">
             <span className="mr-1.5 inline-block size-2 rounded-[1px] border border-ink-2 align-[-1px]" />
             Sample data. Fictional accounts.
           </p>
+          <div className="ml-auto lg:hidden">
+            <ResumeTour />
+          </div>
         </div>
         <main className="min-w-0 flex-1 px-4 pb-10 pt-6 lg:px-8">{children}</main>
         {/* On a phone the footer clears the fixed tab bar (52 px plus the safe area). */}
@@ -288,6 +311,9 @@ export function Shell({ children }: { children: ReactNode }) {
 
       <Suspense fallback={null}>
         <PhoneNav />
+      </Suspense>
+      <Suspense fallback={null}>
+        <TourLayer />
       </Suspense>
     </div>
   );

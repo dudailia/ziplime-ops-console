@@ -180,7 +180,13 @@ export function OrderTape({
           const isCancelled = e.event === "place" && cancelled.has(e.dry_run_id);
           const side = sideOf(e);
           return (
-            <div key={e.line} role="listitem" data-line={e.line} className={`border-b border-rule last:border-b-0 ${open ? "bg-sunk" : ""}`}>
+            <div
+              key={e.line}
+              role="listitem"
+              data-line={e.line}
+              data-tour={open && e.event === "refuse" ? "refusal" : undefined}
+              className={`border-b border-rule last:border-b-0 ${open ? "bg-sunk" : ""}`}
+            >
               <button
                 type="button"
                 aria-expanded={open}

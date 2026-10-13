@@ -35,24 +35,31 @@ function describe(e: DryRunEvent): string {
  */
 export function SessionClock({
   session,
-  selected,
+  selected = null,
   onSelect,
+  header = true,
+  minWidth = MIN_WIDTH,
 }: {
   session: Session;
-  selected: number | null;
-  onSelect: (line: number) => void;
+  selected?: number | null;
+  /** Without it the clock is a picture: no hover card, no click. */
+  onSelect?: (line: number) => void;
+  header?: boolean;
+  minWidth?: number;
 }) {
   const frame = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(1000);
+  // Narrow clocks label every other hour, so labels never touch.
+  const hourStep = width < 600 ? 120 : 60;
   const [hover, setHover] = useState<{ e: DryRunEvent; x: number; y: number } | null>(null);
 
   useEffect(() => {
     const el = frame.current;
     if (!el) return;
-    const ro = new ResizeObserver(([entry]) => setWidth(Math.max(MIN_WIDTH, Math.floor(entry.contentRect.width))));
+    const ro = new ResizeObserver(([entry]) => setWidth(Math.max(minWidth, Math.floor(entry.contentRect.width))));
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [minWidth]);
 
   const lanes = useMemo(() => {
     const symbols = new Set<string>();
@@ -78,7 +85,7 @@ export function SessionClock({
   const outside = session.events.filter((e) => e.clock.minuteET < SESSION_OPEN_MINUTE || e.clock.minuteET > SESSION_CLOSE_MINUTE);
 
   const hours = [];
-  for (let m = 600; m <= SESSION_CLOSE_MINUTE; m += 60) hours.push(m);
+  for (let m = 600; m <= SESSION_CLOSE_MINUTE; m += hourStep) hours.push(m);
   const halves = [];
   for (let m = SESSION_OPEN_MINUTE; m < SESSION_CLOSE_MINUTE; m += 60) halves.push(m);
 
@@ -86,7 +93,8 @@ export function SessionClock({
   const counts = session.counts;
 
   return (
-    <div className="overflow-hidden rounded-panel border border-rule bg-surface">
+    <div className={header ? "overflow-hidden rounded-panel border border-rule bg-surface" : ""}>
+      {header && (
       <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 pb-1 pt-3">
         <h2 className="t-title text-[30px] text-ink sm:text-[38px]">{sessionLabel(session.date, true)}</h2>
         <p className="text-[13px] text-ink-2">
@@ -94,6 +102,7 @@ export function SessionClock({
           <span className="sm:hidden"> Scroll sideways for the full day.</span>
         </p>
       </div>
+      )}
       <div ref={frame} className="relative overflow-x-auto overscroll-x-contain">
         <svg
           width={width}
@@ -121,9 +130,11 @@ export function SessionClock({
             </g>
           ))}
           <line x1={x(SESSION_OPEN_MINUTE)} x2={x(SESSION_OPEN_MINUTE)} y1={TOP - 6} y2={height - 8} stroke="var(--rule-strong)" />
-          <text x={x(SESSION_OPEN_MINUTE)} y={TOP - 12} className="t-wide fill-ink-2 text-[11px] font-[700]">
-            9:30
-          </text>
+          {hourStep === 60 && (
+            <text x={x(SESSION_OPEN_MINUTE)} y={TOP - 12} className="t-wide fill-ink-2 text-[11px] font-[700]">
+              9:30
+            </text>
+          )}
 
           {/* lanes */}
           {lanes.map((symbol) => (
@@ -198,9 +209,9 @@ export function SessionClock({
               <g
                 key={`g${e.line}`}
                 role="presentation"
-                className="cursor-pointer"
-                onClick={() => onSelect(e.line)}
-                onMouseEnter={() => setHover({ e, x: cx, y: cy })}
+                className={onSelect ? "cursor-pointer" : undefined}
+                onClick={onSelect ? () => onSelect(e.line) : undefined}
+                onMouseEnter={onSelect ? () => setHover({ e, x: cx, y: cy }) : undefined}
               >
                 <rect x={cx - 6} y={cy - LANE / 2} width={12} height={LANE} fill="transparent" />
                 {glyph}

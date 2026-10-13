@@ -48,7 +48,7 @@ export function AutomationsView() {
         title="Automations"
         sub={`Rules run over the dry-run files as of ${sessionLabel(CALENDAR.asOf, true)}. They open tickets and write notes for a person. They never send a reply or switch anything to live.`}
       >
-        <Button kind="primary" onClick={runNow} disabled={!Object.values(state.rules).some(Boolean)}>
+        <Button kind="primary" tour="run-rules" onClick={runNow} disabled={!Object.values(state.rules).some(Boolean)}>
           Run rules now
         </Button>
       </PageTitle>
@@ -87,7 +87,7 @@ export function AutomationsView() {
           </Panel>
         </div>
         <div className="min-w-0 xl:col-span-7">
-          <Panel title="Run log" aside={state.runs.length ? `${state.runs.length} run${state.runs.length === 1 ? "" : "s"}, newest first` : undefined}>
+          <Panel tour="rules" title="Run log" aside={state.runs.length ? `${state.runs.length} run${state.runs.length === 1 ? "" : "s"}, newest first` : undefined}>
             {state.runs.length === 0 ? (
               <p className="px-4 py-6 text-[13px] text-ink-2">No runs yet. Press Run rules now to see what each rule would do.</p>
             ) : (

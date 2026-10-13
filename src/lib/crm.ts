@@ -1,6 +1,6 @@
 // Per-account rollups for the ops CRM. Pure, over seed data.
 
-import type { Profile } from "./dryrun/explain";
+import { explain, type Profile } from "./dryrun/explain";
 import { readiness } from "./dryrun/metrics";
 import { countEvents } from "./dryrun/parse";
 import type { EventCounts, ParsedFile } from "./dryrun/types";
@@ -75,4 +75,28 @@ function maskOf(value: string): string {
 
 export function otherClients(accountId: string, accounts: readonly Account[]): string[] {
   return accounts.filter((a) => a.id !== accountId).flatMap(identifiers);
+}
+
+export type FrontDoorNumbers = {
+  orders: number;
+  sessions: number;
+  deployments: number;
+  refused: number;
+  explained: number;
+  needHelp: number;
+  accounts: number;
+};
+
+/** The three numbers on the front door, straight from the seed files. Cancels aren't orders. */
+export function frontDoorNumbers(accounts: readonly Account[], deployments: readonly Deployment[]): FrontDoorNumbers {
+  const n: FrontDoorNumbers = { orders: 0, sessions: 0, deployments: deployments.length, refused: 0, explained: 0, needHelp: 0, accounts: accounts.length };
+  for (const d of deployments) {
+    const s = summarizeDeployment(d);
+    n.orders += s.counts.place + s.counts.refuse + s.counts.skip;
+    n.sessions += s.file.sessions.length;
+    n.refused += s.counts.refuse;
+    for (const e of s.file.events) if (e.event === "refuse" && explain(e, s.profile)?.detailKnown) n.explained += 1;
+  }
+  n.needHelp = accounts.map(summarizeAccount).filter((a) => a.health.level === "red").length;
+  return n;
 }
