@@ -153,7 +153,7 @@ export function AccountDetail() {
         sub={
           <>
             {account.company ? `${account.company}. ` : ""}
-            <span className="t-cond tabular-nums">{account.accountNumber}</span>, {account.email}. Joined {sessionLabel(account.joined, true)}.
+            <span className="t-cond tabular-nums">{account.accountNumber || "No Lime account yet"}</span>, {account.email}. Joined {sessionLabel(account.joined, true)}.
           </>
         }
       >

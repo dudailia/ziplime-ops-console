@@ -138,7 +138,7 @@ export function AccountsView() {
                     </Link>
                     <div className="text-[12px] text-ink-2">
                       {s.account.company ? `${s.account.company}, ` : ""}
-                      <span className="t-cond tabular-nums">{s.account.accountNumber}</span>
+                      <span className="t-cond tabular-nums">{s.account.accountNumber || "No Lime account yet"}</span>
                     </div>
                   </td>
                   <td className="t-cond text-right text-ink-2 md:px-3 md:py-2.5 md:text-left">

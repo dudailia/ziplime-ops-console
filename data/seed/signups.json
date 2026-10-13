@@ -1,0 +1,578 @@
+{
+  "_note": "30 fictional Beta signups. Fields mirror the row limex.com's early-access form posts (checked 2026-10-13): email, the four optional multi-select answers and the Trading Pod toggle. 'note' is a proposed free-text field that limex.com doesn't have today. Emails are invented.",
+  "signups": [
+    {
+      "id": "su-001",
+      "email": "maya.chen@example.com",
+      "ts": "2026-10-01T09:14:00-04:00",
+      "page": "/",
+      "trade": [
+        "Stocks"
+      ],
+      "style": [
+        "Just starting"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "No real insight"
+      ],
+      "wantsPod": false,
+      "note": "Opened my first Robinhood account in August. Mostly index ETFs and a few tech names. I want to understand what I'm doing."
+    },
+    {
+      "id": "su-002",
+      "email": "d.okonkwo@example.net",
+      "ts": "2026-10-01T11:02:00-04:00",
+      "page": "/",
+      "trade": [
+        "Options"
+      ],
+      "style": [
+        "Swing"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "Manual entry",
+        "No real insight"
+      ],
+      "wantsPod": false,
+      "note": "Sell cash-secured puts and covered calls on about 15 names, track everything in a spreadsheet. On thinkorswim."
+    },
+    {
+      "id": "su-003",
+      "email": "lena.vogt@example.org",
+      "ts": "2026-10-01T13:40:00-04:00",
+      "page": "/",
+      "trade": [],
+      "style": [],
+      "funded": [],
+      "pain": [],
+      "wantsPod": false
+    },
+    {
+      "id": "su-004",
+      "email": "raj.patel.trades@example.com",
+      "ts": "2026-10-02T08:05:00-04:00",
+      "page": "/",
+      "trade": [
+        "Futures"
+      ],
+      "style": [
+        "Day trading"
+      ],
+      "funded": [
+        "Trading one now"
+      ],
+      "pain": [
+        "My own psychology"
+      ],
+      "wantsPod": true,
+      "note": "Funded account with a prop firm, trade ES and NQ around the open. Three months consistent, want help with discipline after losses."
+    },
+    {
+      "id": "su-005",
+      "email": "sam.whitaker@example.com",
+      "ts": "2026-10-02T10:30:00-04:00",
+      "page": "/",
+      "trade": [
+        "Crypto"
+      ],
+      "style": [
+        "Part-time"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "Manual entry"
+      ],
+      "wantsPod": false,
+      "note": "BTC and ETH, a little SOL. I trade on Coinbase in the evenings after work."
+    },
+    {
+      "id": "su-006",
+      "email": "ines.carvalho@example.com",
+      "ts": "2026-10-02T16:12:00-04:00",
+      "page": "/",
+      "trade": [
+        "Stocks",
+        "Options"
+      ],
+      "style": [
+        "Day trading"
+      ],
+      "funded": [
+        "Working toward it"
+      ],
+      "pain": [
+        "My own psychology",
+        "Price"
+      ],
+      "wantsPod": false
+    },
+    {
+      "id": "su-007",
+      "email": "tom.becker@example.net",
+      "ts": "2026-10-03T07:48:00-04:00",
+      "page": "/",
+      "trade": [
+        "Stocks"
+      ],
+      "style": [
+        "Swing"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "No real insight"
+      ],
+      "wantsPod": false,
+      "note": "I backtest in Python (pandas, some zipline) and trade the signals by hand on IBKR. Want to see if my live results match the backtest."
+    },
+    {
+      "id": "su-008",
+      "email": "ava.nguyen@example.com",
+      "ts": "2026-10-03T12:20:00-04:00",
+      "page": "/",
+      "trade": [
+        "Crypto"
+      ],
+      "style": [
+        "Just starting"
+      ],
+      "funded": [],
+      "pain": [],
+      "wantsPod": false,
+      "note": "New to all of this, friend told me about Limex."
+    },
+    {
+      "id": "su-009",
+      "email": "marco.rossi@example.org",
+      "ts": "2026-10-03T15:55:00-04:00",
+      "page": "/",
+      "trade": [],
+      "style": [],
+      "funded": [],
+      "pain": [],
+      "wantsPod": false
+    },
+    {
+      "id": "su-010",
+      "email": "hana.kim@example.com",
+      "ts": "2026-10-04T10:10:00-04:00",
+      "page": "/",
+      "trade": [
+        "Stocks",
+        "Options"
+      ],
+      "style": [
+        "Part-time"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "Manual entry",
+        "Privacy"
+      ],
+      "wantsPod": false,
+      "note": "Fidelity for long-term, a few options trades a month. I don't want to hand my login to random apps."
+    },
+    {
+      "id": "su-011",
+      "email": "j.alvarez@example.net",
+      "ts": "2026-10-04T21:33:00-04:00",
+      "page": "/",
+      "trade": [
+        "Futures",
+        "Crypto"
+      ],
+      "style": [
+        "Day trading"
+      ],
+      "funded": [
+        "Working toward it"
+      ],
+      "pain": [
+        "My own psychology"
+      ],
+      "wantsPod": true,
+      "note": "Working on a prop challenge, failed one already. Also scalp BTC perps."
+    },
+    {
+      "id": "su-012",
+      "email": "priyanka.s@example.com",
+      "ts": "2026-10-05T09:02:00-04:00",
+      "page": "/",
+      "trade": [
+        "Stocks"
+      ],
+      "style": [
+        "Swing"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "No real insight",
+        "Manual entry"
+      ],
+      "wantsPod": false,
+      "note": "Swing trade breakouts on E*TRADE, hold a few days to a few weeks. Journal is a mess."
+    },
+    {
+      "id": "su-013",
+      "email": "oliver.grant@example.com",
+      "ts": "2026-10-05T11:47:00-04:00",
+      "page": "/",
+      "trade": [
+        "Options"
+      ],
+      "style": [
+        "Day trading"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "Price"
+      ],
+      "wantsPod": false,
+      "note": "0DTE SPX spreads mostly. Tried three journals, all too expensive."
+    },
+    {
+      "id": "su-014",
+      "email": "fatima.zahra@example.org",
+      "ts": "2026-10-05T14:30:00-04:00",
+      "page": "/",
+      "trade": [
+        "Stocks"
+      ],
+      "style": [
+        "Just starting"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "No real insight"
+      ],
+      "wantsPod": false
+    },
+    {
+      "id": "su-015",
+      "email": "ben.harlow@example.com",
+      "ts": "2026-10-06T08:15:00-04:00",
+      "page": "/",
+      "trade": [
+        "Stocks",
+        "Futures"
+      ],
+      "style": [
+        "Day trading"
+      ],
+      "funded": [
+        "Trading one now"
+      ],
+      "pain": [
+        "No real insight"
+      ],
+      "wantsPod": false,
+      "note": "Trade a funded account and my own Schwab account. Want one place to see both."
+    },
+    {
+      "id": "su-016",
+      "email": "chloe.martin@example.net",
+      "ts": "2026-10-06T10:00:00-04:00",
+      "page": "/",
+      "trade": [],
+      "style": [],
+      "funded": [],
+      "pain": [],
+      "wantsPod": false
+    },
+    {
+      "id": "su-017",
+      "email": "yusuf.demir@example.com",
+      "ts": "2026-10-06T13:25:00-04:00",
+      "page": "/",
+      "trade": [
+        "Crypto"
+      ],
+      "style": [
+        "Swing"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "Privacy"
+      ],
+      "wantsPod": false,
+      "note": "Hold mostly ETH and a few alts, rotate every few weeks. Self-custody matters to me."
+    },
+    {
+      "id": "su-018",
+      "email": "grace.liu@example.com",
+      "ts": "2026-10-07T09:40:00-04:00",
+      "page": "/",
+      "trade": [
+        "Stocks",
+        "Options",
+        "Futures",
+        "Crypto"
+      ],
+      "style": [
+        "Day trading",
+        "Swing"
+      ],
+      "funded": [
+        "Working toward it"
+      ],
+      "pain": [
+        "My own psychology",
+        "No real insight",
+        "Manual entry"
+      ],
+      "wantsPod": true
+    },
+    {
+      "id": "su-019",
+      "email": "noah.fischer@example.org",
+      "ts": "2026-10-07T12:12:00-04:00",
+      "page": "/",
+      "trade": [
+        "Stocks"
+      ],
+      "style": [
+        "Part-time"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "Other"
+      ],
+      "wantsPod": false,
+      "note": "I run a small systematic strategy, rebalance monthly. Mostly curious what Limex adds over a spreadsheet."
+    },
+    {
+      "id": "su-020",
+      "email": "sofia.reyes@example.com",
+      "ts": "2026-10-07T17:05:00-04:00",
+      "page": "/",
+      "trade": [
+        "Options"
+      ],
+      "style": [
+        "Just starting"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "No real insight"
+      ],
+      "wantsPod": false,
+      "note": "Learning options, paper trading on Webull for now."
+    },
+    {
+      "id": "su-021",
+      "email": "kwame.boateng@example.net",
+      "ts": "2026-10-08T08:50:00-04:00",
+      "page": "/",
+      "trade": [
+        "Stocks"
+      ],
+      "style": [
+        "Day trading"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "My own psychology"
+      ],
+      "wantsPod": false,
+      "note": "Momentum day trader, small caps. I overtrade after a red morning."
+    },
+    {
+      "id": "su-022",
+      "email": "elena.petrova@example.com",
+      "ts": "2026-10-08T11:18:00-04:00",
+      "page": "/",
+      "trade": [],
+      "style": [],
+      "funded": [],
+      "pain": [],
+      "wantsPod": false
+    },
+    {
+      "id": "su-023",
+      "email": "will.tanaka@example.com",
+      "ts": "2026-10-08T15:44:00-04:00",
+      "page": "/",
+      "trade": [
+        "Stocks",
+        "Options"
+      ],
+      "style": [
+        "Swing"
+      ],
+      "funded": [
+        "Trading one now"
+      ],
+      "pain": [
+        "Manual entry"
+      ],
+      "wantsPod": true,
+      "note": "Two years trading a funded options account, audited track record. IBKR for personal."
+    },
+    {
+      "id": "su-024",
+      "email": "amira.haddou@example.org",
+      "ts": "2026-10-09T09:30:00-04:00",
+      "page": "/",
+      "trade": [
+        "Crypto"
+      ],
+      "style": [
+        "Day trading"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "Price",
+        "Manual entry"
+      ],
+      "wantsPod": false
+    },
+    {
+      "id": "su-025",
+      "email": "lucas.moreau@example.com",
+      "ts": "2026-10-09T13:03:00-04:00",
+      "page": "/",
+      "trade": [
+        "Stocks"
+      ],
+      "style": [
+        "Swing"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "No real insight"
+      ],
+      "wantsPod": false,
+      "note": "Write my own screeners in Python, buy-only, hold weeks. Robinhood."
+    },
+    {
+      "id": "su-026",
+      "email": "zoe.adams@example.net",
+      "ts": "2026-10-10T10:22:00-04:00",
+      "page": "/",
+      "trade": [
+        "Stocks"
+      ],
+      "style": [
+        "Part-time"
+      ],
+      "funded": [],
+      "pain": [
+        "Manual entry"
+      ],
+      "wantsPod": false
+    },
+    {
+      "id": "su-027",
+      "email": "diego.santos@example.com",
+      "ts": "2026-10-11T19:40:00-04:00",
+      "page": "/",
+      "trade": [
+        "Futures"
+      ],
+      "style": [
+        "Swing"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "No real insight"
+      ],
+      "wantsPod": false,
+      "note": "Micro futures, MES and MNQ, hold overnight sometimes."
+    },
+    {
+      "id": "su-028",
+      "email": "mei.watanabe@example.com",
+      "ts": "2026-10-12T08:10:00-04:00",
+      "page": "/",
+      "trade": [
+        "Stocks",
+        "Crypto"
+      ],
+      "style": [
+        "Just starting"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "My own psychology"
+      ],
+      "wantsPod": false,
+      "note": "Bought some stocks and bitcoin last year, panic sold both. Want to do it properly this time."
+    },
+    {
+      "id": "su-029",
+      "email": "arjun.mehta@example.org",
+      "ts": "2026-10-12T14:55:00-04:00",
+      "page": "/",
+      "trade": [
+        "Options",
+        "Futures"
+      ],
+      "style": [
+        "Day trading"
+      ],
+      "funded": [
+        "Working toward it"
+      ],
+      "pain": [
+        "My own psychology",
+        "Price"
+      ],
+      "wantsPod": false,
+      "note": "Can you guarantee I'll pass a prop challenge with this? Need 10% a month."
+    },
+    {
+      "id": "su-030",
+      "email": "kate.obrien@example.com",
+      "ts": "2026-10-13T09:05:00-04:00",
+      "page": "/",
+      "trade": [
+        "Stocks"
+      ],
+      "style": [
+        "Swing"
+      ],
+      "funded": [
+        "Not my thing"
+      ],
+      "pain": [
+        "Privacy",
+        "No real insight"
+      ],
+      "wantsPod": false,
+      "note": "Mostly dividend stocks at Fidelity, some swing trades. Want insight without sharing my password."
+    }
+  ]
+}
