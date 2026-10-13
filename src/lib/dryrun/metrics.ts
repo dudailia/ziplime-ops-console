@@ -103,8 +103,15 @@ function median(values: number[]): number {
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+/**
+ * How many recent sessions both readiness and CRM health look at. One number,
+ * so a deployment can't pass "no recent refusals" in the portal while the CRM
+ * marks it for its refusals in the same sessions.
+ */
+export const RECENT_SESSIONS = 5;
+
 /** "Ready to go live?" The six checks in PLAN.md section 4, over the last n sessions. */
-export function readiness(file: ParsedFile, profile: Profile | null, n = 3): CheckResult[] {
+export function readiness(file: ParsedFile, profile: Profile | null, n = RECENT_SESSIONS): CheckResult[] {
   const recent = file.sessions.slice(-n);
   const all = file.events;
   const checks: CheckResult[] = [];

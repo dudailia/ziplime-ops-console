@@ -73,7 +73,11 @@ function PhoneNav() {
   const badges = useNavBadges();
   const items = GROUPS.flatMap((g) => g.items);
   return (
-    <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-30 border-t border-rule bg-surface lg:hidden">
+    <nav
+      aria-label="Main"
+      data-testid="tabbar"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-rule bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
+    >
       <ul className="grid grid-cols-5">
         {items.map((item) => {
           const active = isActive(pathname, item.href);
@@ -83,7 +87,7 @@ function PhoneNav() {
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`relative flex flex-col items-center gap-0.5 pb-2 pt-2 text-[11px] ${
+                className={`relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] ${
                   active ? "font-semibold text-ink" : "text-ink-2"
                 }`}
               >
@@ -215,18 +219,22 @@ function Brand() {
 export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[224px_minmax(0,1fr)]">
-      <aside className="sticky top-0 hidden h-dvh flex-col gap-6 border-r border-rule bg-surface py-5 lg:flex">
-        <div className="px-3">
-          <Brand />
-          <p className="mt-1.5 text-[12px] leading-snug text-ink-3">On ziplime&apos;s Lime dry run</p>
-        </div>
-        <Suspense fallback={null}>
-          <RailNav />
-        </Suspense>
-        <div className="mt-auto flex flex-col gap-3 px-3">
-          <AiLine />
-          <ThemeToggle />
-          <ResetDemo />
+      {/* The aside stretches the full grid row, so its background and rule run
+          the length of the page; the inner column sticks to the viewport. */}
+      <aside data-testid="rail" className="hidden border-r border-rule bg-surface lg:block">
+        <div className="sticky top-0 flex h-dvh flex-col gap-6 overflow-y-auto py-5">
+          <div className="px-3">
+            <Brand />
+            <p className="mt-1.5 text-[12px] leading-snug text-ink-3">On ziplime&apos;s Lime dry run</p>
+          </div>
+          <Suspense fallback={null}>
+            <RailNav />
+          </Suspense>
+          <div className="mt-auto flex flex-col gap-3 px-3">
+            <AiLine />
+            <ThemeToggle />
+            <ResetDemo />
+          </div>
         </div>
       </aside>
 

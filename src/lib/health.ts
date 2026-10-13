@@ -3,6 +3,7 @@
 // so the colours don't drift with the real clock.
 
 import { explain, needsClaude, type Profile } from "./dryrun/explain";
+import { RECENT_SESSIONS } from "./dryrun/metrics";
 import { countEvents, refusalRate } from "./dryrun/parse";
 import type { ParsedFile } from "./dryrun/types";
 
@@ -10,7 +11,7 @@ export type HealthLevel = "red" | "amber" | "green" | "grey";
 export type HealthReason = { level: HealthLevel; text: string; deployment?: string };
 export type Health = { level: HealthLevel; reasons: HealthReason[] };
 
-export const HEALTH_WINDOW = 5;
+export const HEALTH_WINDOW = RECENT_SESSIONS;
 export const STALE_AFTER_TRADING_DAYS = 3;
 
 export const HEALTH_LABEL: Record<HealthLevel, string> = {

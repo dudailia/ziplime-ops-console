@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Profile } from "@/lib/dryrun/explain";
-import { netShares, readiness, whyGroups, worstEvent } from "@/lib/dryrun/metrics";
+import { netShares, readiness, RECENT_SESSIONS, whyGroups, worstEvent } from "@/lib/dryrun/metrics";
 import type { ParsedFile, Session } from "@/lib/dryrun/types";
 import { pct, plural, shortDate } from "@/lib/format";
 import { Env, EVENT_TEXT, EVENT_WORD, EventGlyph, Panel, Stat } from "@/components/ui/kit";
@@ -167,7 +167,7 @@ function Mark({ pass }: { pass: boolean }) {
 }
 
 export function Readiness({ file, profile }: { file: ParsedFile; profile: Profile | null }) {
-  const [n, setN] = useState(3);
+  const [n, setN] = useState(RECENT_SESSIONS);
   const checks = readiness(file, profile, n);
   const passed = checks.filter((c) => c.pass).length;
   return (

@@ -34,7 +34,9 @@ describe("automation rules on the seed", () => {
 
   it("flags Harbor Lane momentum as ready for a live review, for a person to act on", () => {
     const ready = runRules(initialState(), only("ready-for-live"), at);
-    expect(ready.lines.map((l) => l.deployment)).toContain("harbor-momentum");
+    // Only Harbor Lane: Jonas Weber's breakout refused orders on 7 Oct, inside
+    // the same 5-session window the CRM uses, so it isn't ready.
+    expect(ready.lines.map((l) => l.deployment)).toEqual(["harbor-momentum"]);
     expect(ready.activity.every((a) => a.text.includes("A person decides"))).toBe(true);
   });
 

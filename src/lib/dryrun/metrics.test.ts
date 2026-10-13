@@ -100,7 +100,26 @@ describe("readiness", () => {
       counts
         .flatMap((n, day) => Array.from({ length: n }, (_, i) => place(`d${day}o${i}`, "AAPL", "buy", 1).replace(/2026-10-12T/, `2026-10-0${day + 5}T`)))
         .join("\n") + "\n";
-    expect(readiness(parseDryRun(sessions([10, 13, 10]), "f"), null).find((c) => c.id === "stable")?.pass).toBe(true);
-    expect(readiness(parseDryRun(sessions([10, 14, 10]), "f"), null).find((c) => c.id === "stable")?.pass).toBe(false);
+    expect(readiness(parseDryRun(sessions([10, 13, 10]), "f"), null, 3).find((c) => c.id === "stable")?.pass).toBe(true);
+    expect(readiness(parseDryRun(sessions([10, 14, 10]), "f"), null, 3).find((c) => c.id === "stable")?.pass).toBe(false);
+  });
+});
+
+describe("readiness and health share one window", async () => {
+  const { HEALTH_WINDOW } = await import("../health");
+  const { RECENT_SESSIONS } = await import("./metrics");
+
+  it("uses the last 5 sessions for both", () => {
+    expect(RECENT_SESSIONS).toBe(5);
+    expect(HEALTH_WINDOW).toBe(RECENT_SESSIONS);
+    expect(readiness(seed("harbor-momentum"), profileOf("harbor-momentum")).find((c) => c.id === "sessions")?.label).toBe(
+      "At least 5 sessions recorded",
+    );
+  });
+
+  it("fails Jonas Weber's breakout on recent refusals, as the CRM does", () => {
+    const c = readiness(seed("jonas-breakout"), profileOf("jonas-breakout")).find((x) => x.id === "no-refusals")!;
+    expect(c.pass).toBe(false);
+    expect(c.evidence).toMatch(/2026-10-07/);
   });
 });
