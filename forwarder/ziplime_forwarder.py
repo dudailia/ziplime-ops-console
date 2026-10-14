@@ -73,6 +73,10 @@ class State:
     next_line: int
     # Stream line number of this file's first line. Lines keep counting across a rotation.
     file_first_line: int
+    # The file's size at the last read. Past offset, it was there but not sent
+    # yet, which is what a replaced file can leave behind. None in a state file
+    # written before this was recorded.
+    size: int | None = None
 
 
 def sign(secret: bytes, timestamp: str, body: bytes) -> str:
@@ -108,7 +112,8 @@ def load_state(state_path: Path) -> State | None:
     except (OSError, ValueError) as exc:
         raise ForwarderError(f"Can't read the state file {state_path}: {exc}", EXIT_CONFIG) from exc
     try:
-        return State(**{f.name: data[f.name] for f in dataclasses.fields(State)})
+        optional = {f.name for f in dataclasses.fields(State) if f.default is not dataclasses.MISSING}
+        return State(**{f.name: data[f.name] for f in dataclasses.fields(State) if f.name in data or f.name not in optional})
     except (KeyError, TypeError) as exc:
         raise ForwarderError(f"The state file {state_path} isn't one this forwarder wrote.", EXIT_CONFIG) from exc
 
@@ -128,12 +133,15 @@ def batch_body(file_name: str, first_line: int, lines: list[str]) -> bytes:
     return json.dumps({"file": file_name, "first_line": first_line, "lines": lines}, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
 
-def read_lines(path: Path, offset: int, max_lines: int, max_bytes: int, first_line: int = 1) -> tuple[list[str], int]:
-    """Complete lines after offset, within the batch limits. A last line with no newline yet waits."""
+def read_lines(path: Path, offset: int, max_lines: int, max_bytes: int, first_line: int = 1) -> tuple[list[str], int, int]:
+    """Complete lines after offset, within the batch limits, and the file's size
+    at this read. A last line with no newline yet waits."""
     lines: list[str] = []
     # The body's own bytes count too: the file name, first_line and the brackets.
     size = len(batch_body(path.name, first_line, []))
     with open(path, "rb") as handle:
+        # From the open handle, so it is this file's size even if the path is replaced meanwhile.
+        file_size = os.fstat(handle.fileno()).st_size
         handle.seek(offset)
         while len(lines) < max_lines:
             raw = handle.readline()
@@ -151,7 +159,7 @@ def read_lines(path: Path, offset: int, max_lines: int, max_bytes: int, first_li
             lines.append(text)
             size += cost
             offset += len(raw)
-    return lines, offset
+    return lines, offset, max(file_size, offset)
 
 
 def offset_of_line(path: Path, line_index: int) -> int:
@@ -203,8 +211,9 @@ class Forwarder:
             raise ForwarderError(f"The state file belongs to {state.path}, not {self.path}. Use a state file per dry-run file.", EXIT_CONFIG)
         if st.st_ino != state.inode:
             # Rotated: a new file at the same path. Keep counting lines from where the old one ended.
+            self.log(self._replaced_warning(state))
             self.log(f"{self.path} is a new file; continuing from stream line {state.next_line}.")
-            return State(state.path, st.st_ino, 0, state.next_line, state.next_line)
+            return State(state.path, st.st_ino, 0, state.next_line, state.next_line, st.st_size)
         if st.st_size < state.offset:
             raise ForwarderError(
                 f"{self.path} shrank below the {state.offset} bytes already sent. ziplime only appends, so something rewrote it; not guessing.",
@@ -212,13 +221,35 @@ class Forwarder:
             )
         return state
 
+    def _replaced_warning(self, state: State) -> str:
+        """What a replaced file may have taken with it. The old file is gone from this
+        path, so only what the last read saw can be counted."""
+        if state.size is None:
+            return (
+                f"Warning: {self.path} was replaced, and the state file doesn't record its size, so this can't tell "
+                f"whether all of the old file was sent. {state.offset} bytes of it were."
+            )
+        if state.size > state.offset:
+            return (
+                f"Warning: {self.path} was replaced before all of it was sent: at least {state.size - state.offset} bytes "
+                f"of the old file (bytes {state.offset} to {state.size} at the last read) are not in the console, "
+                f"and so is anything written to it after the last read."
+            )
+        return (
+            f"Warning: {self.path} was replaced. All {state.offset} bytes seen at the last read were sent, but this "
+            f"can't tell whether lines were written to the old file after the last read; any that were are not in the console."
+        )
+
     def run_once(self) -> int:
         """Sends everything that's complete now. Returns how many lines were sent."""
         state = self._state()
         save_state(self.state_path, state)
         sent = 0
         while True:
-            lines, end = read_lines(self.path, state.offset, self.batch_lines, self.batch_bytes, state.next_line)
+            lines, end, size = read_lines(self.path, state.offset, self.batch_lines, self.batch_bytes, state.next_line)
+            if size != state.size:
+                state = dataclasses.replace(state, size=size)
+                save_state(self.state_path, state)
             if not lines:
                 return sent
             body = batch_body(self.path.name, state.next_line, lines)

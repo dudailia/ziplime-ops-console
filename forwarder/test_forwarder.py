@@ -238,6 +238,78 @@ def test_keeps_counting_lines_across_a_rotated_file(tmp_path, console):
     assert console.requests[-1]["data"]["lines"] == [engine_line(100), engine_line(101)]
 
 
+def rotate(path: Path) -> None:
+    """What logrotate does: move the file away, start a new one at the same path."""
+    os.rename(path, path.with_name(path.name + ".1"))
+    write(path, 100, 2, mode="w")
+
+
+def warnings(logs: list[str]) -> list[str]:
+    return [m for m in logs if m.startswith("Warning:")]
+
+
+def test_names_the_unsent_bytes_when_a_file_is_replaced_before_it_was_all_sent(tmp_path, console):
+    path = tmp_path / "run.jsonl"
+    write(path, 1, 4)
+    console.script = [(200, None), (401, {"error": "unauthorized"})]
+    f, _, logs = make(tmp_path, console, batch_lines=2)
+    with pytest.raises(fw.ForwarderError):
+        f.run_once()  # lines 1 and 2 sent, then the console refused 3 and 4
+    state = json.loads((tmp_path / "state.json").read_text())
+    unsent = path.stat().st_size - state["offset"]
+    assert unsent == len(engine_line(3)) + len(engine_line(4)) + 2
+    rotate(path)
+    f.run_once()
+    [warning] = warnings(logs)
+    assert f"at least {unsent} bytes" in warning and "not in the console" in warning
+    # It keeps going with the new file.
+    assert console.requests[-1]["data"]["lines"] == [engine_line(100), engine_line(101)]
+
+
+def test_counts_a_half_written_line_it_saw_as_unsent(tmp_path, console):
+    path = tmp_path / "run.jsonl"
+    write(path, 1, 2)
+    with open(path, "a", encoding="utf-8") as handle:
+        handle.write('{"event": "sk')  # the engine was mid-line
+    f, _, logs = make(tmp_path, console)
+    f.run_once()
+    assert json.loads((tmp_path / "state.json").read_text())["size"] == path.stat().st_size
+    rotate(path)
+    f.run_once()
+    [warning] = warnings(logs)
+    assert "at least 13 bytes" in warning
+
+
+def test_warns_it_cannot_tell_when_the_file_was_replaced_while_it_was_down(tmp_path, console):
+    path = tmp_path / "run.jsonl"
+    write(path, 1, 4)
+    f, _, logs = make(tmp_path, console)
+    f.run_once()
+    write(path, 5, 3)  # written while the forwarder was stopped, then the file was rotated
+    rotate(path)
+    again, _, logs = make(tmp_path, console)
+    again.run_once()
+    [warning] = warnings(logs)
+    assert "can't tell" in warning and "after the last read" in warning
+    assert console.requests[-1]["data"]["first_line"] == 5
+
+
+def test_warns_on_a_replaced_file_with_a_state_file_from_before_sizes(tmp_path, console):
+    path = tmp_path / "run.jsonl"
+    write(path, 1, 4)
+    f, _, logs = make(tmp_path, console)
+    f.run_once()
+    state_path = tmp_path / "state.json"
+    old = json.loads(state_path.read_text())
+    del old["size"]
+    state_path.write_text(json.dumps(old))
+    rotate(path)
+    f.run_once()
+    [warning] = warnings(logs)
+    assert "can't tell" in warning and "doesn't record" in warning
+    assert console.requests[-1]["data"]["first_line"] == 5
+
+
 def test_stops_when_the_file_shrank(tmp_path, console):
     path = tmp_path / "run.jsonl"
     write(path, 1, 4)

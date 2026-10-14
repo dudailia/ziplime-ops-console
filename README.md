@@ -117,7 +117,7 @@ What they cover:
 - **Contract** (`src/lib/data/contract.test.ts`): the same checks on the static source and on PGlite seeded through the ingest path.
 - **Ingest** (`src/lib/ingest/ingest.test.ts`): the shared signature vector, strict headers, every line outcome, replay, gap, each refusal, no internals in a 500, no secret in the audit log. A concurrency test runs when `TEST_DATABASE_URL` points at a real Postgres.
 - **Onboarding and ops auth**: one key per approval, 409 the second time, the server-side guard, key rotation, Basic auth, same-origin, JSON only.
-- **Forwarder** (`forwarder/test_forwarder.py`, against a real local HTTP server): batching by lines and bytes, the held-back half line, resume, retry with the same body, no retry on 401, gap rewind, rotation, a shrunk file, a private secret file.
+- **Forwarder** (`forwarder/test_forwarder.py`, against a real local HTTP server): batching by lines and bytes, the held-back half line, resume, retry with the same body, no retry on 401, gap rewind, rotation (with a warning naming the old file's unsent bytes), a shrunk file, a private secret file.
 - **End to end** (`e2e-ingest/ingest.spec.ts`): the real seed generator writes a file from the engine, a signup is approved in the UI, the real forwarder sends the file, and the account page and every portal session match counts taken from the file with plain `JSON.parse`. Then: a second run sends nothing, a resend stores nothing, a tampered signature and an old timestamp get 401, a malformed line is rejected and shown, `data/seed` is untouched. It passed three runs in a row, each on a new database.
 
 The Playwright smoke test walks through:
