@@ -47,3 +47,4 @@ yarn-error.log*
 
 # General Sans: fetched from Fontshare at build time, never committed (ITF FFL, see DESIGN.md)
 /src/app/fonts/*.woff2
+/src/app/fonts/*.woff

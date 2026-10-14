@@ -59,7 +59,7 @@ async function sessionCounts(page: Page, deployment: string, date: string): Prom
   await page.goto(`/portal?d=${deployment}&s=${date}`);
   const dl = page.locator("dl").filter({ hasText: "Refusal rate" });
   await expect(dl).toBeVisible();
-  const read = async (word: string) => Number(await dl.locator("div").filter({ hasText: word }).locator("dd .sr-only").first().textContent());
+  const read = async (word: string) => Number(await dl.locator("div").filter({ hasText: word }).locator("dd .countup-value").first().textContent());
   return { place: await read("Would send"), refuse: await read("Refused"), skip: await read("Skipped"), cancel: await read("Cancelled") };
 }
 

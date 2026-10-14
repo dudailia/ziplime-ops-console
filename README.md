@@ -145,33 +145,47 @@ The other specs cover the tour end to end by keyboard (pause, resume, the card's
 | `/ops/automations` | Limex team | Four rules with on/off, Run rules now, run log |
 | `/about` | anyone | How this was built and verified: `docs/HOW_I_BUILT_THIS.md` itself |
 
+Night, the default theme, at 1440 px:
+
 | | |
 |---|---|
-| ![Dry-run review](docs/screenshots/portal.png) | ![Tour, step 2](docs/screenshots/tour-amber.png) |
-| ![Accounts](docs/screenshots/accounts.png) | ![Account detail](docs/screenshots/account.png) |
-| ![Beta intake](docs/screenshots/intake.png) | ![Support inbox](docs/screenshots/inbox.png) |
-| ![Automations](docs/screenshots/automations.png) | ![Dark mode](docs/screenshots/portal-dark.png) |
-| ![Tour, step 1](docs/screenshots/tour-refusal.png) | ![Tour, step 3](docs/screenshots/tour-guard.png) |
-| ![Front door, light](docs/screenshots/front-light.png) | ![Link preview](docs/screenshots/og.png) |
-| ![How I built this](docs/screenshots/about.png) | |
+| ![Dry-run review](docs/screenshots/portal-dark.png) | ![Account detail](docs/screenshots/account-dark.png) |
+| ![Accounts](docs/screenshots/accounts-dark.png) | ![Beta intake](docs/screenshots/intake-dark.png) |
+| ![Support inbox](docs/screenshots/inbox-dark.png) | ![Automations](docs/screenshots/automations-dark.png) |
+| ![Tour, step 1](docs/screenshots/tour-refusal-dark.png) | ![Tour, step 2](docs/screenshots/tour-watch-dark.png) |
+| ![Tour, step 3](docs/screenshots/tour-guard-dark.png) | ![How I built this](docs/screenshots/about-dark.png) |
+| ![Link preview](docs/screenshots/og.png) | |
+
+Day:
+
+| | |
+|---|---|
+| ![Front door, day](docs/screenshots/front-light.png) | ![Dry-run review, day](docs/screenshots/portal-light.png) |
+| ![Account detail, day](docs/screenshots/account-light.png) | ![Support inbox, day](docs/screenshots/inbox-light.png) |
 
 Database mode:
 
 | | |
 |---|---|
-| ![The one-time ingest key after approving a signup](docs/screenshots/onboarding-key.png) | ![Ingest batches and a rejected line](docs/screenshots/account-ingest.png) |
-| ![Ingest, dark](docs/screenshots/account-ingest-dark.png) | |
+| ![The one-time ingest key after approving a signup](docs/screenshots/onboarding-key-dark.png) | ![Ingest batches and a rejected line](docs/screenshots/account-ingest-dark.png) |
+| ![Ingest, day](docs/screenshots/account-ingest-light.png) | |
 
 Phone, 390 px:
 
 | | | |
 |---|---|---|
-| ![Front door on a phone](docs/screenshots/front-phone.png) | ![Portal on a phone](docs/screenshots/portal-phone-dark.png) | ![Inbox on a phone](docs/screenshots/inbox-phone.png) |
-| ![Tour step 3 on a phone](docs/screenshots/tour-phone-dark.png) | ![Ingest on a phone](docs/screenshots/account-ingest-phone-dark.png) | ![How I built this on a phone](docs/screenshots/about-phone-dark.png) |
+| ![Front door on a phone](docs/screenshots/front-phone-dark.png) | ![Portal on a phone](docs/screenshots/portal-phone-dark.png) | ![Inbox on a phone](docs/screenshots/inbox-phone-dark.png) |
+| ![Tour step 3 on a phone](docs/screenshots/tour-guard-phone-dark.png) | ![Ingest on a phone](docs/screenshots/account-ingest-phone-dark.png) | ![Front door on a phone, day](docs/screenshots/front-phone-light.png) |
+
+`docs/screenshots` has every page and tour step in both themes at both sizes. `node scripts/screenshots.mjs static <url>` retakes them against a running build, and `node scripts/screenshots.mjs db <url> <OPS_PASSWORD>` retakes the database-mode ones against a fresh `pglite:` dev server.
 
 ## Design
 
-`DESIGN.md` is the direction: a trading desk's back office, dense but calm, one lime accent for "where you are and what to do next", tabular numbers, and colour reserved for meaning. Motion has a job or doesn't happen: clock marks draw in time order, KPIs count up once, tape rows settle, guard hits sweep in one by one, approvals flash once, and pages fade in 160 ms. Reduced motion keeps short fades and drops all movement. The mark is the console's own (three session-clock ticks), not a Limex logo.
+`DESIGN.md` is the direction: the console should read as part of the ziplime product family. Its tokens were measured from ziplime.limex.com on 14 Oct 2026: a pure black ground with a faint dot grid, #F2F0FF ink, lime #A6F656 only for the primary action, the current page, focus and one headline word, and cyan #4DCFE7 only for the Doto dot-matrix word. Headlines are uppercase General Sans, data and labels JetBrains Mono, body Inter. Corners are square, borders 1 px. Night is the default theme; day works too. `src/lib/design/contrast.test.ts` checks every text and status colour for WCAG AA on all three backgrounds in both themes.
+
+It never borrows Limex's or ziplime's logo or wordmark: the mark is the console's own (three session-clock ticks) with "ziplime ops console" in lowercase mono. General Sans comes from Fontshare under the ITF Free Font License, which allows self-hosting but not redistribution through a public repository, so `scripts/fetch-fonts.mjs` downloads it (SHA-256 pinned) before every build instead of the files living in git.
+
+Motion has a job or doesn't happen: the hero terminal types one real engine line and its explanation once, the ticker scrolls real seed events slowly and pauses on hover, focus or its button, the Doto word flickers in once, clock marks draw in time order, KPIs count up once, guard hits sweep in one by one, approvals flash once, and pages fade in 160 ms. Reduced motion shows the final state of every one of them.
 
 ## Sources and decisions
 

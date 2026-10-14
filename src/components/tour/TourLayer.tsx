@@ -275,7 +275,7 @@ export function TourLayer() {
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {!here ? (
-            <button type="button" className="press rounded-[2px] border border-accent-edge bg-accent px-3 py-1.5 text-[13px] font-semibold text-on-accent" onClick={() => act({ type: "goto", step: tour.step })}>
+            <button type="button" className="press t-btn border border-accent bg-accent px-3 py-1.5 text-[12px] text-on-accent hover:border-ink hover:bg-ink hover:text-ground" onClick={() => act({ type: "goto", step: tour.step })}>
               Go to {step.page}
             </button>
           ) : (
@@ -293,7 +293,7 @@ export function TourLayer() {
               <button
                 type="button"
                 data-testid="tour-next"
-                className="press ml-auto rounded-[2px] border border-accent-edge bg-accent px-3 py-1.5 text-[13px] font-semibold text-on-accent"
+                className="press ml-auto t-btn border border-accent bg-accent px-3 py-1.5 text-[12px] text-on-accent hover:border-ink hover:bg-ink hover:text-ground"
                 onClick={() => act({ type: "next" })}
               >
                 {last ? "Finish" : "Next"}

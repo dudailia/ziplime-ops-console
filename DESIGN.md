@@ -7,7 +7,7 @@ What we never take: Limex's or ziplime's logo or wordmark. Our mark is our own s
 ## Principles
 
 1. **Black ground, thin lines, square corners.** Panels are near-black boxes with 1px borders and no shadow. Corners are 0 on panels and buttons, 2px on small controls.
-2. **Lime is where you are and what to do next.** The primary action, the current page, focus, the selected session, the tour spotlight, and one word per headline as a solid block. Wherever dry-run events are drawn (the session clock, the order tape, the history chart, event counts), lime also marks "would send", because that is the engine's own green light. Lime is never a fill behind text.
+2. **Lime is where you are and what to do next.** The primary action, the current page, focus, the selected session, the tour spotlight, and one word per headline as a solid block. Wherever dry-run events are drawn (the session clock, the order tape, the history chart, event counts), lime also marks "would send", because that is the engine's own green light. Lime is never a fill behind text. On the account history chart the would-send segment is drawn at 55% so a healthy history doesn't bury the refusals.
 3. **Cyan belongs to the dot-matrix word.** One Doto word or phrase per hero, in cyan. Nothing else is cyan.
 4. **Mono for anything a machine wrote.** Data, labels, tickers, ids, code, timestamps and the big numbers are JetBrains Mono. Prose is Inter. Headlines are General Sans.
 5. **Status colours carry meaning and pass AA on black.** Red means refused (events) or needs help (health). Every status always comes with a word.

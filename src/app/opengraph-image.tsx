@@ -2,94 +2,123 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { frontDoorNumbers } from "@/lib/crm";
-import { SESSION_CLOSE_MINUTE, SESSION_OPEN_MINUTE } from "@/lib/dryrun/time";
-import { fileOf } from "@/lib/data/lookup";
 import { STATIC_DATASET } from "@/lib/data/static";
+import { tickerItems } from "@/lib/front";
+import { EVENT_WORD } from "@/components/ui/kit";
 
-export const alt = "ziplime Ops Console: an ops layer for ziplime's dry-run mode, built on PR #39. Sample data.";
+export const alt = "ziplime Ops Console. Every order checked. Nothing sent. Now you can see why. Built on ziplime PR #39. Sample data.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+// Night tokens from globals.css (DESIGN.md).
 const C = {
-  ground: "#0d1215",
-  surface: "#141a1e",
-  rule: "#2a343b",
-  ink: "#e4e9ec",
-  ink2: "#a4b0b8",
-  ink3: "#7a8790",
-  lime: "#c5ef3a",
-  place: "#7ea3ff",
-  refuse: "#ff6f64",
-  cancel: "#8b98a1",
+  ground: "#000000",
+  surface: "#0b0a10",
+  rule: "#1e1d25",
+  ink: "#f2f0ff",
+  ink2: "#b4b1c2",
+  ink3: "#8f8c9b",
+  lime: "#a6f656",
+  onHighlight: "#0b0a10",
+  pixel: "#4dcfe7",
+  refuse: "#ff3355",
+  skip: "#f5b83d",
+  bad: "#ff5c7a",
 };
 
-// The link preview: the headline, the front door's hero session as a strip of
-// marks, and the three numbers. Always the public demo's seed: a link
-// preview is for people who can't sign in to a database deployment.
-// Archivo (SIL Open Font License), static instances, so the preview matches the app's type.
-const font = (name: string) => readFile(join(process.cwd(), "src/app/og", name));
+// The link preview, in the front door's look: the headline with its lime word
+// and Doto word, and the three seed numbers. Always the public demo's seed: a
+// link preview is for people who can't sign in to a database deployment.
+// Satori reads woff, not woff2. JetBrains Mono and Doto are OFL and live in
+// src/app/og; General Sans is fetched before the build (scripts/fetch-fonts.mjs).
+const font = (dir: string, name: string) => readFile(join(process.cwd(), "src/app", dir, name));
 
 export default async function OpenGraphImage() {
-  const [regular, semi, wide] = await Promise.all([font("Archivo-Regular.ttf"), font("Archivo-SemiBold.ttf"), font("ArchivoExpanded-ExtraBold.ttf")]);
+  const [display, mono, monoBold, pixel] = await Promise.all([
+    font("fonts", "GeneralSans-Bold.woff"),
+    font("og", "JetBrainsMono-Regular.woff"),
+    font("og", "JetBrainsMono-Bold.woff"),
+    font("og", "Doto-ExtraBold.woff"),
+  ]);
   const n = frontDoorNumbers(STATIC_DATASET);
-  const session = fileOf(STATIC_DATASET, "priya-growth").sessions.find((s) => s.date === "2026-10-07")!;
-  const lanes = [...new Set(session.events.map((e) => e.symbol ?? "?"))].sort();
-  const W = 1040;
-  const x = (m: number) => ((Math.min(SESSION_CLOSE_MINUTE, Math.max(SESSION_OPEN_MINUTE, m)) - SESSION_OPEN_MINUTE) / (SESSION_CLOSE_MINUTE - SESSION_OPEN_MINUTE)) * (W - 90) + 70;
+  // One real event of each outcome from the ticker, in the ticker's order.
+  const all = tickerItems(STATIC_DATASET, Infinity);
+  const OUTCOMES = (["refuse", "place", "skip"] as const).flatMap((k) => all.find((t) => t.event === k) ?? []);
+  const label = { fontFamily: "Mono", fontSize: 16, letterSpacing: 1, color: C.ink3, textTransform: "uppercase" } as const;
 
   return new ImageResponse(
     (
-      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: C.ground, color: C.ink, padding: "56px 80px", fontFamily: "Archivo" }}>
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          background: C.ground,
+          backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.16) 1.5px, transparent 2px)",
+          backgroundSize: "32px 32px",
+          color: C.ink,
+          padding: "52px 72px",
+          fontFamily: "Mono",
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 5, width: 40, height: 40, borderRadius: 8, background: "#12181c", border: `1px solid ${C.rule}`, padding: "8px 9px" }}>
-            <div style={{ width: 5, height: 13, background: C.ink, opacity: 0.55, borderRadius: 1 }} />
-            <div style={{ width: 5, height: 18, background: C.ink, opacity: 0.8, borderRadius: 1 }} />
-            <div style={{ width: 5, height: 23, background: C.lime, borderRadius: 1 }} />
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 5, width: 40, height: 40, background: C.surface, border: `1px solid #6b6878`, padding: "8px 9px" }}>
+            <div style={{ width: 5, height: 13, background: C.ink, opacity: 0.55 }} />
+            <div style={{ width: 5, height: 18, background: C.ink, opacity: 0.8 }} />
+            <div style={{ width: 5, height: 23, background: C.lime }} />
           </div>
-          <div style={{ display: "flex", fontSize: 26, fontFamily: "ArchivoWide" }}>
-            ziplime<span style={{ marginLeft: 8, fontFamily: "Archivo", fontWeight: 400, color: C.ink2 }}>Ops Console</span>
+          <div style={{ display: "flex", fontSize: 24 }}>
+            <span style={{ fontWeight: 700 }}>ziplime</span>
+            <span style={{ marginLeft: 12, color: C.ink2 }}>ops console</span>
           </div>
-          <div style={{ display: "flex", marginLeft: "auto", fontSize: 18, color: C.ink3 }}>Unofficial concept. Sample data.</div>
+          <div style={{ display: "flex", marginLeft: "auto", ...label }}>Unofficial concept. Sample data.</div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", marginTop: 36, fontSize: 54, fontFamily: "ArchivoWide", lineHeight: 1.1, letterSpacing: -0.5 }}>
-          <span>An ops layer for ziplime&apos;s</span>
-          <span style={{ display: "flex" }}>
-            dry-run mode, built on&nbsp;<span style={{ borderBottom: `5px solid ${C.lime}` }}>PR #39</span>
-          </span>
+        <div style={{ display: "flex", alignSelf: "flex-start", alignItems: "center", gap: 12, marginTop: 40, padding: "8px 14px", border: `1px solid ${C.rule}`, background: C.surface, ...label, color: C.ink2 }}>
+          <div style={{ width: 8, height: 8, background: C.lime }} />
+          <span>Engine → dry run → console</span>
+          <span style={{ color: C.ink }}>{"// built on ziplime PR #39"}</span>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", marginTop: 40, background: C.surface, border: `1px solid ${C.rule}`, borderRadius: 10, padding: "14px 0 10px", position: "relative", height: 150 }}>
-          {lanes.map((sym, i) => (
-            <div key={sym} style={{ position: "absolute", left: 0, top: 18 + i * 30, width: W, height: 26, display: "flex", alignItems: "center" }}>
-              <div style={{ width: 56, textAlign: "right", fontSize: 15, color: C.ink2, display: "flex", justifyContent: "flex-end" }}>{sym}</div>
-              <div style={{ position: "absolute", left: 70, right: 20, top: 13, height: 1, background: C.rule }} />
+        <div style={{ display: "flex", flexDirection: "column", marginTop: 24, fontFamily: "Display", fontSize: 60, lineHeight: 1.04, letterSpacing: -1.2, textTransform: "uppercase" }}>
+          {/* Satori shrinks an inline span with a background, so each piece is its own flex item. */}
+          <div style={{ display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>
+            <span style={{ marginRight: 18 }}>Every order</span>
+            <div style={{ display: "flex", background: C.lime, color: C.onHighlight, padding: "0 8px" }}>checked</div>
+            <span>.</span>
+          </div>
+          <div style={{ display: "flex", whiteSpace: "nowrap" }}>Nothing sent.</div>
+          <div style={{ display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>
+            <span style={{ marginRight: 18 }}>Now you can see</span>
+            <span style={{ fontFamily: "Pixel", color: C.pixel, letterSpacing: 0 }}>why.</span>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 30, marginTop: 26, fontSize: 16, letterSpacing: 0.5, overflow: "hidden" }}>
+          {OUTCOMES.map((t) => (
+            <div key={t.key} style={{ display: "flex", gap: 8, whiteSpace: "nowrap" }}>
+              <span style={{ color: C.ink3 }}>@{t.account}</span>
+              <span style={{ fontWeight: 700 }}>{t.symbol}</span>
+              <span style={{ fontWeight: 700, color: t.event === "refuse" ? C.refuse : t.event === "place" ? C.lime : C.skip }}>{EVENT_WORD[t.event].toLowerCase()}</span>
             </div>
           ))}
-          {session.events.map((e) => {
-            const top = 18 + lanes.indexOf(e.symbol ?? "?") * 30;
-            const left = x(e.clock.minuteET);
-            if (e.event === "place") return <div key={e.line} style={{ position: "absolute", left: left - 2, top: top + (e.side === "buy" ? 1 : 13), width: 4, height: 12, background: C.place }} />;
-            if (e.event === "refuse")
-              return (
-                <div key={e.line} style={{ position: "absolute", left: left - 8, top: top + 5, width: 16, height: 16, display: "flex" }}>
-                  <div style={{ position: "absolute", left: 7, top: -1, width: 3, height: 18, background: C.refuse, transform: "rotate(45deg)" }} />
-                  <div style={{ position: "absolute", left: 7, top: -1, width: 3, height: 18, background: C.refuse, transform: "rotate(-45deg)" }} />
-                </div>
-              );
-            return <div key={e.line} style={{ position: "absolute", left: left - 30, top: top + 3, width: 30, height: 2, background: C.cancel }} />;
-          })}
         </div>
 
-        <div style={{ display: "flex", marginTop: 28, gap: 64 }}>
-          {[
-            [String(n.orders), "orders through the live checks", C.ink],
-            [String(n.refused), "refused before reaching Lime", C.refuse],
-            [`${n.needHelp} of ${n.accounts}`, "accounts need help", C.refuse],
-          ].map(([v, l, tone]) => (
-            <div key={l} style={{ display: "flex", flexDirection: "column" }}>
-              <div style={{ display: "flex", fontSize: 44, fontFamily: "ArchivoWide", color: tone }}>{v}</div>
-              <div style={{ display: "flex", fontSize: 19, fontWeight: 600, color: C.ink2 }}>{l}</div>
+        <div style={{ display: "flex", marginTop: "auto", border: `1px solid ${C.rule}`, background: C.surface }}>
+          {(
+            [
+              [String(n.orders), "", "orders checked", C.ink],
+              [String(n.refused), "", "refused before Lime", C.refuse],
+              [String(n.needHelp), ` of ${n.accounts}`, "accounts need help", C.bad],
+            ] as const
+          ).map(([v, of, l, tone], i) => (
+            <div key={l} style={{ display: "flex", flexDirection: "column", flex: 1, padding: "18px 24px", borderLeft: i ? `1px solid ${C.rule}` : "none" }}>
+              <div style={{ display: "flex", alignItems: "baseline", fontWeight: 700, fontSize: 46, letterSpacing: -1.5, color: tone }}>
+                {v}
+                {of && <span style={{ fontSize: 22, color: C.ink3, marginLeft: 6 }}>{of}</span>}
+              </div>
+              <div style={{ display: "flex", ...label, fontSize: 15 }}>{l}</div>
             </div>
           ))}
         </div>
@@ -98,9 +127,10 @@ export default async function OpenGraphImage() {
     {
       ...size,
       fonts: [
-        { name: "Archivo", data: regular, weight: 400, style: "normal" },
-        { name: "Archivo", data: semi, weight: 600, style: "normal" },
-        { name: "ArchivoWide", data: wide, weight: 800, style: "normal" },
+        { name: "Display", data: display, weight: 700, style: "normal" },
+        { name: "Mono", data: mono, weight: 400, style: "normal" },
+        { name: "Mono", data: monoBold, weight: 700, style: "normal" },
+        { name: "Pixel", data: pixel, weight: 800, style: "normal" },
       ],
     },
   );

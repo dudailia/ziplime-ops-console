@@ -2,7 +2,7 @@
 //
 // The ITF Free Font License lets us self-host the font on our own site but not
 // make the files available through a public repository, so they are not in git
-// (src/app/fonts/*.woff2 is ignored). Each build gets its own copy straight
+// (src/app/fonts/*.woff2 and *.woff are ignored). Each build gets its own copy straight
 // from Fontshare, which is what the licence asks of anyone else who builds
 // this. Fails closed: a file whose SHA-256 doesn't match is never used.
 
@@ -24,6 +24,12 @@ const FILES = [
     name: "GeneralSans-Bold.woff2",
     url: "https://cdn.fontshare.com/wf/KWXO5X3YW4X7OLUMPO4X24HQJGJU7E2Q/VOWUQZS3YLP66ZHPTXAFSH6YACY4WJHT/NIQ54PVBBIWVK3PFSOIOUJSXIJ5WTNDP.woff2",
     sha256: "a29eab9b114f3c631cb24d537400dfb8d0ceea8cc9fb514864a68c4ead960490",
+  },
+  // The link preview (src/app/opengraph-image.tsx) renders with Satori, which reads woff but not woff2.
+  {
+    name: "GeneralSans-Bold.woff",
+    url: "https://cdn.fontshare.com/wf/KWXO5X3YW4X7OLUMPO4X24HQJGJU7E2Q/VOWUQZS3YLP66ZHPTXAFSH6YACY4WJHT/NIQ54PVBBIWVK3PFSOIOUJSXIJ5WTNDP.woff",
+    sha256: "4c2b7f63b165a1ff06120c937fffaf063cdbc271af6025c040685d912f46bbf7",
   },
 ];
 
