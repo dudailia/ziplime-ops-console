@@ -149,7 +149,20 @@ export function PortalView() {
         </div>
         <div className="min-w-0 flex-1">
           {deployment ? (
-            <RiskProfile deployment={deployment} />
+            <>
+              {/* On a phone the env block would push every session below the first screen. */}
+              <details className="group lg:hidden">
+                <summary className="cursor-pointer select-none text-[13px] font-semibold text-ink">
+                  Risk profile{deployment.riskEnv ? `, ${Object.keys(deployment.riskEnv).length} settings` : ""}
+                </summary>
+                <div className="mt-2">
+                  <RiskProfile deployment={deployment} />
+                </div>
+              </details>
+              <div className="hidden lg:block">
+                <RiskProfile deployment={deployment} />
+              </div>
+            </>
           ) : (
             <p className="text-[12px] text-ink-2">The risk profile isn&apos;t in the file, so explanations use the reason text alone.</p>
           )}

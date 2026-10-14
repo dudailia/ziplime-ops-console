@@ -1,12 +1,14 @@
 # ziplime Ops Console
 
-An unofficial concept: what Limex could run on top of ziplime's Lime dry-run mode (issue #5, branch `feat/dry-run-orders`). All data is sample data. Accounts, names, emails and tickets are fictional.
+An unofficial concept: an ops layer for ziplime's Lime dry-run mode, built on [PR #39](https://github.com/Limex-com/ziplime/pull/39) (issue #5, branch `feat/dry-run-orders`). All data is sample data. Accounts, names, emails and tickets are fictional.
+
+Open `/` and press **Take the 3-minute tour**. Five steps, one sentence each, on the real pages: a refused order and its fix, an account on watch, the guard blocking a risky draft, a Beta signup triaged and approved, and an automation run. Arrow keys move, Escape pauses, and the tour resumes from the front page or the rail.
 
 - **Client portal**: a trader opens a dry-run file and sees which orders would have gone out, which were refused or skipped, and why, on the 09:30 to 16:00 ET clock.
 - **Ops CRM**: the Limex team sees account health, triages Beta signups, answers support tickets with drafts grounded in the account's own file, and runs automation rules.
 - **People decide**: nothing counts as sent and no account is created until a person clicks Approve, and a guard blocks approval while the text promises returns, gives investment advice or mentions another client.
 
-![Dry-run review](docs/screenshots/portal.png)
+![Front door](docs/screenshots/front-dark.png)
 
 ## How it connects to the dry-run feature
 
@@ -48,13 +50,15 @@ ANTHROPIC_MODEL=claude-sonnet-5-5   # optional; this is the default
 
 The key stays on the server. Three routes use it: `/api/explain`, `/api/draft` and `/api/triage`. `/api/ai-status` reports only whether a key is set. Each prompt carries one account's or one signup's data. `/api/draft` looks up the linked dry-run lines server side, in that account's own files.
 
-State lives in `localStorage` (`ziplime-ops-console:v1`). **Reset demo** in the rail clears it. Opened `.jsonl` files stay in memory for the tab and are never uploaded.
+State lives in `localStorage` (`ziplime-ops-console:v1`, and `ziplime-ops-console:tour` for the tour). **Reset demo** in the rail clears it. Opened `.jsonl` files stay in memory for the tab and are never uploaded.
+
+Keyboard: `?` shows every shortcut. `t` starts or resumes the tour, `g` then a letter opens a page (`r` review, `a` accounts, `i` intake, `s` support inbox, `u` automations, `h` front page), `j` and `k` move through list rows, `/` focuses the page's search. Shortcuts never fire while you type.
 
 ## Tests
 
 ```
-npm test             # vitest: 215 tests
-npm run test:e2e     # Playwright smoke test over the production build, desktop and 390 px
+npm test             # vitest: 233 tests
+npm run test:e2e     # Playwright over the production build, desktop and a 390 px phone: 26 tests (3 run on one size only)
 npm run lint
 npm run build
 ```
@@ -68,9 +72,12 @@ The vitest suite covers:
 - **Guard**: each category, word boundaries, other-client identifiers, and the intake-only checks.
 - **Intake triage**: per persona, broker tags and priority.
 - **Approve flows**: exactly one account per signup; nothing sent while the guard flags the text.
-- **Automations**: the second run only skips.
+- **Automations**: the second run only skips, and only Harbor Lane is ready for a live review.
+- **Tour**: the reducer, the saved state (a reload mid-tour comes back paused), and that every tour sentence still matches the seed.
+- **Shortcuts**: the keymap and list movement.
+- **Front door**: the three numbers, from the seed.
 
-The Playwright test runs without an API key. It walks through:
+The Playwright tests run without an API key. The smoke test walks through:
 
 1. Portal, plus an upload with a malformed line.
 2. CRM.
@@ -80,11 +87,13 @@ The Playwright test runs without an API key. It walks through:
 6. Reload and reset.
 7. A check that no page scrolls sideways.
 
+The other specs cover the tour end to end by keyboard (pause, resume, the card's Approve and Run buttons), shortcuts, page titles, the icon and share image, empty states, layout shift on every page, reduced motion, the rail's full height and the phone tab bar at a real 390 px viewport.
+
 ## Pages
 
 | Route | Who | What |
 |---|---|---|
-| `/` | anyone | What this is, and the path an order takes in dry run |
+| `/` | anyone | What this is, a real session from the seed, three numbers from the seed, the tour |
 | `/portal` | trader | Session strip, session clock, counts, why orders didn't go out, order tape, net shares, readiness checklist, open a `.jsonl` file |
 | `/ops` | Limex team | Accounts with health in words, sortable and filterable |
 | `/ops/accounts/[id]` | Limex team | Health reasons, history chart, deployments and risk profiles, tickets, plan, activity |
@@ -94,11 +103,22 @@ The Playwright test runs without an API key. It walks through:
 
 | | |
 |---|---|
+| ![Dry-run review](docs/screenshots/portal.png) | ![Tour, step 2](docs/screenshots/tour-amber.png) |
 | ![Accounts](docs/screenshots/accounts.png) | ![Account detail](docs/screenshots/account.png) |
 | ![Beta intake](docs/screenshots/intake.png) | ![Support inbox](docs/screenshots/inbox.png) |
 | ![Automations](docs/screenshots/automations.png) | ![Dark mode](docs/screenshots/portal-dark.png) |
+| ![Tour, step 1](docs/screenshots/tour-refusal.png) | ![Tour, step 3](docs/screenshots/tour-guard.png) |
+| ![Front door, light](docs/screenshots/front-light.png) | ![Link preview](docs/screenshots/og.png) |
 
-Phone, 390 px: ![Portal on a phone](docs/screenshots/portal-phone-dark.png)
+Phone, 390 px:
+
+| | | |
+|---|---|---|
+| ![Front door on a phone](docs/screenshots/front-phone.png) | ![Portal on a phone](docs/screenshots/portal-phone-dark.png) | ![Inbox on a phone](docs/screenshots/inbox-phone.png) |
+
+## Design
+
+`DESIGN.md` is the direction: a trading desk's back office, dense but calm, one lime accent for "where you are and what to do next", tabular numbers, and colour reserved for meaning. Motion has a job or doesn't happen: clock marks draw in time order, KPIs count up once, tape rows settle, guard hits sweep in one by one, approvals flash once, and pages fade in 160 ms. Reduced motion keeps short fades and drops all movement. The mark is the console's own (three session-clock ticks), not a Limex logo.
 
 ## Sources and decisions
 
@@ -111,30 +131,23 @@ Phone, 390 px: ![Portal on a phone](docs/screenshots/portal-phone-dark.png)
   The free-text `note` is a proposed field that limex.com doesn't have, and the UI labels it so.
 - **Brokers**: the six that limex.com lists as connected via SnapTrade. A broker is tagged `stated`, `inferred` or `unknown`; the form never asks.
 - **Workspace names**: placeholders, because limex.com doesn't list its Workspaces yet. The UI says so.
-- **Health**: computed over each deployment's last 5 sessions, as of the manifest's `asOf` (2026-10-12), so the colours don't drift.
+- **Health and readiness use the same window**: each deployment's last 5 sessions (`RECENT_SESSIONS`), health as of the manifest's `asOf` (2026-10-12) so the colours don't drift. With readiness on 3 sessions, Jonas Weber's breakout passed "no recent refusals" in the portal while the CRM had it on watch for the same refusals; now both agree.
   - **Needs help**: 20% or more of orders refused, or 2 or more Lime rejections.
   - **Watch**: 5% or more refused, 1 Lime rejection, a stale run, `validate_orders=False`, or a reason with no built-in explanation.
 - **The guard is a phrase check, not a compliance system.** The UI says that wherever it runs.
 
 ## Demo script (3 minutes)
 
-1. **`/` (15 s).** "ziplime's dry run runs every order through the live checks and writes it to a file. This console reads that file." Point at the six-step path.
-2. **Portal (60 s).** The default is Priya Raman's growth rotation.
-   - Point at the clock: two red crosses on TSLA.
-   - In "Why didn't these orders go out?", click "TSLA isn't on the allowlist". The tape filters to those two lines.
-   - Open a row: the explanation names `ZIPLIME_ALLOWED_SYMBOLS` and lists what it allows. Show the raw line.
-   - Point at "Ready to go live?": 3 of 6 checks pass, with the evidence.
-   - Switch to Wen Li's four-fund rebalancer. The sell refusals explain why `ZIPLIME_ALLOW_SELL` can't just be turned on under the fail-closed profile.
-   - Optional: drop a `.jsonl` file with one broken line. It shows "Line N: ..." and the rest loads.
-3. **Accounts (20 s).** Five accounts need help, three are on watch, two are healthy, and each badge says why in words. Open Wen Li: the history chart shows refusals on the last four sessions.
-4. **Automations (25 s).** Click Run rules now.
-   - The run opens tickets for three refusal streaks, notes Sofia's Lime rejection and Nadia's stale test run, and flags Harbor Lane momentum for a live review that a person decides.
-   - Run it again: everything is skipped.
-5. **Inbox (40 s).** Open T-1043, Sofia's ticket.
-   - The seeded draft says "guaranteed", "you should buy" and names another client. The guard highlights all three and Approve is disabled.
-   - Click Insert template reply. It is built from Sofia's own refusals, the guard passes, and Approve and send adds it to the thread as approved by a person.
-   - With a key, Draft with Claude does the same from the same facts.
-6. **Beta intake (20 s).** Open will.tanaka: a funded trader who asked about Trading Pod, so priority is high by rule. The broker is "Interactive Brokers (stated)" from the note. The welcome email says the email isn't a Pod invitation. Approve, then open the new account.
+The tour is the demo. Open `/` and talk over it.
+
+1. **Front door (20 s).** "ziplime's dry run sends every order through the live checks and writes it to a file. This console reads those files." Point at the clock: a real session from the engine. Then the numbers: 487 orders, 69 refused, 5 of 10 accounts need help. Press **Take the 3-minute tour**.
+2. **A refused order (40 s).** The tour opens Priya Raman's 11:09 TSLA refusal. The explanation names `ZIPLIME_ALLOWED_SYMBOLS` and what it allows. Scroll to "Ready to go live?": 3 of 6 checks pass, with the evidence. Press the right arrow.
+3. **An account on watch (20 s).** Jonas Weber: 11% refused over the last 5 sessions, said in words, not just a colour.
+4. **The guard (40 s).** Sofia's seeded draft says "guaranteed", "you should buy" and names another client. Each phrase is highlighted and Approve is off. Optional, off tour: Insert template reply, the guard passes, Approve and send.
+5. **Beta intake (30 s).** will.tanaka is high priority by rule: a funded account and a Trading Pod question. Press **Approve will.tanaka** on the card: the real Approve button runs and the CRM account exists.
+6. **Automations (30 s).** Press **Run rules now** on the card. Tickets open for three refusal streaks, Sofia's Lime rejection and Nadia's stale run are noted, and Harbor Lane is flagged for a live review that a person decides. Run it again: everything skips. Press Finish.
+
+Leftover time: `?` for shortcuts, the theme toggle, or drop a `.jsonl` file with a broken line on the portal.
 
 ## Not verified
 
