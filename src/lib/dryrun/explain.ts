@@ -249,7 +249,15 @@ const RULES: Rule[] = [
   },
 ];
 
-const SKIP_LOT = /^(-?\d+(?:\.\d+)?) (\S+) is below one lot \((\d+) shares?\); order not sent$/;
+// The engine writes the fraction with Python's :g, which turns to an exponent
+// below 1e-4 ("4e-05", "2.27374e-13"): the float noise a rebalance leaves.
+const SKIP_LOT = /^(-?\d+(?:\.\d+)?(?:e[+-]?\d+)?) (\S+) is below one lot \((\d+) shares?\); order not sent$/i;
+
+/** "0.316", or "less than 0.0001" for the tiny ones, which read as noise in an exponent. */
+function fraction(text: string): string {
+  const n = Math.abs(Number(text));
+  return n > 0 && n < 0.0001 ? "less than 0.0001" : text;
+}
 
 /** Splits "ValueError: message" into its parts. */
 export function splitReason(reason: string): { type: string | null; message: string } {
@@ -266,7 +274,7 @@ export function explain(event: RefuseEvent | SkipEvent, profile: Profile | null 
       kind: "benign",
       detailKnown: true,
       title: "Less than one share, so nothing to send",
-      happened: `The strategy asked for ${m[1]} ${m[2]}. Lime trades whole shares, so that rounds to zero and the engine skips it. Not an error: a rebalance near its target routinely asks for a fraction.`,
+      happened: `The strategy asked for ${fraction(m[1])} ${m[2]}. Lime trades whole shares, so that rounds to zero and the engine skips it. Not an error: a rebalance near its target routinely asks for a fraction.`,
       setting: "LOT_SIZE = 1",
       change: "Nothing, unless skips are most of the run. Then the strategy is rebalancing too often for the account size.",
     };

@@ -122,3 +122,16 @@ describe("front door numbers", async () => {
     });
   });
 });
+
+describe("deploymentHealth and the engine's float-noise skips", () => {
+  it("stays green when a rebalance leaves a skip like 2.27374e-13 shares", () => {
+    const day = cal.tradingDays.at(-1)!;
+    const skip = JSON.stringify({
+      account: "LX***17", event: "skip", order_dt: `${day}T11:05:00-04:00`, recorded_at: `${day}T15:05:00+00:00`,
+      symbol: "SPY", ziplime_order_id: "noise-1", requested_amount: 2.27374e-13,
+      reason: "2.27374e-13 SPY is below one lot (1 share); order not sent",
+    });
+    const h = deploymentHealth(file([[4, 0], [4, 0], [4, 0], [4, 0], [4, 0]], undefined, skip + "\n"), null, cal);
+    expect(h.level).toBe("green");
+  });
+});

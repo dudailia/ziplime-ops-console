@@ -65,6 +65,20 @@ describe("explain, on every reason the seed run produced", () => {
     expect(x).toMatchObject({ ruleId: "skip-lot", kind: "benign", detailKnown: true });
     expect(x?.happened).toContain(skip.symbol);
   });
+
+  // The engine formats the fraction with Python's :g, which switches to an
+  // exponent below 1e-4. Float noise left by a rebalance is exactly that small.
+  it.each([
+    ["0.316 VTI is below one lot (1 share); order not sent", "0.316 VTI"],
+    ["4e-05 AAPL is below one lot (1 share); order not sent", "less than 0.0001 AAPL"],
+    ["2.27374e-13 SPY is below one lot (1 share); order not sent", "less than 0.0001 SPY"],
+  ])("reads the skip %s", (reason, asked) => {
+    const skip = seedReasons.find((e) => e.event === "skip")! as SkipEvent;
+    const x = explain({ ...skip, reason });
+    expect(x).toMatchObject({ ruleId: "skip-lot", kind: "benign" });
+    expect(x?.happened).toContain(`asked for ${asked}.`);
+    expect(needsClaude(x)).toBe(false);
+  });
 });
 
 describe("explain, on engine messages the seed doesn't produce", () => {
