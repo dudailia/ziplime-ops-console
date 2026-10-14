@@ -131,8 +131,10 @@ export function AccountDetail() {
   const stored = account.fromIntake ? ds.decisions[account.fromIntake] : undefined;
   const entries: Entry[] = [
     ...state.activity.filter((a) => a.accountId === account.id).map((a) => ({ at: a.at, text: a.text, by: a.by, kind: a.kind })),
-    ...(stored?.kind === "approved" ? [{ at: stored.at, text: "Approved from Beta intake. First deployment and ingest key created.", by: stored.by, kind: "intake" }] : []),
-    { at: `${account.joined}T09:00:00-04:00`, text: `Joined the ${plan.name} plan`, by: "system", kind: "joined" },
+    // An approval stored in the database is when the account joined, so it replaces the "Joined" line.
+    stored?.kind === "approved"
+      ? { at: stored.at, text: `Approved from Beta intake and joined the ${plan.name} plan. First deployment and ingest key created.`, by: stored.by, kind: "intake" }
+      : { at: `${account.joined}T09:00:00-04:00`, text: `Joined the ${plan.name} plan`, by: "system", kind: "joined" },
     ...summary.deployments
       .filter((d) => d.file.sessions.length > 0)
       .map((d) => ({

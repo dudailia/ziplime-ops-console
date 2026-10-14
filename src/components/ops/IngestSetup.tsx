@@ -37,7 +37,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 function Block({ text, label }: { text: string; label: string }) {
   return (
     <div className="flex items-start gap-2">
-      <pre className="min-w-0 flex-1 overflow-x-auto rounded-[4px] border border-rule bg-sunk px-3 py-2 font-mono text-[12px] leading-relaxed text-ink">{text}</pre>
+      <pre className="min-w-0 flex-1 whitespace-pre-wrap break-all rounded-[4px] border border-rule bg-sunk px-3 py-2 font-mono text-[12px] leading-relaxed text-ink">{text}</pre>
       <CopyButton text={text} label={label} />
     </div>
   );
