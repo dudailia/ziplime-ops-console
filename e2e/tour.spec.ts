@@ -78,3 +78,42 @@ test("the tour stays usable when the visitor wanders off mid-step", async ({ pag
     await expect(page.getByRole("dialog")).toContainText("Step 1 of 5");
   }
 });
+
+// Under load, Next.js renders a client navigation in two passes and the second
+// one sets scrollTop to 0 even with { scroll: false }. That used to cancel the
+// tour's only scroll and leave the target and the card off screen.
+async function resumeAtGuard(page: import("@playwright/test").Page) {
+  await page.goto("/");
+  await page.evaluate(() => localStorage.setItem("ziplime-ops-console:tour", JSON.stringify({ status: "paused", step: 2 })));
+  await page.goto("/");
+  await page.getByTestId("tour-start").click();
+  await expect(page).toHaveURL(/\/ops\/inbox\?t=T-1043/);
+}
+
+test("the spotlight comes back when the page jumps to the top on its own", async ({ page }) => {
+  await resumeAtGuard(page);
+  const guard = page.locator('[data-tour="guard"]');
+  await expect(guard).toBeInViewport();
+  await page.evaluate(() => (document.documentElement.scrollTop = 0));
+  await expect(guard).toBeInViewport();
+  await expect(page.getByTestId("tour-next")).toBeInViewport();
+});
+
+test("the visitor's own scroll wins, and the card stays on screen", async ({ page, isMobile }) => {
+  await resumeAtGuard(page);
+  const guard = page.locator('[data-tour="guard"]');
+  await expect(guard).toBeInViewport();
+  await page.waitForTimeout(800); // let the tour's own scroll finish
+  if (isMobile) {
+    // A real swipe, so the page gets touch events the way a phone sends them.
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Input.synthesizeScrollGesture", { x: 200, y: 200, yDistance: 3000, gestureSourceType: "touch", speed: 4000 });
+  } else {
+    await page.mouse.move(400, 300);
+    await page.mouse.wheel(0, -4000);
+  }
+  await expect(guard).not.toBeInViewport();
+  await page.waitForTimeout(600);
+  await expect(guard).not.toBeInViewport();
+  await expect(page.getByTestId("tour-next")).toBeInViewport();
+});

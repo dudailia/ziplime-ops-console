@@ -19,10 +19,25 @@ function prefersReducedMotion() {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+/** How long a step keeps its target on screen against scrolls the visitor didn't make. */
+const SETTLE_MS = 4000;
+const SCROLL_KEYS = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "]);
+
+function inView(r: DOMRect) {
+  const need = Math.min(r.height, 80);
+  return Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0) >= need;
+}
+
 /**
- * Follows the step's target on screen: scrolls it into view once, then tracks
- * its box every frame (pages hydrate, rows expand, panels grow). Also reports
+ * Follows the step's target on screen: brings it into view, then tracks its
+ * box every frame (pages hydrate, rows expand, panels grow). Also reports
  * whether the step's action control exists.
+ *
+ * One scroll is not enough. Under load, Next.js renders a client navigation
+ * twice and the second render sets scrollTop to 0 even with { scroll: false },
+ * which cancels a smooth scroll in flight. So for the first few seconds of a
+ * step, if the target is off screen and nothing is scrolling, scroll to it
+ * again. The visitor's own wheel, touch or scroll keys end that at once.
  */
 function useTarget(selector: string | null, actionSelector: string | null) {
   const [rect, setRect] = useState<Rect | null>(null);
@@ -30,18 +45,35 @@ function useTarget(selector: string | null, actionSelector: string | null) {
   useEffect(() => {
     if (!selector) return;
     let frame = 0;
-    let scrolled = false;
     let last: Rect | null = null;
     let lastAction = false;
+    let userScrolled = false;
+    let lastY = -1;
+    let stillFrames = 0;
+    let scrolls = 0;
+    const until = performance.now() + SETTLE_MS;
+    const mine = () => (userScrolled = true);
+    const onKey = (e: KeyboardEvent) => {
+      if (SCROLL_KEYS.has(e.key)) userScrolled = true;
+    };
+    window.addEventListener("wheel", mine, { passive: true });
+    window.addEventListener("touchmove", mine, { passive: true });
+    window.addEventListener("keydown", onKey);
     const tick = () => {
       const el = document.querySelector<HTMLElement>(selector);
       let next: Rect | null = null;
       if (el) {
-        if (!scrolled) {
-          scrolled = true;
+        const y = window.scrollY;
+        stillFrames = y === lastY ? stillFrames + 1 : 0;
+        lastY = y;
+        let r = el.getBoundingClientRect();
+        // The first scroll goes at once; later ones wait until scrolling has stopped.
+        if (!userScrolled && !inView(r) && performance.now() < until && (scrolls === 0 || stillFrames >= 3)) {
+          scrolls += 1;
+          stillFrames = 0;
           el.scrollIntoView({ block: "center", behavior: prefersReducedMotion() ? "auto" : "smooth" });
+          r = el.getBoundingClientRect();
         }
-        const r = el.getBoundingClientRect();
         next = { top: Math.round(r.top), left: Math.round(r.left), width: Math.round(r.width), height: Math.round(r.height) };
       }
       if (!sameRect(next, last)) {
@@ -58,6 +90,9 @@ function useTarget(selector: string | null, actionSelector: string | null) {
     frame = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(frame);
+      window.removeEventListener("wheel", mine);
+      window.removeEventListener("touchmove", mine);
+      window.removeEventListener("keydown", onKey);
       setRect(null);
     };
   }, [selector, actionSelector]);
@@ -125,15 +160,18 @@ export function TourLayer() {
   if (!running) return null;
 
   const phone = vw < PHONE;
+  // A target scrolled out of view docks the card in the corner, so the card never leaves the screen with it.
+  const visible = !!rect && rect.top + rect.height > 0 && rect.top < vh;
   let style: React.CSSProperties;
-  if (phone || !rect) {
+  if (phone || !rect || !visible) {
     style = phone
       ? { left: 8, right: 8, bottom: "calc(60px + env(safe-area-inset-bottom))" }
       : { right: 24, bottom: 24, width: CARD_W };
   } else {
     const below = rect.top + rect.height + PAD + 12;
     const above = rect.top - PAD - 12 - cardH;
-    const top = below + cardH < vh - 12 ? below : above > 12 ? above : Math.max(12, vh - cardH - 24);
+    const fits = below + cardH < vh - 12 ? below : above > 12 ? above : vh - cardH - 24;
+    const top = Math.max(12, Math.min(fits, vh - cardH - 12));
     const left = Math.min(Math.max(12, rect.left), vw - CARD_W - 12);
     style = { top, left, width: CARD_W };
   }
