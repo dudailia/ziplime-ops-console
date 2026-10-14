@@ -21,7 +21,7 @@ export default function Home() {
     <div className="mx-auto flex max-w-[1120px] flex-col gap-8 lg:gap-10 lg:pt-4">
       <section>
         <h1 className="t-title max-w-[24ch] text-balance text-[34px] text-ink sm:text-[42px] xl:text-[48px]">
-          An ops layer for ziplime&apos;s dry-run mode, built on{" "}
+          An ops layer for ziplime&apos;s <span className="whitespace-nowrap">dry-run mode</span>, built on{" "}
           <a href={PR_URL} className="underline decoration-accent-ink decoration-[3px] underline-offset-[6px] hover:decoration-ink">
             PR #39
           </a>
@@ -62,9 +62,9 @@ export default function Home() {
       </figure>
 
       <dl className="grid grid-cols-1 gap-px overflow-hidden rounded-panel border border-rule bg-rule sm:grid-cols-3">
-        <Figure value={n.orders} label="orders ran through the live checks" note={`${n.sessions} sessions across ${n.deployments} deployments`} />
-        <Figure value={n.refused} tone="text-refuse" label="refused before reaching Lime" note={`${n.explained} with a plain-English fix built in`} />
-        <Figure value={n.needHelp} of={n.accounts} tone="text-bad" label="accounts need help" note="Health in words, from each account's last 5 sessions" />
+        <Figure id="front-orders" value={n.orders} label="orders ran through the live checks" note={`${n.sessions} sessions across ${n.deployments} deployments`} />
+        <Figure id="front-refused" value={n.refused} tone="text-refuse" label="refused before reaching Lime" note={`${n.explained} with a plain-English fix built in`} />
+        <Figure id="front-help" value={n.needHelp} of={n.accounts} tone="text-bad" label="accounts need help" note="Health in words, from each account's last 5 sessions" />
       </dl>
 
       <p className="max-w-[80ch] text-[12px] text-ink-3">
@@ -76,13 +76,13 @@ export default function Home() {
   );
 }
 
-function Figure({ value, of, label, note, tone = "text-ink" }: { value: number; of?: number; label: string; note: string; tone?: string }) {
+function Figure({ id, value, of, label, note, tone = "text-ink" }: { id: string; value: number; of?: number; label: string; note: string; tone?: string }) {
   return (
     <div className="flex flex-col gap-1 bg-surface px-4 py-3 sm:px-5 sm:py-4">
       <dt className="order-2 text-[14px] font-semibold text-ink">{label}</dt>
       <dd className="order-1 flex items-baseline gap-2">
         <span className={`t-wide text-[34px] sm:text-[40px] font-[760] leading-none tabular-nums ${tone}`}>
-          <CountUp value={value} />
+          <CountUp id={id} value={value} />
         </span>
         {of !== undefined && <span className="t-wide text-[20px] font-[700] text-ink-3">of {of}</span>}
       </dd>

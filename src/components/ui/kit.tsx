@@ -159,3 +159,12 @@ export function AiOffNote({ children }: { children?: ReactNode }) {
     </p>
   );
 }
+
+/** A drawn check mark, for approved and passing states. */
+export function Check({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 12 12" aria-hidden className="shrink-0">
+      <path d="M2 6.5l2.6 2.5L10 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}

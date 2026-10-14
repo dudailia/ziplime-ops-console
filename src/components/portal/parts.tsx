@@ -70,7 +70,7 @@ export function EventCounts({ session }: { session: Session }) {
             {EVENT_WORD[k]}
           </dt>
           <dd className={`t-wide text-[24px] font-[750] leading-none tabular-nums ${c[k] > 0 ? EVENT_TEXT[k] : "text-ink-3"}`}>
-            <CountUp value={c[k]} />
+            <CountUp id={`${session.date}:${k}`} value={c[k]} />
           </dd>
         </div>
       ))}

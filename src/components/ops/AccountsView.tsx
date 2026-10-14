@@ -100,7 +100,7 @@ export function AccountsView() {
                 {HEALTH_LABEL[l]}
               </span>
               <span className={`t-wide text-[28px] font-[750] leading-none tabular-nums ${counts[l] ? HEALTH_TEXT[l] : "text-ink-3"}`}>
-                <CountUp value={counts[l]} />
+                <CountUp id={`health-${l}`} value={counts[l]} />
               </span>
             </button>
           ))}

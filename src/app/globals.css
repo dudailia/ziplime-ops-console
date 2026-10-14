@@ -200,12 +200,6 @@ mark.guard-hit {
   padding: 0 1px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  * {
-    transition: none !important;
-    animation: none !important;
-  }
-}
 
 /* Press feedback on every button-like control. */
 .press:active:not(:disabled) {
@@ -247,4 +241,118 @@ kbd.kbd {
   color: var(--ink-2);
   font: 600 11px/1.5 var(--font-sans);
   text-align: center;
+}
+
+/* ---- Motion (DESIGN.md). Each one explains a change; none hides a value for long. ---- */
+
+/* Page change: the main column fades in. */
+.page-in {
+  animation: page-in 160ms var(--ease-out) both;
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* Session clock: marks draw in time order, cancels extend from their order. */
+.clock-mark {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mark-in 220ms var(--ease-out) both;
+  animation-delay: var(--d, 0ms);
+}
+@keyframes mark-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+.clock-cancel {
+  transform-box: fill-box;
+  transform-origin: right center;
+  animation: cancel-in 260ms var(--ease-out) both;
+  animation-delay: var(--d, 0ms);
+}
+@keyframes cancel-in {
+  from {
+    opacity: 0;
+    transform: scaleX(0.2);
+  }
+}
+
+/* Order tape: the first rows settle in, 18 ms apart. */
+.tape-row {
+  animation: row-in 140ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 18ms);
+}
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* Guard: each risky phrase is marked in turn, 90 ms apart. */
+mark.guard-hit {
+  background-image: linear-gradient(var(--refuse-soft), var(--refuse-soft));
+  background-repeat: no-repeat;
+  background-color: transparent;
+  animation: hit-in 260ms var(--ease-out) both;
+  animation-delay: calc(120ms + var(--i, 0) * 90ms);
+}
+@keyframes hit-in {
+  from {
+    background-size: 0% 100%;
+    border-bottom-color: transparent;
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+
+/* Approve: the new state flashes lime once, then settles. */
+.approve-flash {
+  animation: approve 1400ms var(--ease-out) both;
+}
+@keyframes approve {
+  0% {
+    background-color: var(--accent-soft);
+    box-shadow: inset 0 0 0 1px var(--accent-edge);
+  }
+  100% {
+    box-shadow: inset 0 0 0 1px transparent;
+  }
+}
+
+/* Count-ups hide their first frame until script starts them; this reveals
+   them anyway if it never does. */
+.js .countup [data-state="pending"] {
+  visibility: hidden;
+  animation: reveal 0s 1.2s forwards;
+}
+@keyframes reveal {
+  to {
+    visibility: visible;
+  }
+}
+
+/* Reduced motion: no movement. Fades that explain a change stay, shortened;
+   the approve flash stays because it confirms an action. */
+@media (prefers-reduced-motion: reduce) {
+  .page-in,
+  .tour-card,
+  .tape-row {
+    animation: fade-in 120ms ease both;
+    animation-delay: 0ms;
+  }
+  .clock-mark,
+  .clock-cancel,
+  mark.guard-hit {
+    animation: none;
+  }
+  .press:active:not(:disabled) {
+    transform: none;
+  }
 }

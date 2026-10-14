@@ -49,15 +49,15 @@ All text tokens pass 4.5:1 on `surface` and `ground` in both themes. Night is th
 
 ## Motion
 
-Each animation has a job. All of them are under 250 ms per element unless noted, use `cubic-bezier(0.23, 1, 0.32, 1)` (strong ease-out), and collapse to a plain fade or nothing under `prefers-reduced-motion`.
+Each animation has a job. Each element animates for 250 ms or less unless noted, use `cubic-bezier(0.23, 1, 0.32, 1)` (strong ease-out), and collapse to a plain fade or nothing under `prefers-reduced-motion`.
 
 | Moment | Job | How |
 |---|---|---|
 | Session clock marks | Show the session happen in time order | Each mark fades and scales from 0.6 with a delay proportional to its minute, 450 ms total |
-| KPI numbers | Draw the eye once, on first view | Count up over 600 ms, once per page load; width reserved so nothing shifts; the real value is always in the accessible name |
+| KPI numbers | Draw the eye once, on first view | Count up over 600 ms, once per page load; width reserved so nothing shifts; the real value is always what assistive tech reads |
 | Order tape rows | Show the list arrived | 140 ms fade and 4 px settle, 18 ms stagger, capped at 12 rows |
 | Guard highlights | Show each risky phrase being found | Highlights sweep in one after another, 90 ms apart |
-| Approve | Make the state change unmistakable | Status flips with a lime flash on the new sent message or approved row |
+| Approve | Make the state change unmistakable | The new sent message or approved line flashes lime once and fades over 1.4 s; it never delays the click |
 | Page change | Keep continuity without waiting | 160 ms fade of the main column |
 
 Never animated: keyboard shortcuts, sorting, filtering, typing. Data is never hidden while it animates for longer than the stagger window.
@@ -68,3 +68,5 @@ Never animated: keyboard shortcuts, sorting, filtering, typing. Data is never hi
 - No hero-metric cards, gradient text, glass, or decorative charts.
 - No eyebrow labels in caps above headings.
 - No icon-in-a-circle feature grids.
+
+Reduced motion: page, card and tape fades shorten to 120 ms with no movement; clock marks, guard sweeps and count-ups show their final state at once; press scaling is off; the approve flash stays because it confirms an action.

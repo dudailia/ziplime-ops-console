@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { cancelledIds, sideOf } from "@/lib/dryrun/metrics";
 import { formatMinute, SESSION_CLOSE_MINUTE, SESSION_OPEN_MINUTE } from "@/lib/dryrun/time";
 import type { DryRunEvent, Session } from "@/lib/dryrun/types";
@@ -13,6 +13,7 @@ const TOP = 30;
 const LANE = 30;
 // Wide enough that the 9:30 and 10:00 labels never touch.
 const MIN_WIDTH = 820;
+const DRAW_MS = 450;
 
 function describe(e: DryRunEvent): string {
   const time = formatMinute(e.clock.minuteET);
@@ -82,6 +83,8 @@ export function SessionClock({
   const clampMin = (m: number) => Math.min(SESSION_CLOSE_MINUTE, Math.max(SESSION_OPEN_MINUTE, m));
   const x = (minute: number) => GUTTER + ((clampMin(minute) - SESSION_OPEN_MINUTE) / span) * plotW;
   const laneY = (symbol: string | null) => TOP + lanes.indexOf(symbol ?? "?") * LANE + LANE / 2;
+  // Marks draw in time order on mount: a mark's delay is its place in the day.
+  const delay = (minute: number) => ({ "--d": `${Math.round(((clampMin(minute) - SESSION_OPEN_MINUTE) / span) * DRAW_MS)}ms` }) as CSSProperties;
   const outside = session.events.filter((e) => e.clock.minuteET < SESSION_OPEN_MINUTE || e.clock.minuteET > SESSION_CLOSE_MINUTE);
 
   const hours = [];
@@ -166,7 +169,7 @@ export function SessionClock({
             const x2 = x(e.clock.minuteET);
             const x1 = place ? x(place.clock.minuteET) : x2 - 10;
             return (
-              <g key={e.line} className="text-cancel">
+              <g key={e.line} className="clock-cancel text-cancel" style={delay(e.clock.minuteET)}>
                 <line x1={x1} x2={x2} y1={y} y2={y} stroke="currentColor" strokeWidth={1.5} strokeDasharray={place ? undefined : "2 2"} />
                 <line x1={x2} x2={x2} y1={y - 4} y2={y + 4} stroke="currentColor" strokeWidth={1.5} />
               </g>
@@ -209,12 +212,13 @@ export function SessionClock({
               <g
                 key={`g${e.line}`}
                 role="presentation"
+                style={delay(e.clock.minuteET)}
                 className={onSelect ? "cursor-pointer" : undefined}
                 onClick={onSelect ? () => onSelect(e.line) : undefined}
                 onMouseEnter={onSelect ? () => setHover({ e, x: cx, y: cy }) : undefined}
               >
                 <rect x={cx - 6} y={cy - LANE / 2} width={12} height={LANE} fill="transparent" />
-                {glyph}
+                <g className="clock-mark">{glyph}</g>
               </g>
             );
           })}

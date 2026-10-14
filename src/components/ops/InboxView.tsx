@@ -9,15 +9,16 @@ import { explain } from "@/lib/dryrun/explain";
 import { sideOf } from "@/lib/dryrun/metrics";
 import { formatMinute } from "@/lib/dryrun/time";
 import { shortDate, stampET } from "@/lib/format";
-import { linkedEvents, templateReply, type Ticket } from "@/lib/inbox";
+import { linkedEvents, templateReply, type Message, type Ticket } from "@/lib/inbox";
 import { ticketStatus, TICKET_STATUS_LABEL, type TicketStatus } from "@/lib/inbox/status";
 import { useStore } from "@/lib/store/StoreProvider";
 import { currentReply, REVIEWER, replyHits, thread } from "@/lib/store/state";
 import { useAccounts } from "@/lib/store/useAccounts";
 import { useTickets } from "@/lib/store/selectors";
-import { AiOffNote, Button, Chip, EVENT_TEXT, EVENT_WORD, EventGlyph, PageTitle, Panel } from "@/components/ui/kit";
+import { AiOffNote, Button, Check, Chip, EVENT_TEXT, EVENT_WORD, EventGlyph, PageTitle, Panel } from "@/components/ui/kit";
 import { DraftEditor } from "@/components/ui/DraftEditor";
 import { WhyPanel } from "@/components/portal/WhyPanel";
+import { useFresh } from "@/components/ui/useFresh";
 import { HealthBadge } from "./HealthBadge";
 
 const STATUS_TONE: Record<TicketStatus, string> = {
@@ -26,6 +27,26 @@ const STATUS_TONE: Record<TicketStatus, string> = {
   flagged: "font-semibold text-refuse",
   replied: "text-ink-3",
 };
+
+/** One message. A reply approved a moment ago flashes once, so the send is unmistakable. */
+function ThreadMessage({ m }: { m: Message }) {
+  const fresh = useFresh(m.approvedBy ? m.at : undefined);
+  return (
+    <li className={`border-b border-rule px-4 py-3 last:border-b-0 ${m.from === "limex" ? "bg-sunk" : ""} ${fresh ? "approve-flash" : ""}`}>
+      <div className="flex flex-wrap items-baseline gap-x-2 text-[12px]">
+        <span className="font-semibold text-ink">{m.author}</span>
+        <span className="text-ink-3">{stampET(m.at)}</span>
+        {m.approvedBy && (
+          <span className="inline-flex items-center gap-1 font-semibold text-ok">
+            <Check />
+            Approved by {m.approvedBy}, marked as sent
+          </span>
+        )}
+      </div>
+      <p className="mt-1 max-w-[72ch] whitespace-pre-wrap text-[13px] text-ink">{m.body}</p>
+    </li>
+  );
+}
 
 function LinkedLines({ ticket }: { ticket: Ticket }) {
   const [open, setOpen] = useState<string | null>(null);
@@ -201,14 +222,7 @@ function Detail({ ticket }: { ticket: Ticket }) {
         <ol>
           {messages.length === 0 && <li className="px-4 py-3 text-[13px] text-ink-2">No messages yet. This ticket was opened by a rule; the first reply starts the thread.</li>}
           {messages.map((m, i) => (
-            <li key={i} className={`border-b border-rule px-4 py-3 last:border-b-0 ${m.from === "limex" ? "bg-sunk" : ""}`}>
-              <div className="flex flex-wrap items-baseline gap-x-2 text-[12px]">
-                <span className="font-semibold text-ink">{m.author}</span>
-                <span className="text-ink-3">{stampET(m.at)}</span>
-                {m.approvedBy && <span className="text-ok">Approved by {m.approvedBy}, marked as sent</span>}
-              </div>
-              <p className="mt-1 max-w-[72ch] whitespace-pre-wrap text-[13px] text-ink">{m.body}</p>
-            </li>
+            <ThreadMessage key={i} m={m} />
           ))}
         </ol>
       </Panel>

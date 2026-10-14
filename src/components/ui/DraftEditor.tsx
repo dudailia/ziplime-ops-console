@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { CATEGORY_LABEL, segments, type GuardHit } from "@/lib/guard";
 
 /** A draft with the guard's hits listed and highlighted. Edits re-run the guard upstream. */
@@ -74,9 +75,14 @@ export function GuardReport({ text, hits, blocked = false }: { text: string; hit
         </span>
       </div>
       <p className="whitespace-pre-wrap px-3 py-2 text-[13px] leading-relaxed text-ink">
-        {segments(text, hits).map((s, i) =>
+        {segments(text, hits).map((s, i, all) =>
           s.hit ? (
-            <mark key={i} className="guard-hit" title={CATEGORY_LABEL[s.hit.category]}>
+            <mark
+              key={i}
+              className="guard-hit"
+              title={CATEGORY_LABEL[s.hit.category]}
+              style={{ "--i": all.slice(0, i).filter((x) => x.hit).length } as CSSProperties}
+            >
               {s.text}
             </mark>
           ) : (

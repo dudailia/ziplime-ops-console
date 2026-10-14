@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useAiStatus } from "@/lib/ai/useAiStatus";
 import { stampET } from "@/lib/format";
 import { SIGNUPS } from "@/lib/intake";
@@ -12,7 +12,8 @@ import { rulesTriage, type Triage } from "@/lib/intake/triage";
 import { FORM, POD_TOGGLE, skippedStepTwo, type Signup } from "@/lib/intake/types";
 import { useStore } from "@/lib/store/StoreProvider";
 import { REVIEWER, type IntakeRecord } from "@/lib/store/state";
-import { AiOffNote, Button, Chip, PageTitle, Panel } from "@/components/ui/kit";
+import { AiOffNote, Button, Check, Chip, PageTitle, Panel } from "@/components/ui/kit";
+import { useFresh } from "@/components/ui/useFresh";
 import { DraftEditor } from "@/components/ui/DraftEditor";
 
 const PRIORITY_TONE = { high: "text-bad", normal: "text-ink-2", low: "text-ink-3" } as const;
@@ -106,6 +107,12 @@ function TriageCard({ s, rec }: { s: Signup; rec: IntakeRecord | undefined }) {
   );
 }
 
+/** The approved line. Flashes once when the approval just happened. */
+function Approved({ at, children }: { at: string; children: ReactNode }) {
+  const fresh = useFresh(at);
+  return <p className={`-mx-2 rounded-[4px] px-2 py-1 text-[13px] text-ink ${fresh ? "approve-flash" : ""}`}>{children}</p>;
+}
+
 function Detail({ s }: { s: Signup }) {
   const { state, dispatch } = useStore();
   const ai = useAiStatus();
@@ -194,15 +201,19 @@ function Detail({ s }: { s: Signup }) {
         </div>
         <div className="flex flex-wrap items-center gap-3 border-t border-rule px-4 py-3">
           {rec?.decision?.kind === "approved" ? (
-            <p className="text-[13px] text-ink">
-              <span className="font-semibold text-ok">Approved</span> by {rec.decision.by}, {stampET(rec.decision.at)}. Welcome email marked as sent; nothing leaves
+            <Approved at={rec.decision.at}>
+              <span className="inline-flex items-center gap-1 font-semibold text-ok">
+                <Check />
+                Approved
+              </span>{" "}
+              by {rec.decision.by}, {stampET(rec.decision.at)}. Welcome email marked as sent; nothing leaves
               this demo.{" "}
               {account && (
                 <Link href={`/ops/accounts/${account.id}`} className="font-semibold underline">
                   Open the new account
                 </Link>
               )}
-            </p>
+            </Approved>
           ) : rec?.decision?.kind === "dismissed" ? (
             <>
               <p className="text-[13px] text-ink-2">

@@ -23,7 +23,8 @@ export const metadata: Metadata = {
 };
 
 // Applies the saved theme before first paint, so dark mode doesn't flash.
-const THEME_SCRIPT = `try{var t=localStorage.getItem("ziplime-ops-console:theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+// Also marks the page as scripted, so count-ups can hide their first frame.
+const THEME_SCRIPT = `document.documentElement.classList.add("js");try{var t=localStorage.getItem("ziplime-ops-console:theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { explain, type Profile } from "@/lib/dryrun/explain";
 import { cancelledIds, sideOf, whyGroups } from "@/lib/dryrun/metrics";
 import { formatMinute } from "@/lib/dryrun/time";
@@ -53,6 +53,8 @@ function RawLine({ e }: { e: DryRunEvent }) {
   );
 }
 
+const INTRO_ROWS = 12;
+
 const GRID = "md:grid md:grid-cols-[52px_104px_64px_44px_56px_92px_minmax(0,1fr)] md:items-center md:gap-x-3";
 
 export function OrderTape({
@@ -95,6 +97,14 @@ export function OrderTape({
     }
     return true;
   });
+
+  // The first rows settle in once when the session opens. Rows that appear
+  // later through a filter don't animate: filtering should feel instant.
+  const [intro, setIntro] = useState(() => new Map(session.events.slice(0, INTRO_ROWS).map((e, i) => [e.line, i])));
+  useEffect(() => {
+    const t = setTimeout(() => setIntro(new Map()), 600);
+    return () => clearTimeout(t);
+  }, []);
 
   const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -185,13 +195,14 @@ export function OrderTape({
               role="listitem"
               data-line={e.line}
               data-tour={open && e.event === "refuse" ? "refusal" : undefined}
-              className={`border-b border-rule last:border-b-0 ${open ? "bg-sunk" : ""}`}
+              className={`border-b border-rule last:border-b-0 ${open ? "bg-sunk" : ""} ${intro.has(e.line) ? "tape-row" : ""}`}
+              style={intro.has(e.line) ? ({ "--i": intro.get(e.line) } as CSSProperties) : undefined}
             >
               <button
                 type="button"
                 aria-expanded={open}
                 onClick={() => onSelect(open ? null : e.line)}
-                className={`w-full px-4 py-1.5 text-left text-[13px] hover:bg-sunk ${GRID} flex flex-wrap items-center gap-x-3 gap-y-0.5`}
+                className={`w-full px-4 py-1.5 text-left text-[13px] transition-colors duration-150 hover:bg-sunk ${GRID} flex flex-wrap items-center gap-x-3 gap-y-0.5`}
               >
                 <span className="t-cond tabular-nums text-ink-2">{formatMinute(e.clock.minuteET)}</span>
                 <span className={`t-cond inline-flex items-center gap-1.5 font-semibold ${EVENT_TEXT[e.event]}`}>
