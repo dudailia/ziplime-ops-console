@@ -9,6 +9,7 @@ import { explain } from "@/lib/dryrun/explain";
 import { sideOf } from "@/lib/dryrun/metrics";
 import { formatMinute } from "@/lib/dryrun/time";
 import { shortDate, stampET } from "@/lib/format";
+import { useDataset } from "@/lib/data/DatasetProvider";
 import { linkedEvents, templateReply, type Message, type Ticket } from "@/lib/inbox";
 import { ticketStatus, TICKET_STATUS_LABEL, type TicketStatus } from "@/lib/inbox/status";
 import { useStore } from "@/lib/store/StoreProvider";
@@ -50,7 +51,8 @@ function ThreadMessage({ m }: { m: Message }) {
 
 function LinkedLines({ ticket }: { ticket: Ticket }) {
   const [open, setOpen] = useState<string | null>(null);
-  const linked = linkedEvents(ticket);
+  const ds = useDataset();
+  const linked = linkedEvents(ds, ticket);
   if (linked.length === 0) return null;
   return (
     <Panel title="Linked dry-run lines" aside="From this account's own files">
@@ -109,13 +111,14 @@ function LinkedLines({ ticket }: { ticket: Ticket }) {
 
 function Composer({ ticket }: { ticket: Ticket }) {
   const { state, dispatch } = useStore();
+  const ds = useDataset();
   const accounts = useAccounts();
   const ai = useAiStatus();
   const account = accounts.find((a) => a.id === ticket.accountId)!;
   const reply = currentReply(state, ticket);
   const text = reply?.text ?? "";
-  const hits = replyHits(state, ticket, text);
-  const status = ticketStatus(state, ticket);
+  const hits = replyHits(ds, state, ticket, text);
+  const status = ticketStatus(ds, state, ticket);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const now = () => new Date().toISOString();
@@ -159,7 +162,7 @@ function Composer({ ticket }: { ticket: Ticket }) {
             {busy ? "Drafting…" : "Draft with Claude"}
           </Button>
         )}
-        <Button kind={ai?.enabled ? "quiet" : "secondary"} onClick={() => set(templateReply(ticket, account), "template")}>
+        <Button kind={ai?.enabled ? "quiet" : "secondary"} onClick={() => set(templateReply(ds, ticket, account), "template")}>
           Insert template reply
         </Button>
         {reply && (
@@ -195,9 +198,10 @@ function Composer({ ticket }: { ticket: Ticket }) {
 
 function Detail({ ticket }: { ticket: Ticket }) {
   const { state } = useStore();
+  const ds = useDataset();
   const accounts = useAccounts();
   const account = accounts.find((a) => a.id === ticket.accountId);
-  const summary = useMemo(() => (account ? summarizeAccount(account) : null), [account]);
+  const summary = useMemo(() => (account ? summarizeAccount(ds, account) : null), [ds, account]);
   const messages = thread(state, ticket);
   return (
     <div className="flex flex-col gap-4">
@@ -235,6 +239,7 @@ function Detail({ ticket }: { ticket: Ticket }) {
 
 export function InboxView() {
   const { state } = useStore();
+  const ds = useDataset();
   const tickets = useTickets();
   const accounts = useAccounts();
   const params = useSearchParams();
@@ -247,9 +252,9 @@ export function InboxView() {
     () =>
       tickets
         .filter((t) => !accountFilter || t.accountId === accountFilter)
-        .map((t) => ({ t, status: ticketStatus(state, t), account: accounts.find((a) => a.id === t.accountId) }))
+        .map((t) => ({ t, status: ticketStatus(ds, state, t), account: accounts.find((a) => a.id === t.accountId) }))
         .sort((a, b) => Date.parse(b.t.createdAt) - Date.parse(a.t.createdAt)),
-    [tickets, accountFilter, state, accounts],
+    [ds, tickets, accountFilter, state, accounts],
   );
   const counts = useMemo(() => {
     const c: Record<TicketStatus, number> = { "needs-reply": 0, "in-review": 0, flagged: 0, replied: 0 };

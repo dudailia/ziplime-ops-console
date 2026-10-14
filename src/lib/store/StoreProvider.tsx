@@ -1,8 +1,10 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useDataset } from "../data/DatasetProvider";
+import type { Dataset } from "../data/types";
 import type { ParsedFile } from "../dryrun/types";
-import { initialState, reducer, revive, STORAGE_KEY, type Action, type State } from "./state";
+import { DB_STORAGE_KEY, initialState, reducer, revive, STORAGE_KEY, type Action, type State } from "./state";
 
 type Store = {
   state: State;
@@ -16,17 +18,17 @@ type Store = {
 
 const StoreContext = createContext<Store | null>(null);
 
-function load(): State | null {
+function load(key: string): State | null {
   try {
-    return revive(window.localStorage.getItem(STORAGE_KEY));
+    return revive(window.localStorage.getItem(key));
   } catch {
     return null;
   }
 }
 
-function save(state: State) {
+function save(key: string, state: State) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    window.localStorage.setItem(key, JSON.stringify(state));
   } catch {
     // Private mode or storage full: the demo still works, it just won't remember.
   }
@@ -37,24 +39,27 @@ type BoxAction = Action | { type: "loaded"; saved: State | null };
 
 // Wraps the pure reducer with whether saved state has been read yet. The
 // server and the first client render both use the seed, so hydration matches.
-function boxReducer(box: Box, action: BoxAction): Box {
+function boxReducer(ds: Dataset, box: Box, action: BoxAction): Box {
   if (action.type === "loaded") return { state: action.saved ?? box.state, hydrated: true };
-  return { ...box, state: reducer(box.state, action) };
+  return { ...box, state: reducer(box.state, action, ds) };
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [box, dispatchBox] = useReducer(boxReducer, undefined, () => ({ state: initialState(), hydrated: false }));
+  const ds = useDataset();
+  const key = ds.source === "postgres" ? DB_STORAGE_KEY : STORAGE_KEY;
+  // React calls the reducer from the latest render, so it always sees the current dataset.
+  const [box, dispatchBox] = useReducer((b: Box, a: BoxAction) => boxReducer(ds, b, a), undefined, () => ({ state: initialState(), hydrated: false }));
   const { state, hydrated } = box;
   const dispatch = useCallback((action: Action) => dispatchBox(action), []);
   const [uploads, setUploads] = useState<ParsedFile[]>([]);
 
   useEffect(() => {
-    dispatchBox({ type: "loaded", saved: load() });
-  }, []);
+    dispatchBox({ type: "loaded", saved: load(key) });
+  }, [key]);
 
   useEffect(() => {
-    if (hydrated) save(state);
-  }, [state, hydrated]);
+    if (hydrated) save(key, state);
+  }, [key, state, hydrated]);
 
   const addUpload = useCallback((file: ParsedFile) => {
     setUploads((list) => [...list.filter((f) => f.source !== file.source), file]);
@@ -62,11 +67,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const resetDemo = useCallback(() => {
     try {
-      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(key);
     } catch {}
     setUploads([]);
     dispatch({ type: "reset" });
-  }, [dispatch]);
+  }, [dispatch, key]);
 
   const value = useMemo(
     () => ({ state, dispatch, uploads, addUpload, resetDemo, hydrated }),

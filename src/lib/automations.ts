@@ -1,16 +1,17 @@
-// Automation rules (PLAN.md section 9). Pure: (seed data, state) -> effects,
+// Automation rules (PLAN.md section 9). Pure: (dataset, state) -> effects,
 // so a run is testable and the log shows exactly what it did. Idempotent: an
 // effect whose id already exists is skipped and logged as such. Rules open
 // tickets and write notes; they never send anything.
 
-import { CALENDAR, summarizeDeployment } from "./crm";
+import { summarizeDeployment } from "./crm";
+import type { Dataset } from "./data/types";
 import { explain } from "./dryrun/explain";
 import type { RefuseEvent } from "./dryrun/types";
 import { shortDate } from "./format";
 import { STALE_AFTER_TRADING_DAYS, tradingDaysBetween } from "./health";
 import { templateReply, type Ticket } from "./inbox";
-import { DEPLOYMENTS, SEED_ACCOUNTS } from "./seed";
-import { allTickets, type Activity, type State } from "./store/state";
+import type { Deployment } from "./seed";
+import { allAccounts, allTickets, type Activity, type State } from "./store/state";
 
 export type RuleId = "refusal-streak" | "broker-rejection" | "stale" | "ready-for-live";
 
@@ -46,13 +47,15 @@ export type Run = { id: string; at: string; by: string; lines: LogLine[] };
 
 export type RunResult = { tickets: Ticket[]; activity: Activity[]; lines: LogLine[] };
 
-export function runRules(state: State, enabled: Record<RuleId, boolean>, at: string): RunResult {
-  const ticketIds = new Set(allTickets(state).map((t) => t.id));
+export function runRules(ds: Dataset, state: State, enabled: Record<RuleId, boolean>, at: string): RunResult {
+  const ticketIds = new Set(allTickets(ds, state).map((t) => t.id));
   const activityIds = new Set(state.activity.map((a) => a.id));
   const out: RunResult = { tickets: [], activity: [], lines: [] };
-  const accountOf = (id: string) => SEED_ACCOUNTS.find((a) => a.id === id)!;
+  const accounts = allAccounts(ds, state);
+  const accountOf = (id: string) => accounts.find((a) => a.id === id)!;
+  const asOf = ds.calendar.asOf;
 
-  const note = (rule: RuleId, d: (typeof DEPLOYMENTS)[number], id: string, text: string) => {
+  const note = (rule: RuleId, d: Deployment, id: string, text: string) => {
     if (activityIds.has(id)) {
       out.lines.push({ rule, accountId: d.account, deployment: d.id, text: `Skipped: note already added. ${text}`, skipped: true });
       return;
@@ -62,9 +65,9 @@ export function runRules(state: State, enabled: Record<RuleId, boolean>, at: str
     out.lines.push({ rule, accountId: d.account, deployment: d.id, text: `Note added. ${text}`, skipped: false });
   };
 
-  for (const d of DEPLOYMENTS) {
-    const s = summarizeDeployment(d);
-    const sessions = s.file.sessions.filter((x) => x.date <= CALENDAR.asOf);
+  for (const d of ds.deployments) {
+    const s = summarizeDeployment(ds, d);
+    const sessions = s.file.sessions.filter((x) => x.date <= asOf);
     const last = sessions.at(-1);
 
     if (enabled["refusal-streak"]) {
@@ -85,7 +88,7 @@ export function runRules(state: State, enabled: Record<RuleId, boolean>, at: str
             links: [{ deployment: d.id, ids: latest.map((e) => e.ziplime_order_id) }],
             rule: { id: "refusal-streak", trigger },
           };
-          ticket.draft = { by: "Automation (template)", text: templateReply(ticket, accountOf(d.account)) };
+          ticket.draft = { by: "Automation (template)", text: templateReply(ds, ticket, accountOf(d.account)) };
           ticketIds.add(id);
           out.tickets.push(ticket);
           out.activity.push({
@@ -101,7 +104,7 @@ export function runRules(state: State, enabled: Record<RuleId, boolean>, at: str
       }
     }
 
-    if (enabled["broker-rejection"] && last && last.date === CALENDAR.asOf) {
+    if (enabled["broker-rejection"] && last && last.date === asOf) {
       const rejected = last.events.filter((e) => e.event === "refuse" && explain(e, s.profile)?.ruleId === "broker-validation");
       if (rejected.length > 0) {
         note(
@@ -114,7 +117,7 @@ export function runRules(state: State, enabled: Record<RuleId, boolean>, at: str
     }
 
     if (enabled.stale && last) {
-      const gap = tradingDaysBetween(last.date, CALENDAR.asOf, CALENDAR.tradingDays);
+      const gap = tradingDaysBetween(last.date, asOf, ds.calendar.tradingDays);
       if (gap > STALE_AFTER_TRADING_DAYS) {
         note("stale", d, `A-${d.id}-stale-${last.date}`, `Dry run stale: ${d.strategy} last ran ${shortDate(last.date)}, ${gap} trading days ago.`);
       }

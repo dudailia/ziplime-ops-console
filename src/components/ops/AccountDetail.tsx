@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
-import { CALENDAR, summarizeAccount, type DeploymentSummary } from "@/lib/crm";
+import { summarizeAccount, type DeploymentSummary } from "@/lib/crm";
+import { useDataset } from "@/lib/data/DatasetProvider";
 import { groupSessions } from "@/lib/dryrun/parse";
 import { sessionLabel, stampET } from "@/lib/format";
 import { HEALTH_LABEL } from "@/lib/health";
@@ -104,9 +105,10 @@ function DeploymentCard({ s }: { s: DeploymentSummary }) {
 export function AccountDetail() {
   const params = useParams<{ id: string }>();
   const accounts = useAccounts();
+  const ds = useDataset();
   const { state } = useStore();
   const account = accounts.find((a) => a.id === params.id);
-  const summary = useMemo(() => (account ? summarizeAccount(account) : null), [account]);
+  const summary = useMemo(() => (account ? summarizeAccount(ds, account) : null), [ds, account]);
   const [chartDeployment, setChartDeployment] = useState("all");
 
   if (!account || !summary) {
@@ -162,7 +164,7 @@ export function AccountDetail() {
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <div className="flex min-w-0 flex-col gap-4 xl:col-span-8">
-          <Panel title="Why this colour" aside={`Last 5 sessions per deployment, as of ${sessionLabel(CALENDAR.asOf)}`}>
+          <Panel title="Why this colour" aside={`Last 5 sessions per deployment, as of ${sessionLabel(ds.calendar.asOf)}`}>
             <ul className="px-4 py-2.5">
               {summary.health.reasons.map((r, i) => (
                 <li key={i} className="flex items-start gap-2 py-0.5 text-[13px]">
@@ -202,7 +204,7 @@ export function AccountDetail() {
               {summary.deployments.length === 0 ? (
                 <p className="text-[13px] text-ink-2">No dry runs yet. The trader&apos;s first run with dry_run_file set will show up here.</p>
               ) : (
-                <HistoryChart points={points} dates={CALENDAR.tradingDays} />
+                <HistoryChart points={points} dates={ds.calendar.tradingDays} />
               )}
             </div>
           </Panel>

@@ -105,6 +105,19 @@ describe("parseDryRun defensively", () => {
     expect(message).toContain('"side" must be one of buy, sell');
   });
 
+  it("checks that quantity and limit price are decimal strings the engine could write", () => {
+    const parsed = parseDryRun(
+      jsonl(place({ quantity: "five" }), place({ quantity: "-3" }), place({ limit_price: "0" }), place({ quantity: "12", limit_price: "101.25" })),
+      "f",
+    );
+    expect(parsed.errors.map((e) => e.message)).toEqual([
+      'place: "quantity" must be a decimal string, got "five"',
+      'place: "quantity" must be zero or more, got -3',
+      'place: "limit_price" must be more than zero, got 0',
+    ]);
+    expect(parsed.events).toHaveLength(1);
+  });
+
   it("rejects an unknown event, a missing event and a non-object line", () => {
     const parsed = parseDryRun(jsonl({ event: "fill", recorded_at: "x" }, { symbol: "AAPL" }, [1, 2], 42), "f");
     expect(parsed.errors.map((e) => e.message)).toEqual([

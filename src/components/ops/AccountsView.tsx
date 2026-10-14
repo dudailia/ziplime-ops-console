@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { CALENDAR } from "@/lib/crm";
+import { useDataset } from "@/lib/data/DatasetProvider";
 import { sessionLabel } from "@/lib/format";
 import { HEALTH_LABEL, healthRank, type HealthLevel } from "@/lib/health";
 import { planByKey } from "@/lib/plans";
@@ -15,6 +15,7 @@ import { HEALTH_FILL, HEALTH_TEXT, HealthBadge, HealthDot } from "./HealthBadge"
 type SortKey = "health" | "trader" | "last" | "deployments" | "tickets";
 
 export function AccountsView() {
+  const ds = useDataset();
   const summaries = useAccountSummaries();
   const tickets = useOpenTicketCounts();
   const [level, setLevel] = useState<HealthLevel | "all">("all");
@@ -73,7 +74,7 @@ export function AccountsView() {
     <div>
       <PageTitle
         title="Accounts"
-        sub={`Health from each deployment's last 5 dry-run sessions, as of ${sessionLabel(CALENDAR.asOf, true)}. The worst deployment sets the colour.`}
+        sub={`Health from each deployment's last 5 dry-run sessions, as of ${sessionLabel(ds.calendar.asOf, true)}. The worst deployment sets the colour.`}
       />
 
       {/* The health mix as one proportional bar, and four counts that filter the table. */}

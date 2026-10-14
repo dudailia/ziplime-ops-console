@@ -1,15 +1,19 @@
-// The demo's mutable state: everything a person can change. Seed data stays
-// in lib/seed and is never copied in here. Pure reducer, so it is testable.
+// The demo's mutable state: everything a person can change. The dataset
+// (seed or database) is never copied in here; functions that need it take it
+// as an argument. Pure reducer, so it is testable.
 
 import { otherClients } from "../crm";
 import { guard } from "../guard";
 import type { RuleId, Run } from "../automations";
-import { SEED_TICKETS, type Message, type ReplySource, type Ticket } from "../inbox";
-import { accountFromSignup, signupById, SIGNUPS } from "../intake";
+import type { Dataset } from "../data/types";
+import type { Message, ReplySource, Ticket } from "../inbox";
+import { accountFromSignup, signupById } from "../intake";
 import type { Triage } from "../intake/triage";
-import { SEED_ACCOUNTS, type Account } from "../seed";
+import type { Account } from "../seed";
 
 export const STORAGE_KEY = "ziplime-ops-console:v1";
+/** Database mode keeps its browser state apart, so static-demo approvals never show up there. */
+export const DB_STORAGE_KEY = "ziplime-ops-console:v1:database";
 
 export type ActivityKind = "automation" | "intake" | "ticket" | "note";
 
@@ -81,7 +85,7 @@ export function initialState(): State {
   };
 }
 
-export function reducer(state: State, action: Action): State {
+export function reducer(state: State, action: Action, ds: Dataset): State {
   switch (action.type) {
     case "hydrate":
       return action.state;
@@ -96,7 +100,7 @@ export function reducer(state: State, action: Action): State {
     case "intake/edit":
       return patchIntake(state, action.id, { draft: { subject: action.subject, body: action.body } });
     case "intake/approve":
-      return approveSignup(state, action);
+      return approveSignup(ds, state, action);
     case "intake/dismiss": {
       const rec = state.intake[action.id];
       if (rec?.decision) return state;
@@ -110,16 +114,16 @@ export function reducer(state: State, action: Action): State {
     case "reply/discard":
       return { ...state, replies: { ...state.replies, [action.ticketId]: null } };
     case "reply/approve":
-      return approveReply(state, action);
+      return approveReply(ds, state, action);
     case "tickets/create": {
-      const known = new Set(allTickets(state).map((t) => t.id));
+      const known = new Set(allTickets(ds, state).map((t) => t.id));
       const fresh = action.tickets.filter((t) => !known.has(t.id));
       return { ...state, createdTickets: [...state.createdTickets, ...fresh], activity: [...state.activity, ...action.activity] };
     }
     case "rules/toggle":
       return { ...state, rules: { ...state.rules, [action.rule]: !state.rules[action.rule] } };
     case "rules/run": {
-      const known = new Set(allTickets(state).map((t) => t.id));
+      const known = new Set(allTickets(ds, state).map((t) => t.id));
       const seen = new Set(state.activity.map((a) => a.id));
       return {
         ...state,
@@ -144,24 +148,31 @@ function patchIntake(state: State, id: string, patch: Partial<IntakeRecord>): St
   return { ...state, intake: { ...state.intake, [id]: { ...prev, ...patch } } };
 }
 
-export function allAccounts(state: State): Account[] {
-  return [...SEED_ACCOUNTS, ...state.extraAccounts];
+export function allAccounts(ds: Dataset, state: State): Account[] {
+  return mergeAccounts(ds.accounts, state.extraAccounts);
+}
+
+/** The dataset's accounts, then the ones approved in this browser that the dataset doesn't have. */
+export function mergeAccounts(base: readonly Account[], extra: readonly Account[]): Account[] {
+  const known = new Set(base.map((a) => a.id));
+  return [...base, ...extra.filter((a) => !known.has(a.id))];
 }
 
 /** Identifiers the welcome email to this signup must not mention. */
-export function intakeOthers(state: State, signupId: string): string[] {
-  const others = SIGNUPS.filter((s) => s.id !== signupId).map((s) => s.email);
-  return [...otherClients("", allAccounts(state)), ...others];
+export function intakeOthers(ds: Dataset, state: State, signupId: string): string[] {
+  const others = ds.signups.filter((s) => s.id !== signupId).map((s) => s.email);
+  return [...otherClients("", allAccounts(ds, state)), ...others];
 }
 
 // Approving creates exactly one Beta account, and only if the email passes the guard.
-function approveSignup(state: State, action: Extract<Action, { type: "intake/approve" }>): State {
-  const signup = signupById(action.id);
-  if (!signup || state.intake[action.id]?.decision) return state;
+// In database mode the server does this instead (lib/data/onboarding.ts).
+function approveSignup(ds: Dataset, state: State, action: Extract<Action, { type: "intake/approve" }>): State {
+  const signup = signupById(ds.signups, action.id);
+  if (!signup || state.intake[action.id]?.decision || ds.decisions[action.id]) return state;
   if (state.extraAccounts.some((a) => a.fromIntake === action.id)) return state;
   const text = `${action.email.subject}\n${action.email.body}`;
-  if (!guard(text, { intake: true, otherClients: intakeOthers(state, action.id) }).ok) return state;
-  const account = accountFromSignup(signup, allAccounts(state).map((a) => a.id), action.at);
+  if (!guard(text, { intake: true, otherClients: intakeOthers(ds, state, action.id) }).ok) return state;
+  const account = accountFromSignup(signup, allAccounts(ds, state).map((a) => a.id), action.at);
   const next = patchIntake(state, action.id, {
     decision: { kind: "approved", by: action.by, at: action.at, accountId: account.id },
     draft: action.email,
@@ -188,8 +199,8 @@ export function revive(raw: string | null): State | null {
   }
 }
 
-export function allTickets(state: State): Ticket[] {
-  return [...SEED_TICKETS, ...state.createdTickets];
+export function allTickets(ds: Dataset, state: State): Ticket[] {
+  return [...ds.tickets, ...state.createdTickets];
 }
 
 /** The draft on a ticket: this session's reply, else a seeded draft, else nothing. */
@@ -199,8 +210,8 @@ export function currentReply(state: State, ticket: Ticket): Reply | null {
   return null;
 }
 
-export function replyHits(state: State, ticket: Ticket, text: string) {
-  return guard(text, { otherClients: otherClients(ticket.accountId, allAccounts(state)) }).hits;
+export function replyHits(ds: Dataset, state: State, ticket: Ticket, text: string) {
+  return guard(text, { otherClients: otherClients(ticket.accountId, allAccounts(ds, state)) }).hits;
 }
 
 export function thread(state: State, ticket: Ticket): Message[] {
@@ -214,11 +225,11 @@ export function needsReply(state: State, ticket: Ticket): boolean {
 }
 
 // Only a human click lands here, and only for a draft the guard passes.
-function approveReply(state: State, action: Extract<Action, { type: "reply/approve" }>): State {
-  const ticket = allTickets(state).find((t) => t.id === action.ticketId);
+function approveReply(ds: Dataset, state: State, action: Extract<Action, { type: "reply/approve" }>): State {
+  const ticket = allTickets(ds, state).find((t) => t.id === action.ticketId);
   if (!ticket) return state;
   const reply = currentReply(state, ticket);
-  if (!reply || replyStatusOf(state, ticket, reply.text) !== "in_review") return state;
+  if (!reply || replyStatusOf(ds, state, ticket, reply.text) !== "in_review") return state;
   const message: Message = { from: "limex", author: "The Limex team", at: action.at, body: reply.text, approvedBy: action.by, source: reply.source };
   return {
     ...state,
@@ -238,7 +249,7 @@ function approveReply(state: State, action: Extract<Action, { type: "reply/appro
   };
 }
 
-function replyStatusOf(state: State, ticket: Ticket, text: string) {
+function replyStatusOf(ds: Dataset, state: State, ticket: Ticket, text: string) {
   if (text.trim() === "") return "empty";
-  return replyHits(state, ticket, text).length > 0 ? "flagged" : "in_review";
+  return replyHits(ds, state, ticket, text).length > 0 ? "flagged" : "in_review";
 }

@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, IBM_Plex_Mono } from "next/font/google";
+import { Suspense, type ReactNode } from "react";
 import { Shell } from "@/components/shell/Shell";
+import { DatasetProvider } from "@/lib/data/DatasetProvider";
+import { BUILD_MODE, serverDataset } from "@/lib/data/server";
+import type { Dataset } from "@/lib/data/types";
 import { StoreProvider } from "@/lib/store/StoreProvider";
 import "./globals.css";
 
@@ -49,10 +53,29 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className="min-h-dvh">
-        <StoreProvider>
-          <Shell>{children}</Shell>
-        </StoreProvider>
+        {BUILD_MODE === "database" ? (
+          <Suspense fallback={<p className="p-6 text-[14px] text-ink-2">Loading the console…</p>}>
+            <DatabaseApp>{children}</DatabaseApp>
+          </Suspense>
+        ) : (
+          <App dataset={null}>{children}</App>
+        )}
       </body>
     </html>
   );
+}
+
+function App({ dataset, children }: { dataset: Dataset | null; children: ReactNode }) {
+  return (
+    <DatasetProvider dataset={dataset}>
+      <StoreProvider>
+        <Shell>{children}</Shell>
+      </StoreProvider>
+    </DatasetProvider>
+  );
+}
+
+// Database mode: wait for a request, read through the data source, then render.
+async function DatabaseApp({ children }: { children: ReactNode }) {
+  return <App dataset={await serverDataset()}>{children}</App>;
 }

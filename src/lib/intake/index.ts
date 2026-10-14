@@ -4,8 +4,8 @@ import type { Signup } from "./types";
 
 export const SIGNUPS = signupsJson.signups as Signup[];
 
-export function signupById(id: string): Signup | undefined {
-  return SIGNUPS.find((s) => s.id === id);
+export function signupById(signups: readonly Signup[], id: string): Signup | undefined {
+  return signups.find((s) => s.id === id);
 }
 
 /** "maya.chen@example.com" -> "Maya Chen". The form collects no name. */

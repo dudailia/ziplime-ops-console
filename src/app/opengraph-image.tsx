@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { frontDoorNumbers } from "@/lib/crm";
 import { SESSION_CLOSE_MINUTE, SESSION_OPEN_MINUTE } from "@/lib/dryrun/time";
-import { DEPLOYMENTS, seedFile, SEED_ACCOUNTS } from "@/lib/seed";
+import { fileOf } from "@/lib/data/lookup";
+import { STATIC_DATASET } from "@/lib/data/static";
 
 export const alt = "ziplime Ops Console: an ops layer for ziplime's dry-run mode, built on PR #39. Sample data.";
 export const size = { width: 1200, height: 630 };
@@ -23,14 +24,15 @@ const C = {
 };
 
 // The link preview: the headline, the front door's hero session as a strip of
-// marks, and the three numbers. Everything is computed from the seed.
+// marks, and the three numbers. Always the public demo's seed: a link
+// preview is for people who can't sign in to a database deployment.
 // Archivo (SIL Open Font License), static instances, so the preview matches the app's type.
 const font = (name: string) => readFile(join(process.cwd(), "src/app/og", name));
 
 export default async function OpenGraphImage() {
   const [regular, semi, wide] = await Promise.all([font("Archivo-Regular.ttf"), font("Archivo-SemiBold.ttf"), font("ArchivoExpanded-ExtraBold.ttf")]);
-  const n = frontDoorNumbers(SEED_ACCOUNTS, DEPLOYMENTS);
-  const session = seedFile("priya-growth").sessions.find((s) => s.date === "2026-10-07")!;
+  const n = frontDoorNumbers(STATIC_DATASET);
+  const session = fileOf(STATIC_DATASET, "priya-growth").sessions.find((s) => s.date === "2026-10-07")!;
   const lanes = [...new Set(session.events.map((e) => e.symbol ?? "?"))].sort();
   const W = 1040;
   const x = (m: number) => ((Math.min(SESSION_CLOSE_MINUTE, Math.max(SESSION_OPEN_MINUTE, m)) - SESSION_OPEN_MINUTE) / (SESSION_CLOSE_MINUTE - SESSION_OPEN_MINUTE)) * (W - 90) + 70;

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { stampET } from "@/lib/format";
+import { useDataset } from "@/lib/data/DatasetProvider";
 import { ticketStatus, TICKET_STATUS_LABEL } from "@/lib/inbox/status";
 import { useStore } from "@/lib/store/StoreProvider";
 import { useTickets } from "@/lib/store/selectors";
@@ -9,6 +10,7 @@ import { Panel } from "@/components/ui/kit";
 
 export function AccountTickets({ accountId }: { accountId: string }) {
   const { state } = useStore();
+  const ds = useDataset();
   const tickets = useTickets().filter((t) => t.accountId === accountId);
   return (
     <Panel title="Tickets" aside={tickets.length ? <Link className="underline" href={`/ops/inbox?account=${accountId}`}>Open in inbox</Link> : undefined}>
@@ -17,7 +19,7 @@ export function AccountTickets({ accountId }: { accountId: string }) {
       ) : (
         <ul>
           {tickets.map((t) => {
-            const status = ticketStatus(state, t);
+            const status = ticketStatus(ds, state, t);
             return (
               <li key={t.id} className="border-b border-rule last:border-b-0">
                 <Link href={`/ops/inbox?account=${accountId}&t=${t.id}`} className="block px-4 py-2 hover:bg-sunk">

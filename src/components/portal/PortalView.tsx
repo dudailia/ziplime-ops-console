@@ -5,7 +5,9 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import type { Profile } from "@/lib/dryrun/explain";
 import type { ParsedFile, Session } from "@/lib/dryrun/types";
-import { DEPLOYMENTS, deploymentById, seedFile, SEED_ACCOUNTS, type Deployment } from "@/lib/seed";
+import { useDataset } from "@/lib/data/DatasetProvider";
+import { deploymentById, fileOf } from "@/lib/data/lookup";
+import type { Deployment } from "@/lib/seed";
 import { useStore } from "@/lib/store/StoreProvider";
 import { Env, PageTitle, Panel } from "@/components/ui/kit";
 import { OrderTape, emptyFilter, type TapeFilter } from "./OrderTape";
@@ -50,13 +52,14 @@ export function PortalView() {
   const router = useRouter();
   const pathname = usePathname();
   const { uploads, addUpload } = useStore();
+  const ds = useDataset();
 
   const d = params.get("d") ?? DEFAULT_DEPLOYMENT;
   const upload = d.startsWith(UPLOAD_PREFIX) ? uploads.find((u) => u.source === d.slice(UPLOAD_PREFIX.length)) : undefined;
-  const deployment = upload ? undefined : deploymentById(d) ?? deploymentById(DEFAULT_DEPLOYMENT);
-  const file: ParsedFile = upload ?? seedFile(deployment!.id);
+  const deployment = upload ? undefined : (deploymentById(ds, d) ?? deploymentById(ds, DEFAULT_DEPLOYMENT) ?? ds.deployments[0]);
+  const file: ParsedFile = upload ?? fileOf(ds, deployment!.id);
   const profile = profileOf(deployment);
-  const account = deployment ? SEED_ACCOUNTS.find((a) => a.id === deployment.account) : undefined;
+  const account = deployment ? ds.accounts.find((a) => a.id === deployment.account) : undefined;
 
   const sDate = params.get("s");
   const session = file.sessions.find((s) => s.date === sDate) ?? file.sessions[file.sessions.length - 1];
@@ -79,7 +82,7 @@ export function PortalView() {
     go({ d: `${UPLOAD_PREFIX}${f.source}` });
   };
 
-  const byAccount = SEED_ACCOUNTS.map((a) => ({ a, ds: DEPLOYMENTS.filter((x) => x.account === a.id) }));
+  const byAccount = ds.accounts.map((a) => ({ a, deps: ds.deployments.filter((x) => x.account === a.id) })).filter((g) => g.deps.length > 0);
   const missingUpload = d.startsWith(UPLOAD_PREFIX) && !upload;
 
   return (
@@ -104,9 +107,9 @@ export function PortalView() {
                 ))}
               </optgroup>
             )}
-            {byAccount.map(({ a, ds }) => (
+            {byAccount.map(({ a, deps }) => (
               <optgroup key={a.id} label={a.company ? `${a.trader}, ${a.company}` : a.trader}>
-                {ds.map((x) => (
+                {deps.map((x) => (
                   <option key={x.id} value={x.id}>
                     {x.strategy}
                   </option>

@@ -6,7 +6,9 @@ import { explain, type Profile } from "../dryrun/explain";
 import { readiness } from "../dryrun/metrics";
 import type { DryRunEvent, RefuseEvent, SkipEvent } from "../dryrun/types";
 import { shortDate } from "../format";
-import { deploymentById, seedFile, type Account, type Deployment } from "../seed";
+import { deploymentById, fileOf } from "../data/lookup";
+import type { Dataset } from "../data/types";
+import type { Account, Deployment } from "../seed";
 
 export type ReplySource = "template" | "claude" | "human";
 
@@ -50,14 +52,14 @@ function idsOf(e: DryRunEvent): string[] {
   }
 }
 
-/** The ticket's linked lines, looked up in that account's own seed files only. */
-export function linkedEvents(ticket: Pick<Ticket, "accountId" | "links">): Linked[] {
+/** The ticket's linked lines, looked up in that account's own dry-run files only. */
+export function linkedEvents(ds: Dataset, ticket: Pick<Ticket, "accountId" | "links">): Linked[] {
   const out: Linked[] = [];
   for (const link of ticket.links) {
-    const deployment = deploymentById(link.deployment);
+    const deployment = deploymentById(ds, link.deployment);
     if (!deployment || deployment.account !== ticket.accountId) continue;
     const wanted = new Set(link.ids);
-    const events = seedFile(deployment.id).events.filter((e) => idsOf(e).some((id) => wanted.has(id)));
+    const events = fileOf(ds, deployment.id).events.filter((e) => idsOf(e).some((id) => wanted.has(id)));
     out.push({ deployment, profile: { riskEnv: deployment.riskEnv, validateOrders: deployment.validateOrders }, events });
   }
   return out;
@@ -67,9 +69,9 @@ const firstName = (a: Account) => a.trader.split(" ")[0];
 const joinList = (xs: string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
 
 /** A deterministic reply built from the same data Claude would get. */
-export function templateReply(ticket: Ticket, account: Account): string {
+export function templateReply(ds: Dataset, ticket: Ticket, account: Account): string {
   const parts: string[] = [`Hi ${firstName(account)},`, "", "Thanks for writing in. Here is what your dry-run file shows."];
-  for (const { deployment, profile, events } of linkedEvents(ticket)) {
+  for (const { deployment, profile, events } of linkedEvents(ds, ticket)) {
     const why = events.filter((e): e is RefuseEvent | SkipEvent => e.event === "refuse" || e.event === "skip");
     const groups = new Map<string, (RefuseEvent | SkipEvent)[]>();
     for (const e of why) {
@@ -90,7 +92,7 @@ export function templateReply(ticket: Ticket, account: Account): string {
       }
     }
     if (why.length === 0) {
-      const failed = readiness(seedFile(deployment.id), profile).filter((c) => !c.pass);
+      const failed = readiness(fileOf(ds, deployment.id), profile).filter((c) => !c.pass);
       if (failed.length === 0) {
         parts.push("", `${deployment.strategy} passes all six readiness checks in the console. A person at Limex reviews every switch to live, and we'll pick that up with you.`);
       } else {

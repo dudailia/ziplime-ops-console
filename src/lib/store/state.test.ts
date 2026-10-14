@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { STATIC_DATASET as ds } from "../data/static";
 import { SIGNUPS } from "../intake";
 import { rulesTriage } from "../intake/triage";
 import { initialState, reducer, revive, type Action, type State } from "./state";
 
-const run = (actions: Action[], from: State = initialState()) => actions.reduce(reducer, from);
+const run = (actions: Action[], from: State = initialState()) => actions.reduce((s, a) => reducer(s, a, ds), from);
 const at = "2026-10-13T16:00:00-04:00";
 const maya = SIGNUPS.find((s) => s.email === "maya.chen@example.com")!;
 const approve = (id: string, body = rulesTriage(SIGNUPS.find((s) => s.id === id)!).email.body): Action => ({

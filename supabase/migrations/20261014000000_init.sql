@@ -44,7 +44,9 @@ create table public.accounts (
   account_number text not null default '',
   plan           text not null check (plan in ('beta', 'bronze', 'silver', 'gold')),
   joined         date not null,
-  created_at     timestamptz not null default now()
+  created_at     timestamptz not null default now(),
+  -- The order rows were created in; lists show accounts in this order.
+  created_seq    bigint generated always as identity unique
 );
 -- Intake accounts have no Lime account yet (''); every real number is unique.
 create unique index accounts_account_number_key on public.accounts (account_number) where account_number <> '';
@@ -74,13 +76,15 @@ create table public.deployments (
   strategy        text not null,
   description     text not null default '',
   symbols         text[] not null default '{}',
-  -- null: the deployment ran without the fail-closed risk profile.
-  risk_env        jsonb check (risk_env is null or jsonb_typeof(risk_env) = 'object'),
+  -- null: the deployment ran without the fail-closed risk profile. json, not
+  -- jsonb, so the variables keep the order the profile lists them in.
+  risk_env        json check (risk_env is null or json_typeof(risk_env) = 'object'),
   validate_orders boolean not null,
   deadlines       jsonb not null default '{}' check (jsonb_typeof(deadlines) = 'object'),
   -- One past the highest line number ever received for this deployment.
   next_line       integer not null default 1 check (next_line >= 1),
-  created_at      timestamptz not null default now()
+  created_at      timestamptz not null default now(),
+  created_seq     bigint generated always as identity unique
 );
 create index deployments_account_idx on public.deployments (account_id);
 
@@ -196,7 +200,7 @@ create table public.audit_log (
   count      integer not null default 1 check (count >= 1),
   check ((bucket is null) = (action <> 'ingest.refused'))
 );
-create unique index audit_log_bucket_key on public.audit_log (action, target, bucket) where bucket is not null;
+create unique index audit_log_bucket_key on public.audit_log (action, target, (detail ->> 'reason'), bucket) where bucket is not null;
 create index audit_log_target_idx on public.audit_log (target, at desc);
 
 -- Grants. Supabase gives anon and authenticated access to new tables in

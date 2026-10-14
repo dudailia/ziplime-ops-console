@@ -5,13 +5,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
 import { useAiStatus } from "@/lib/ai/useAiStatus";
 import { stampET } from "@/lib/format";
-import { SIGNUPS } from "@/lib/intake";
+import { useDataset } from "@/lib/data/DatasetProvider";
 import { BROKERS, BROKERS_MORE, WORKSPACE_NOTE, workspaceName } from "@/lib/intake/catalog";
-import { activeTriage, currentEmail, intakeHits, intakeStatus, STATUS_LABEL, type IntakeStatus } from "@/lib/intake/status";
+import { activeTriage, currentEmail, decisionOf, intakeHits, intakeStatus, STATUS_LABEL, type IntakeStatus } from "@/lib/intake/status";
 import { rulesTriage, type Triage } from "@/lib/intake/triage";
 import { FORM, POD_TOGGLE, skippedStepTwo, type Signup } from "@/lib/intake/types";
 import { useStore } from "@/lib/store/StoreProvider";
-import { REVIEWER, type IntakeRecord } from "@/lib/store/state";
+import { allAccounts, REVIEWER, type IntakeRecord } from "@/lib/store/state";
 import { AiOffNote, Button, Check, Chip, PageTitle, Panel } from "@/components/ui/kit";
 import { useFresh } from "@/components/ui/useFresh";
 import { DraftEditor } from "@/components/ui/DraftEditor";
@@ -115,12 +115,14 @@ function Approved({ at, children }: { at: string; children: ReactNode }) {
 
 function Detail({ s }: { s: Signup }) {
   const { state, dispatch } = useStore();
+  const ds = useDataset();
   const ai = useAiStatus();
   const rec = state.intake[s.id];
-  const status = intakeStatus(state, s);
+  const decision = decisionOf(ds, state, s.id);
+  const status = intakeStatus(ds, state, s);
   const email = currentEmail(s, rec);
-  const hits = intakeHits(state, s);
-  const decided = Boolean(rec?.decision);
+  const hits = intakeHits(ds, state, s);
+  const decided = Boolean(decision);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -139,7 +141,7 @@ function Detail({ s }: { s: Signup }) {
     }
   };
 
-  const account = rec?.decision?.accountId ? state.extraAccounts.find((a) => a.id === rec.decision!.accountId) : undefined;
+  const account = decision?.accountId ? allAccounts(ds, state).find((a) => a.id === decision.accountId) : undefined;
 
   return (
     <div className="flex flex-col gap-4">
@@ -200,13 +202,13 @@ function Detail({ s }: { s: Signup }) {
           />
         </div>
         <div className="flex flex-wrap items-center gap-3 border-t border-rule px-4 py-3">
-          {rec?.decision?.kind === "approved" ? (
-            <Approved at={rec.decision.at}>
+          {decision?.kind === "approved" ? (
+            <Approved at={decision.at}>
               <span className="inline-flex items-center gap-1 font-semibold text-ok">
                 <Check />
                 Approved
               </span>{" "}
-              by {rec.decision.by}, {stampET(rec.decision.at)}. Welcome email marked as sent; nothing leaves
+              by {decision.by}, {stampET(decision.at)}. Welcome email marked as sent; nothing leaves
               this demo.{" "}
               {account && (
                 <Link href={`/ops/accounts/${account.id}`} className="font-semibold underline">
@@ -214,10 +216,10 @@ function Detail({ s }: { s: Signup }) {
                 </Link>
               )}
             </Approved>
-          ) : rec?.decision?.kind === "dismissed" ? (
+          ) : decision?.kind === "dismissed" ? (
             <>
               <p className="text-[13px] text-ink-2">
-                Dismissed by {rec.decision.by}, {stampET(rec.decision.at)}.
+                Dismissed by {decision.by}, {stampET(decision.at)}.
               </p>
               <Button kind="quiet" onClick={() => dispatch({ type: "intake/reopen", id: s.id })}>
                 Reopen
@@ -248,6 +250,7 @@ function Detail({ s }: { s: Signup }) {
 
 export function IntakeView() {
   const { state } = useStore();
+  const ds = useDataset();
   const params = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -255,10 +258,10 @@ export function IntakeView() {
 
   const rows = useMemo(
     () =>
-      SIGNUPS.map((s) => ({ s, status: intakeStatus(state, s), t: activeTriage(s, state.intake[s.id]) })).sort(
+      ds.signups.map((s) => ({ s, status: intakeStatus(ds, state, s), t: activeTriage(s, state.intake[s.id]) })).sort(
         (a, b) => Date.parse(b.s.ts) - Date.parse(a.s.ts),
       ),
-    [state],
+    [ds, state],
   );
   const counts = useMemo(() => {
     const c: Record<IntakeStatus, number> = { review: 0, flagged: 0, approved: 0, dismissed: 0 };
@@ -267,7 +270,7 @@ export function IntakeView() {
   }, [rows]);
   const shown = rows.filter((r) => (filter === "all" ? true : filter === "high" ? r.t.priority.level === "high" : r.status === filter));
   const selectedId = params.get("id") ?? shown[0]?.s.id ?? null;
-  const selected = SIGNUPS.find((s) => s.id === selectedId) ?? null;
+  const selected = ds.signups.find((s) => s.id === selectedId) ?? null;
   const pick = (id: string) => {
     router.replace(`${pathname}?id=${id}`, { scroll: false });
     if (window.matchMedia("(max-width: 1023px)").matches) {

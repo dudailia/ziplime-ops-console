@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { RULES, runRules, type RuleId } from "@/lib/automations";
-import { CALENDAR } from "@/lib/crm";
+import { useDataset } from "@/lib/data/DatasetProvider";
 import { sessionLabel, stampET } from "@/lib/format";
 import { useStore } from "@/lib/store/StoreProvider";
 import { REVIEWER } from "@/lib/store/state";
@@ -27,13 +27,14 @@ function Toggle({ on, onChange, label }: { on: boolean; onChange: () => void; la
 
 export function AutomationsView() {
   const { state, dispatch } = useStore();
+  const ds = useDataset();
   const accounts = useAccounts();
   const [justRan, setJustRan] = useState<string | null>(null);
   const name = (id: string) => accounts.find((a) => a.id === id)?.trader ?? id;
 
   const runNow = () => {
     const at = new Date().toISOString();
-    const result = runRules(state, state.rules, at);
+    const result = runRules(ds, state, state.rules, at);
     const id = `run-${state.runs.length + 1}-${Date.parse(at)}`;
     dispatch({ type: "rules/run", run: { id, at, by: REVIEWER, lines: result.lines }, tickets: result.tickets, activity: result.activity });
     setJustRan(id);
@@ -46,7 +47,7 @@ export function AutomationsView() {
     <div>
       <PageTitle
         title="Automations"
-        sub={`Rules run over the dry-run files as of ${sessionLabel(CALENDAR.asOf, true)}. They open tickets and write notes for a person. They never send a reply or switch anything to live.`}
+        sub={`Rules run over the dry-run files as of ${sessionLabel(ds.calendar.asOf, true)}. They open tickets and write notes for a person. They never send a reply or switch anything to live.`}
       >
         <Button kind="primary" tour="run-rules" onClick={runNow} disabled={!Object.values(state.rules).some(Boolean)}>
           Run rules now

@@ -1,6 +1,7 @@
 import { aiClient, aiModel, aiOff, badRequest, textOf, upstreamError } from "@/lib/ai/server";
 import { guard } from "@/lib/guard";
-import { signupById, SIGNUPS } from "@/lib/intake";
+import { getDataSource } from "@/lib/data/server";
+import { signupById } from "@/lib/intake";
 import { BROKERS, TRADER_TYPES, WORKSPACES, type TraderType, type WorkspaceKey } from "@/lib/intake/catalog";
 import { rulesTriage, type Triage } from "@/lib/intake/triage";
 import type { Asset } from "@/lib/intake/types";
@@ -85,7 +86,8 @@ export async function POST(request: Request) {
   } catch {
     return badRequest("Body must be JSON.");
   }
-  const signup = typeof id === "string" ? signupById(id) : undefined;
+  const ds = await (await getDataSource()).load();
+  const signup = typeof id === "string" ? signupById(ds.signups, id) : undefined;
   if (!signup) return badRequest("Unknown signup id.");
   const client = aiClient();
   if (!client) return aiOff();
@@ -133,7 +135,7 @@ export async function POST(request: Request) {
       priority: rules.priority,
       email: { subject: out.emailSubject, body: out.emailBody },
     };
-    const others = SIGNUPS.filter((s) => s.id !== signup.id).map((s) => s.email);
+    const others = ds.signups.filter((s) => s.id !== signup.id).map((s) => s.email);
     const { hits } = guard(`${triage.email.subject}\n${triage.email.body}`, { intake: true, otherClients: others });
     return Response.json({ triage, hits, model: message.model });
   } catch (exc) {

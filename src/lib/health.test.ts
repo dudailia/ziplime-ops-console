@@ -109,9 +109,9 @@ describe("health of the seeded accounts", () => {
 
 describe("front door numbers", async () => {
   const { frontDoorNumbers } = await import("./crm");
-  const { DEPLOYMENTS, SEED_ACCOUNTS } = await import("./seed");
+  const { STATIC_DATASET } = await import("./data/static");
   it("counts orders, refusals and accounts that need help from the seed", () => {
-    expect(frontDoorNumbers(SEED_ACCOUNTS, DEPLOYMENTS)).toEqual({
+    expect(frontDoorNumbers(STATIC_DATASET)).toEqual({
       orders: 487,
       sessions: 135,
       deployments: 14,

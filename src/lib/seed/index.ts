@@ -1,5 +1,6 @@
 // Seed data, bundled at build time. The .jsonl files are the engine's own
-// output (scripts/generate_seed.py); accounts.json is hand-written.
+// output (scripts/generate_seed.py); accounts.json is hand-written. Pages read
+// it through the data source (lib/data), never from here directly.
 import accountsJson from "../../../data/seed/accounts.json";
 import manifestJson from "../../../data/seed/manifest.json";
 import harborMomentum from "../../../data/seed/dryruns/harbor-momentum.jsonl?raw";
@@ -16,8 +17,6 @@ import nadiaIntraday from "../../../data/seed/dryruns/nadia-intraday.jsonl?raw";
 import nadiaIndexTest from "../../../data/seed/dryruns/nadia-index-test.jsonl?raw";
 import jonasBreakout from "../../../data/seed/dryruns/jonas-breakout.jsonl?raw";
 import jonasEtf from "../../../data/seed/dryruns/jonas-etf.jsonl?raw";
-import { parseDryRun } from "../dryrun/parse";
-import type { ParsedFile } from "../dryrun/types";
 import type { PlanKey } from "../plans";
 
 export type RiskEnv = Partial<Record<
@@ -89,27 +88,3 @@ export const RAW: Record<string, string> = {
   "jonas-etf": jonasEtf,
 };
 
-export function rawSeedFile(deploymentId: string): string {
-  const text = RAW[deploymentId];
-  if (typeof text !== "string") throw new Error(`No seed file for ${deploymentId}`);
-  return text;
-}
-
-const parsedCache = new Map<string, ParsedFile>();
-
-export function seedFile(deploymentId: string): ParsedFile {
-  let parsed = parsedCache.get(deploymentId);
-  if (!parsed) {
-    parsed = parseDryRun(rawSeedFile(deploymentId), `${deploymentId}.jsonl`);
-    parsedCache.set(deploymentId, parsed);
-  }
-  return parsed;
-}
-
-export function deploymentById(id: string): Deployment | undefined {
-  return DEPLOYMENTS.find((d) => d.id === id);
-}
-
-export function deploymentsFor(accountId: string): Deployment[] {
-  return DEPLOYMENTS.filter((d) => d.account === accountId);
-}

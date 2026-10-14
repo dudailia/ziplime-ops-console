@@ -13,6 +13,8 @@ import { isIsoWithOffset, toEt } from "./time";
 type FieldKind =
   | "string"
   | "nullable-string"
+  | "decimal"
+  | "nullable-decimal"
   | "number"
   | "boolean"
   | "iso"
@@ -40,9 +42,9 @@ const SPECS: Record<EventKind, Record<string, FieldKind>> = {
     dry_run_id: "string",
     client_order_id: "string",
     side: ["buy", "sell"],
-    quantity: "string",
+    quantity: "decimal",
     order_type: ["market", "limit"],
-    limit_price: "nullable-string",
+    limit_price: "nullable-decimal",
     time_in_force: "string",
     route: "string",
     broker_validated: "boolean",
@@ -56,6 +58,8 @@ const SPECS: Record<EventKind, Record<string, FieldKind>> = {
     symbol: "nullable-string",
   },
 };
+
+const DECIMAL = /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/;
 
 function describe(value: unknown): string {
   if (value === null) return "null";
@@ -76,6 +80,16 @@ function checkField(name: string, kind: FieldKind, value: unknown): string | nul
       return value === null || typeof value === "string"
         ? null
         : `"${name}" must be a string or null, got ${describe(value)}`;
+    // Decimal strings, as the engine writes Decimal: quantity unsigned, a limit price positive.
+    case "decimal":
+    case "nullable-decimal":
+      if (value === null && kind === "nullable-decimal") return null;
+      if (typeof value !== "string") return `"${name}" must be a string, got ${describe(value)}`;
+      if (!DECIMAL.test(value)) return `"${name}" must be a decimal string, got ${JSON.stringify(value)}`;
+      if (kind === "decimal" ? Number(value) < 0 : Number(value) <= 0) {
+        return `"${name}" must be ${kind === "decimal" ? "zero or more" : "more than zero"}, got ${value}`;
+      }
+      return null;
     case "number":
       return typeof value === "number" && Number.isFinite(value)
         ? null
@@ -97,9 +111,10 @@ function snippet(raw: string): string {
 }
 
 // Distributes over the union, so narrowing on `event` still works.
-type Unplaced = DryRunEvent extends infer E ? (E extends DryRunEvent ? Omit<E, "clock"> : never) : never;
+export type Unplaced = DryRunEvent extends infer E ? (E extends DryRunEvent ? Omit<E, "clock"> : never) : never;
 
-function parseLine(raw: string, line: number): Unplaced | ParseError {
+/** One line, checked against the record shapes the engine writes. No clock position yet. */
+export function parseRecord(raw: string, line: number): Unplaced | ParseError {
   let value: unknown;
   try {
     value = JSON.parse(raw);
@@ -146,7 +161,7 @@ function parseLine(raw: string, line: number): Unplaced | ParseError {
   return { ...known, event, line, raw, extra } as Unplaced;
 }
 
-function isError(value: Unplaced | ParseError): value is ParseError {
+export function isParseError(value: Unplaced | ParseError): value is ParseError {
   return "message" in value && !("event" in value);
 }
 
@@ -227,8 +242,8 @@ export function parseDryRun(text: string, source: string): ParsedFile {
   lines.forEach((rawLine, index) => {
     const raw = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
     if (raw.trim() === "") return;
-    const result = parseLine(raw, index + 1);
-    if (isError(result)) errors.push(result);
+    const result = parseRecord(raw, index + 1);
+    if (isParseError(result)) errors.push(result);
     else parsed.push(result);
   });
 

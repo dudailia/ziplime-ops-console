@@ -3,8 +3,9 @@ import { otherClients } from "@/lib/crm";
 import { explain } from "@/lib/dryrun/explain";
 import { readiness } from "@/lib/dryrun/metrics";
 import { guard } from "@/lib/guard";
+import { fileOf } from "@/lib/data/lookup";
+import { getDataSource } from "@/lib/data/server";
 import { linkedEvents } from "@/lib/inbox";
-import { SEED_ACCOUNTS, seedFile } from "@/lib/seed";
 
 // Drafts a support reply. The prompt carries only this account's data: the
 // thread, the linked lines (looked up here, server side, in this account's own
@@ -31,8 +32,9 @@ export async function POST(request: Request) {
     return badRequest("Body must be JSON.");
   }
   const t = body.ticket;
-  const account = SEED_ACCOUNTS.find((a) => a.id === t?.accountId);
-  if (!t || !account) return badRequest("ticket.accountId must be a seeded account.");
+  const ds = await (await getDataSource()).load();
+  const account = ds.accounts.find((a) => a.id === t?.accountId);
+  if (!t || !account) return badRequest("ticket.accountId must be a known account.");
   const messages = (Array.isArray(t.messages) ? (t.messages as InMessage[]) : [])
     .slice(-10)
     .filter((m) => typeof m.body === "string")
@@ -44,8 +46,8 @@ export async function POST(request: Request) {
   const client = aiClient();
   if (!client) return aiOff();
 
-  const facts = linkedEvents({ accountId: account.id, links }).map(({ deployment, profile, events }) => {
-    const file = seedFile(deployment.id);
+  const facts = linkedEvents(ds, { accountId: account.id, links }).map(({ deployment, profile, events }) => {
+    const file = fileOf(ds, deployment.id);
     const sessions = new Set(events.map((e) => e.clock.session));
     return {
       strategy: deployment.strategy,
@@ -81,7 +83,7 @@ export async function POST(request: Request) {
       ],
     });
     const text = textOf(message);
-    const { hits } = guard(text, { otherClients: otherClients(account.id, SEED_ACCOUNTS) });
+    const { hits } = guard(text, { otherClients: otherClients(account.id, ds.accounts) });
     return Response.json({ text, hits, model: message.model });
   } catch (exc) {
     return upstreamError(exc);

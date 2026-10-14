@@ -1,3 +1,4 @@
+import type { Dataset } from "../data/types";
 import type { State } from "../store/state";
 import { currentReply, needsReply, replyHits } from "../store/state";
 import type { Ticket } from ".";
@@ -11,8 +12,8 @@ export const TICKET_STATUS_LABEL: Record<TicketStatus, string> = {
   replied: "Replied",
 };
 
-export function ticketStatus(state: State, t: Ticket): TicketStatus {
+export function ticketStatus(ds: Dataset, state: State, t: Ticket): TicketStatus {
   const reply = currentReply(state, t);
-  if (reply && reply.text.trim()) return replyHits(state, t, reply.text).length ? "flagged" : "in-review";
+  if (reply && reply.text.trim()) return replyHits(ds, state, t, reply.text).length ? "flagged" : "in-review";
   return needsReply(state, t) ? "needs-reply" : "replied";
 }
