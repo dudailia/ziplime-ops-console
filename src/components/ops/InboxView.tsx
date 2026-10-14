@@ -68,7 +68,7 @@ function LinkedLines({ ticket }: { ticket: Ticket }) {
               const x = e.event === "refuse" || e.event === "skip" ? explain(e, profile) : null;
               const isOpen = open === key;
               return (
-                <li key={key} className="border-b border-rule last:border-b-0">
+                <li key={key} className="row border-b border-rule last:border-b-0">
                   <button
                     type="button"
                     aria-expanded={isOpen}
@@ -304,12 +304,28 @@ export function InboxView() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="min-w-0 lg:col-span-4">
           <ul className="overflow-hidden rounded-panel border border-rule bg-surface">
-            {shown.length === 0 && <li className="px-4 py-6 text-[13px] text-ink-2">No tickets here.</li>}
+            {shown.length === 0 && (
+              <li className="px-4 py-6 text-[13px] text-ink-2">
+                {filter === "flagged"
+                  ? "No draft is flagged. The guard checks every draft as it's written."
+                  : filter === "replied"
+                    ? "Nothing replied yet. Approve a reply and it lands here."
+                    : filter === "in-review"
+                      ? "No drafts waiting for review. Insert a template reply on any ticket to start one."
+                      : "No tickets match."}{" "}
+                {filter !== "all" && (
+                  <button type="button" className="font-semibold text-ink underline" onClick={() => setFilter("all")}>
+                    Show all tickets
+                  </button>
+                )}
+              </li>
+            )}
             {shown.map(({ t, status, account }) => (
               <li key={t.id} className="border-b border-rule last:border-b-0">
                 <button
                   type="button"
                   aria-current={t.id === selectedId ? "true" : undefined}
+                  data-nav-item
                   onClick={() => pick(t.id)}
                   className={`flex w-full flex-col px-4 py-2.5 text-left hover:bg-sunk ${t.id === selectedId ? "bg-sunk shadow-[inset_3px_0_0_var(--accent-ink)]" : ""}`}
                 >

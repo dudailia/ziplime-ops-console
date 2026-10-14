@@ -36,6 +36,9 @@ export default function Home() {
           <Link href="/portal" className="press rounded-[4px] border border-rule-strong bg-surface px-4 py-2.5 text-[14px] font-semibold text-ink hover:border-ink hover:bg-sunk">
             Open the portal
           </Link>
+          <span className="hidden text-[12px] text-ink-3 lg:inline">
+            Press <kbd className="kbd">t</kbd> for the tour, <kbd className="kbd">?</kbd> for shortcuts
+          </span>
         </div>
       </section>
 

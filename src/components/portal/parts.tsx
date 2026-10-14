@@ -155,7 +155,7 @@ export function NetShares({ session }: { session: Session }) {
           </thead>
           <tbody className="t-cond tabular-nums">
             {rows.map((r) => (
-              <tr key={r.symbol} className="border-b border-rule last:border-b-0">
+              <tr key={r.symbol} className="row border-b border-rule last:border-b-0">
                 <td className="px-4 py-1.5 font-semibold text-ink">{r.symbol}</td>
                 <td className="px-2 py-1.5 text-right text-ink">{r.bought || ""}</td>
                 <td className="px-2 py-1.5 text-right text-ink">{r.sold || ""}</td>
@@ -214,7 +214,7 @@ export function Readiness({ file, profile }: { file: ParsedFile; profile: Profil
       </div>
       <ul>
         {checks.map((c) => (
-          <li key={c.id} className="flex gap-2.5 border-b border-rule px-4 py-2 last:border-b-0">
+          <li key={c.id} className="row flex gap-2.5 border-b border-rule px-4 py-2 last:border-b-0">
             <Mark pass={c.pass} />
             <div className="min-w-0">
               <div className="text-[13px] font-semibold text-ink">{c.label}</div>

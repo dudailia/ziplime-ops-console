@@ -90,7 +90,7 @@ export function ParseReport({ file }: { file: ParsedFile }) {
           </header>
           <ul className="max-h-60 overflow-auto">
             {file.errors.map((e) => (
-              <li key={e.line} className="border-b border-rule px-4 py-2 last:border-b-0">
+              <li key={e.line} className="row border-b border-rule px-4 py-2 last:border-b-0">
                 <div className="text-[13px] text-ink">
                   <span className="font-semibold">Line {e.line}:</span> {e.message}
                 </div>

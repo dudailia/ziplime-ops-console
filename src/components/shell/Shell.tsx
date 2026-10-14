@@ -7,6 +7,7 @@ import { useAiStatus } from "@/lib/ai/useAiStatus";
 import { useStore } from "@/lib/store/StoreProvider";
 import { useNavBadges } from "@/lib/store/selectors";
 import { TourLayer } from "@/components/tour/TourLayer";
+import { Shortcuts } from "./Shortcuts";
 import { useTour } from "@/components/tour/tourStore";
 import { TOUR } from "@/lib/tour";
 import { IconAccounts, IconInbox, IconIntake, IconReview, IconRules } from "./icons";
@@ -201,6 +202,18 @@ function ResetDemo({ compact = false }: { compact?: boolean }) {
   );
 }
 
+function ShortcutHint() {
+  return (
+    <button
+      type="button"
+      onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "?" }))}
+      className="flex items-center gap-1.5 text-left text-[12px] text-ink-2 hover:text-ink"
+    >
+      <kbd className="kbd">?</kbd> Keyboard shortcuts
+    </button>
+  );
+}
+
 /** Shown while a tour is paused, so it can be picked up from any page. */
 function ResumeTour() {
   const { tour, act } = useTour();
@@ -267,6 +280,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </Suspense>
           <div className="mt-auto flex flex-col gap-3 px-3">
             <ResumeTour />
+            <ShortcutHint />
             <AiLine />
             <ThemeToggle />
             <ResetDemo />
@@ -315,6 +329,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <Suspense fallback={null}>
         <TourLayer />
       </Suspense>
+      <Shortcuts />
     </div>
   );
 }

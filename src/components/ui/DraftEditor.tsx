@@ -55,6 +55,9 @@ export function DraftEditor({
 }
 
 export function GuardReport({ text, hits, blocked = false }: { text: string; hits: GuardHit[]; blocked?: boolean }) {
+  if (!text.trim() && !blocked) {
+    return <p className="text-[12px] text-ink-2">Nothing to check yet. Insert the template reply or write one, and the guard reads it as you type.</p>;
+  }
   if (hits.length === 0 && blocked) return <p className="text-[12px] font-semibold text-refuse">Guard blocked approval. Fix the subject line.</p>;
   if (hits.length === 0) {
     return (

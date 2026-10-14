@@ -156,6 +156,7 @@ export function OrderTape({
           </select>
           <input
             type="search"
+            data-search
             aria-label="Search by order id, symbol or line"
             placeholder="Order id or line"
             value={filter.query}
@@ -201,6 +202,7 @@ export function OrderTape({
               <button
                 type="button"
                 aria-expanded={open}
+                data-nav-item
                 onClick={() => onSelect(open ? null : e.line)}
                 className={`w-full px-4 py-1.5 text-left text-[13px] transition-colors duration-150 hover:bg-sunk ${GRID} flex flex-wrap items-center gap-x-3 gap-y-0.5`}
               >

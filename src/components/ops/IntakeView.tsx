@@ -305,12 +305,26 @@ export function IntakeView() {
         <div className="min-w-0 lg:col-span-5">
           <div className="overflow-hidden rounded-panel border border-rule bg-surface">
             <ul className="lg:max-h-[calc(100dvh-220px)] lg:overflow-y-auto">
-              {shown.length === 0 && <li className="px-4 py-6 text-[13px] text-ink-2">Nothing here. Pick another filter.</li>}
+              {shown.length === 0 && (
+                <li className="px-4 py-6 text-[13px] text-ink-2">
+                  {filter === "approved"
+                    ? "No signup approved yet. Approving one creates its Beta account in the CRM."
+                    : filter === "flagged"
+                      ? "No welcome email is flagged. The guard checks each one as it's edited."
+                      : filter === "dismissed"
+                        ? "Nothing dismissed."
+                        : "No signups match."}{" "}
+                  <button type="button" className="font-semibold text-ink underline" onClick={() => setFilter("all")}>
+                    Show all signups
+                  </button>
+                </li>
+              )}
               {shown.map(({ s, status, t }) => (
                 <li key={s.id} className="border-b border-rule last:border-b-0">
                   <button
                     type="button"
                     aria-current={s.id === selectedId ? "true" : undefined}
+                    data-nav-item
                     onClick={() => pick(s.id)}
                     className={`grid w-full grid-cols-[1fr_auto] gap-x-3 px-4 py-2 text-left hover:bg-sunk ${s.id === selectedId ? "bg-sunk shadow-[inset_3px_0_0_var(--accent-ink)]" : ""}`}
                   >

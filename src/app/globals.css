@@ -356,3 +356,13 @@ mark.guard-hit {
     transform: none;
   }
 }
+
+/* Every row tints on hover, so the eye can track across a dense line. */
+.row {
+  transition: background-color 150ms ease;
+}
+@media (hover: hover) {
+  .row:hover {
+    background-color: var(--sunk);
+  }
+}

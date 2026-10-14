@@ -13,7 +13,7 @@ export function AccountTickets({ accountId }: { accountId: string }) {
   return (
     <Panel title="Tickets" aside={tickets.length ? <Link className="underline" href={`/ops/inbox?account=${accountId}`}>Open in inbox</Link> : undefined}>
       {tickets.length === 0 ? (
-        <p className="px-4 py-3 text-[13px] text-ink-2">No tickets.</p>
+        <p className="px-4 py-3 text-[13px] text-ink-2">No tickets. When this trader writes in, or a rule opens one, it shows here.</p>
       ) : (
         <ul>
           {tickets.map((t) => {

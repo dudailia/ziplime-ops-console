@@ -114,6 +114,7 @@ export function AccountsView() {
         {level !== "all" && <span className="text-[12px] text-ink-2">Showing {HEALTH_LABEL[level].toLowerCase()} only</span>}
         <input
           type="search"
+          data-search
           aria-label="Search accounts"
           placeholder="Name, company, account number"
           value={query}
@@ -152,7 +153,7 @@ export function AccountsView() {
                   className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 border-b border-rule px-4 py-3 transition-colors duration-150 last:border-b-0 hover:bg-sunk md:table-row md:p-0"
                 >
                   <td className="md:px-3 md:py-2.5">
-                    <Link href={`/ops/accounts/${s.account.id}`} className="font-semibold text-ink underline-offset-2 hover:underline">
+                    <Link href={`/ops/accounts/${s.account.id}`} data-nav-item className="font-semibold text-ink underline-offset-2 hover:underline">
                       {s.account.trader}
                     </Link>
                     <div className="text-[12px] text-ink-2">

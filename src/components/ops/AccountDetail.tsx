@@ -20,7 +20,7 @@ type Entry = { at: string; text: ReactNode; by: string; kind: string };
 function DeploymentCard({ s }: { s: DeploymentSummary }) {
   const d = s.deployment;
   return (
-    <li className="border-b border-rule px-4 py-3 last:border-b-0">
+    <li className="row border-b border-rule px-4 py-3 last:border-b-0">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="text-[14px] font-semibold text-ink">{d.strategy}</span>
         <span className="text-[12px] text-ink-2">{d.description}</span>
@@ -251,7 +251,7 @@ export function AccountDetail() {
           <Panel title="Activity">
             <ol className="max-h-96 overflow-y-auto">
               {entries.map((e, i) => (
-                <li key={i} className="border-b border-rule px-4 py-2 text-[13px] last:border-b-0">
+                <li key={i} className="row border-b border-rule px-4 py-2 text-[13px] last:border-b-0">
                   <div className="text-ink">{e.text}</div>
                   <div className="text-[11px] text-ink-3">
                     {stampET(e.at)}, {e.by}

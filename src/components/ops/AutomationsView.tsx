@@ -70,7 +70,7 @@ export function AutomationsView() {
           <Panel title="Rules">
             <ul>
               {RULES.map((r) => (
-                <li key={r.id} className="flex gap-3 border-b border-rule px-4 py-3 last:border-b-0">
+                <li key={r.id} className="row flex gap-3 border-b border-rule px-4 py-3 last:border-b-0">
                   <Toggle on={state.rules[r.id]} onChange={() => dispatch({ type: "rules/toggle", rule: r.id as RuleId })} label={r.name} />
                   <div className="min-w-0">
                     <div className={`text-[14px] font-semibold ${state.rules[r.id] ? "text-ink" : "text-ink-3"}`}>{r.name}</div>
@@ -106,7 +106,7 @@ export function AutomationsView() {
                     ) : (
                       <ul>
                         {run.lines.map((l, i) => (
-                          <li key={i} className="grid grid-cols-1 gap-x-3 border-t border-rule px-4 py-1.5 text-[12px] sm:grid-cols-[150px_120px_1fr]">
+                          <li key={i} className="row grid grid-cols-1 gap-x-3 border-t border-rule px-4 py-1.5 text-[12px] sm:grid-cols-[150px_120px_1fr]">
                             <span className="t-cond text-ink-2">{RULES.find((r) => r.id === l.rule)?.name}</span>
                             <Link href={`/ops/accounts/${l.accountId}`} className="t-cond font-semibold text-ink underline-offset-2 hover:underline">
                               {name(l.accountId)}
