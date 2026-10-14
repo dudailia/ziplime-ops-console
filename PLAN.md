@@ -491,3 +491,26 @@ In database mode, Approve on a Beta signup calls the approve route. One transact
 | 15 | Forwarder: body bytes per retry, empty batches, supervisor, oversize line, secret in shell history, secret leaks (minor) | All addressed in 15.6 and 15.7, with tests. |
 | 16 | Cut `accounts.from_signup`, the events-to-sessions foreign key, `source = 'seed'`; say what a replay returns; rotation (minor) | Cut all three (the seed load is marked by its audit actor). A replay returns the original `batch_id`. A rotate route is built. |
 | 17 | Approving twice, or two approvals at once (minor) | 409 with no new key; the signup row is locked; account ids are picked under an advisory lock. |
+
+### 15.11 Built: what changed from the plan, and why
+
+Each of these came up while building, with a test where it matters.
+
+- **Rows keep their order with `created_seq`.** The seed loader first stamped rows with `clock_timestamp()`, but PGlite's clock only resolves milliseconds, so rows tied and the contract test failed on deployment order. Accounts and deployments now have an identity column that records insertion order.
+- **`risk_env` is `json`, not `jsonb`.** `jsonb` reorders keys, and the risk profile is shown in the order it is listed.
+- **Refused calls are counted per deployment, reason and minute** (the unique index includes `detail ->> 'reason'`), so a bad signature and an unknown id don't share one counter.
+- **The parser now matches what Postgres accepts.** `Date.parse` reads 30 February as 2 March and accepts year 0 and a +23:00 offset; the parser now checks real calendar dates, offsets up to 15:59, finite decimals (quantity zero or more, limit price above zero) and NUL characters. The 30 February case was a bug in the static demo too. Tests in `parse.test.ts`.
+- **A value the database still refuses fails only its line**, under a savepoint, and is stored as rejected. If that ever happens, the rebuilt file still shows the line as an event while `sessions` leaves it out; the tightened parser is there so it doesn't. Tested with a constraint only the test database has.
+- **Lines over 16 KB are stored cut to 16 KB**, as rejected, so the console shows them at their number.
+- **Dismissing a signup stays in the browser** in database mode, like replies (D9 covers approvals only).
+- **The proxy skips all of `/_next/`**, which serves only build output; page data travels on page URLs, which it covers.
+- **The account page marks itself as request-time in database builds**, because Cache Components refuses metadata that reads the database on a page that is otherwise prerenderable. A static build doesn't include the marker.
+- **Activity shows the database approval** from the signup row, since database mode doesn't keep it in browser state.
+- **Refresh on navigation compares the path value**, not the router object.
+- **Not a bug, but it looked like one:** the dev server reloads a page in a loop the first time Turbopack compiles a route. The commit before this work does the same; once compiled, every page settles at two requests.
+- **Forwarder rotation:** when the file is replaced, lines written to the old file after the forwarder's last read are not sent. ziplime appends to one file, so this needs a rotation the engine doesn't do.
+
+Not done here, and why:
+- The concurrency test needs a real Postgres (`TEST_DATABASE_URL`); none is available on this machine, so it is skipped and says so.
+- Two Supabase details can only be checked on a real project: that the connection role may `SET ROLE authenticated` (Supabase's `postgres` role normally can), and that no default privileges re-grant new tables to `anon` after the migration's revoke. `docs/PUBLISH.md` lists both as checks.
+- `npm audit` reports 8 advisories, all in dev-only tools that were already there (`eslint-config-next`, `vitest`); fixing them means major upgrades of the test and lint stack, which this run doesn't do.
