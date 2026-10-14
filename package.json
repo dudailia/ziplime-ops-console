@@ -13,7 +13,9 @@
     "seed": "PYTHONDONTWRITEBYTECODE=1 ../ziplime/.venv/bin/python scripts/generate_seed.py",
     "typecheck": "tsc --noEmit",
     "test:forwarder": "PYTHONDONTWRITEBYTECODE=1 python3 -m pytest forwarder -q -p no:cacheprovider",
-    "test:ingest": "playwright test -c playwright.ingest.config.ts"
+    "test:ingest": "playwright test -c playwright.ingest.config.ts",
+    "db:migrate": "DB_TASK=migrate vitest run --config vitest.scripts.config.ts",
+    "db:seed": "DB_TASK=seed vitest run --config vitest.scripts.config.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",

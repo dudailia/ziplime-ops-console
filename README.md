@@ -7,6 +7,9 @@ Open `/` and press **Take the 3-minute tour**. Five steps, one sentence each, on
 - **Client portal**: a trader opens a dry-run file and sees which orders would have gone out, which were refused or skipped, and why, on the 09:30 to 16:00 ET clock.
 - **Ops CRM**: the Limex team sees account health, triages Beta signups, answers support tickets with drafts grounded in the account's own file, and runs automation rules.
 - **People decide**: nothing counts as sent and no account is created until a person clicks Approve, and a guard blocks approval while the text promises returns, gives investment advice or mentions another client.
+- **A real integration path**: a forwarder next to the engine sends new dry-run lines to a signed webhook, the console stores them in Postgres (Supabase), and approving a signup issues that trader's ingest key. Without a database it is the static demo, unchanged.
+
+How it was built with AI, and how each part was checked: [docs/HOW_I_BUILT_THIS.md](docs/HOW_I_BUILT_THIS.md), also at `/about`.
 
 ![Front door](docs/screenshots/front-dark.png)
 
@@ -21,6 +24,34 @@ This console only reads that file:
 - `src/lib/dryrun/metrics.ts` computes net shares and the six "Ready to go live?" checks. `src/lib/health.ts` computes account health.
 
 Nothing here imports, edits or installs into `../ziplime`.
+
+## Integration: from the engine to the console
+
+```
+ trader's machine                                    the console
+ ----------------                                    -----------
+ ziplime, dry run                                    POST /api/ingest/{deployment}
+   dry_run_file="run/x.jsonl"                          HMAC-SHA256 of "<timestamp>.<body>", 5 min window,
+        | appends one line per order event             1 MB cap, per-line results, same batch twice = replay
+        v                                                     |
+ run/x.jsonl  --new lines-->  forwarder  --signed batch-->    v
+                              (Python, stdlib;          Postgres: dry_run_events (every line, accepted or
+                               remembers its offset,     rejected), sessions, ingest_batches, audit_log, ...
+                               retries with backoff)     row-level security; keys in a private schema
+                                                              |
+                                                              v
+                                                        one data interface (lib/data) -> every page
+                                                        static seed when there is no database
+```
+
+- **Two data sources behind one interface** (`src/lib/data`): the bundled seed, and Postgres when `DATABASE_URL` is set at build time. A contract suite runs the same checks on both; the database must give back every seed file byte for byte. The database rebuilds each file from its stored lines, so the one parser the console has gives the same events and line numbers.
+- **Schema and RLS** in `supabase/migrations/`, plain Postgres: foreign keys everywhere, per-event check constraints, `unique (deployment_id, content_hash)`. A trader reads only their own rows, ops reads all, `anon` gets nothing, and the app's own page reads go through RLS as ops.
+- **The webhook** (`openapi.yaml`): an unknown deployment gets the same 401 as a bad signature; batches for one deployment run under a row lock; a bad line never blocks the good ones.
+- **The forwarder** (`forwarder/ziplime_forwarder.py`): reads only complete lines, signs, retries 429 and 5xx, rewinds on a gap, and saves its place only after a 200.
+- **Onboarding**: in database mode, approving a signup creates the account, a first deployment and a 32-byte ingest key, shown once with the exact commands. The account page shows every batch and every rejected line.
+- **Database mode is private**: the whole console sits behind HTTP Basic auth (`OPS_PASSWORD`), except the signed webhook.
+
+The plan, its review (17 findings, two blockers, all fixed before code) and what changed while building are in `PLAN.md` section 15.
 
 ### Where the seed files come from
 
@@ -50,34 +81,42 @@ ANTHROPIC_MODEL=claude-sonnet-5-5   # optional; this is the default
 
 The key stays on the server. Three routes use it: `/api/explain`, `/api/draft` and `/api/triage`. `/api/ai-status` reports only whether a key is set. Each prompt carries one account's or one signup's data. `/api/draft` looks up the linked dry-run lines server side, in that account's own files.
 
-State lives in `localStorage` (`ziplime-ops-console:v1`, and `ziplime-ops-console:tour` for the tour). **Reset demo** in the rail clears it. Opened `.jsonl` files stay in memory for the tab and are never uploaded.
+### With a database
+
+No Supabase CLI or Docker is needed locally: PGlite runs real Postgres inside Node and applies the same migrations.
+
+```
+DATABASE_URL=pglite:.data/dev OPS_PASSWORD=$(openssl rand -hex 16) npm run dev
+```
+
+Sign in with any user name and that password. The database is created, migrated and seeded on first open; `.data/` is git-ignored because it holds ingest keys. For a real Supabase project, see [docs/PUBLISH.md](docs/PUBLISH.md) (`supabase db push`, then `npm run db:seed`).
+
+State lives in `localStorage` (`ziplime-ops-console:v1`, `ziplime-ops-console:v1:database` in database mode, and `ziplime-ops-console:tour` for the tour). **Reset demo** in the rail clears it. Opened `.jsonl` files stay in memory for the tab and are never uploaded.
 
 Keyboard: `?` shows every shortcut. `t` starts or resumes the tour, `g` then a letter opens a page (`r` review, `a` accounts, `i` intake, `s` support inbox, `u` automations, `h` front page), `j` and `k` move through list rows, `/` focuses the page's search. Shortcuts never fire while you type.
 
 ## Tests
 
 ```
-npm test             # vitest: 233 tests
-npm run test:e2e     # Playwright over the production build, desktop and a 390 px phone: 26 tests (3 run on one size only)
-npm run lint
-npm run build
+npm test               # vitest: 326 tests, 2 skipped on purpose (one needs a real Postgres)
+npm run test:forwarder # pytest: 19 forwarder tests
+npm run test:e2e       # Playwright over the production build, desktop and a 390 px phone: 36 tests (3 run on one size only)
+npm run test:ingest    # the end-to-end ingest test on a fresh database
+npm run lint && npm run typecheck && npm run build
 ```
 
-The vitest suite covers:
+What they cover:
 
-- **Parser**: malformed lines, wrong types, CRLF, BOM, DST, cancels across sessions.
-- **Seed files**: every one parses cleanly and matches the manifest.
-- **Explanations**: every engine message is mapped, and the regexes are anchored.
-- **Readiness and health**: each threshold at its boundary, plus the expected colour for every seeded account.
-- **Guard**: each category, word boundaries, other-client identifiers, and the intake-only checks.
-- **Intake triage**: per persona, broker tags and priority.
-- **Approve flows**: exactly one account per signup; nothing sent while the guard flags the text.
-- **Automations**: the second run only skips, and only Harbor Lane is ready for a live review.
-- **Tour**: the reducer, the saved state (a reload mid-tour comes back paused), and that every tour sentence still matches the seed.
-- **Shortcuts**: the keymap and list movement.
-- **Front door**: the three numbers, from the seed.
+- **Parser**: malformed lines, wrong types, CRLF, BOM, DST, cancels across sessions, and dates Postgres would refuse (it used to read 30 February as 2 March).
+- **Seed files, explanations, health and readiness, the guard, intake triage, approve flows, automations, the tour and shortcuts**: each against the real seed. Every seed file parses and matches the manifest; every engine message has an explanation; every tour sentence still matches the data.
+- **Schema and RLS** (`src/lib/db/schema.test.ts`): a trader sees only their rows in every table, ops sees all, no claims sees nothing, `anon` has no privilege, keys can't be read, writes are refused, and a sanity test fails when RLS is off.
+- **Contract** (`src/lib/data/contract.test.ts`): the same checks on the static source and on PGlite seeded through the ingest path.
+- **Ingest** (`src/lib/ingest/ingest.test.ts`): the shared signature vector, strict headers, every line outcome, replay, gap, each refusal, no internals in a 500, no secret in the audit log. A concurrency test runs when `TEST_DATABASE_URL` points at a real Postgres.
+- **Onboarding and ops auth**: one key per approval, 409 the second time, the server-side guard, key rotation, Basic auth, same-origin, JSON only.
+- **Forwarder** (`forwarder/test_forwarder.py`, against a real local HTTP server): batching by lines and bytes, the held-back half line, resume, retry with the same body, no retry on 401, gap rewind, rotation, a shrunk file, a private secret file.
+- **End to end** (`e2e-ingest/ingest.spec.ts`): the real seed generator writes a file from the engine, a signup is approved in the UI, the real forwarder sends the file, and the account page and every portal session match counts taken from the file with plain `JSON.parse`. Then: a second run sends nothing, a resend stores nothing, a tampered signature and an old timestamp get 401, a malformed line is rejected and shown, `data/seed` is untouched. It passed three runs in a row, each on a new database.
 
-The Playwright tests run without an API key. The smoke test walks through:
+The Playwright smoke test walks through:
 
 1. Portal, plus an upload with a malformed line.
 2. CRM.
@@ -87,7 +126,7 @@ The Playwright tests run without an API key. The smoke test walks through:
 6. Reload and reset.
 7. A check that no page scrolls sideways.
 
-The other specs cover the tour end to end by keyboard (pause, resume, the card's Approve and Run buttons), shortcuts, page titles, the icon and share image, empty states, layout shift on every page, reduced motion, the rail's full height and the phone tab bar at a real 390 px viewport.
+The other specs cover the tour end to end by keyboard (pause, resume, the card's Approve and Run buttons, a page that jumps to the top on its own, the visitor's own scroll), shortcuts, page titles, the icon and share image, security headers, empty states, layout shift on every page, reduced motion, the rail's full height and the phone tab bar at a real 390 px viewport.
 
 ## Pages
 
@@ -100,6 +139,7 @@ The other specs cover the tour end to end by keyboard (pause, resume, the card's
 | `/ops/intake` | Limex team | Beta intake queue: rules triage, optional Claude triage, guarded welcome email, approve into the CRM |
 | `/ops/inbox` | Limex team | Tickets linked to real orders, template or Claude drafts, guard, approve |
 | `/ops/automations` | Limex team | Four rules with on/off, Run rules now, run log |
+| `/about` | anyone | How this was built and verified: `docs/HOW_I_BUILT_THIS.md` itself |
 
 | | |
 |---|---|
@@ -109,12 +149,21 @@ The other specs cover the tour end to end by keyboard (pause, resume, the card's
 | ![Automations](docs/screenshots/automations.png) | ![Dark mode](docs/screenshots/portal-dark.png) |
 | ![Tour, step 1](docs/screenshots/tour-refusal.png) | ![Tour, step 3](docs/screenshots/tour-guard.png) |
 | ![Front door, light](docs/screenshots/front-light.png) | ![Link preview](docs/screenshots/og.png) |
+| ![How I built this](docs/screenshots/about.png) | |
+
+Database mode:
+
+| | |
+|---|---|
+| ![The one-time ingest key after approving a signup](docs/screenshots/onboarding-key.png) | ![Ingest batches and a rejected line](docs/screenshots/account-ingest.png) |
+| ![Ingest, dark](docs/screenshots/account-ingest-dark.png) | |
 
 Phone, 390 px:
 
 | | | |
 |---|---|---|
 | ![Front door on a phone](docs/screenshots/front-phone.png) | ![Portal on a phone](docs/screenshots/portal-phone-dark.png) | ![Inbox on a phone](docs/screenshots/inbox-phone.png) |
+| ![Tour step 3 on a phone](docs/screenshots/tour-phone-dark.png) | ![Ingest on a phone](docs/screenshots/account-ingest-phone-dark.png) | ![How I built this on a phone](docs/screenshots/about-phone-dark.png) |
 
 ## Design
 
@@ -152,4 +201,6 @@ Leftover time: `?` for shortcuts, the theme toggle, or drop a `.jsonl` file with
 ## Not verified
 
 - **The Claude paths have not been run against the live API.** No key was available while building, so the three routes are exercised only in their "AI drafting is off" state. The request shapes follow `@anthropic-ai/sdk` 0.133 (`output_config.format` with a JSON schema for triage). Run each once with a key before relying on them.
-- **No deployment.** Nothing has been pushed or deployed.
+- **No real Supabase project.** The migrations, RLS and the whole integration run on PGlite, which is real Postgres; two checks only a hosted project can answer are in `docs/PUBLISH.md`.
+- **Concurrency on a real Postgres.** The row lock that keeps batches for one deployment apart can't be shown on PGlite, which runs one connection; that test is skipped without `TEST_DATABASE_URL`.
+- **No deployment.** Nothing has been pushed or deployed. `docs/PUBLISH.md` has the exact commands for the GitHub repo, the Vercel demo and an optional Supabase project.
