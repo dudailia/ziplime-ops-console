@@ -326,15 +326,27 @@ mark.guard-hit {
   }
 }
 
-/* Count-ups hide their first frame until script starts them; this reveals
-   them anyway if it never does. */
-.js .countup [data-state="pending"] {
-  visibility: hidden;
+/* Count-ups: the real value is the only text. While the count runs it is
+   transparent (still read by assistive tech) and the moving digits are drawn
+   from data-n by a pseudo-element whose alternative text is empty, so screen
+   readers skip it. Before script starts the count the value stays
+   transparent; the fallback shows it after 1.2 s if script never runs. */
+.countup[data-state="counting"]::after {
+  content: attr(data-n);
+  content: attr(data-n) / "";
+  position: absolute;
+  inset: 0;
+}
+.countup[data-state="counting"] .countup-value {
+  opacity: 0;
+}
+.js .countup[data-state="pending"] .countup-value {
+  opacity: 0;
   animation: reveal 0s 1.2s forwards;
 }
 @keyframes reveal {
   to {
-    visibility: visible;
+    opacity: 1;
   }
 }
 

@@ -87,11 +87,17 @@ function Figure({ id, value, of, label, note, tone = "text-ink" }: { id: string;
   return (
     <div className="flex flex-col gap-1 bg-surface px-4 py-3 sm:px-5 sm:py-4">
       <dt className="order-2 text-[14px] font-semibold text-ink">{label}</dt>
-      <dd className="order-1 flex items-baseline gap-2">
+      {/* Inline, not flex, so the space before "of" is real text: "5 of 10", not "5of 10". */}
+      <dd className="order-1 leading-none">
         <span className={`t-wide text-[34px] sm:text-[40px] font-[760] leading-none tabular-nums ${tone}`}>
           <CountUp id={id} value={value} />
         </span>
-        {of !== undefined && <span className="t-wide text-[20px] font-[700] text-ink-3">of {of}</span>}
+        {of !== undefined && (
+          <>
+            {" "}
+            <span className="t-wide ml-1 text-[20px] font-[700] text-ink-3">of {of}</span>
+          </>
+        )}
       </dd>
       <dd className="order-3 text-[12px] text-ink-2">{note}</dd>
     </div>

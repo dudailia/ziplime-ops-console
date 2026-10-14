@@ -1,5 +1,9 @@
 # ziplime Ops Console
 
+**Live demo: https://ziplime-ops-console.vercel.app** (static build, sample data, no database, no API key)
+
+**Built on [ziplime PR #39](https://github.com/Limex-com/ziplime/pull/39)**, the dry-run mode for Lime live trading.
+
 An unofficial concept: an ops layer for ziplime's Lime dry-run mode, built on [PR #39](https://github.com/Limex-com/ziplime/pull/39) (issue #5, branch `feat/dry-run-orders`). All data is sample data. Accounts, names, emails and tickets are fictional.
 
 Open `/` and press **Take the 3-minute tour**. Five steps, one sentence each, on the real pages: a refused order and its fix, an account on watch, the guard blocking a risky draft, a Beta signup triaged and approved, and an automation run. Arrow keys move, Escape pauses, and the tour resumes from the front page or the rail.
@@ -203,4 +207,4 @@ Leftover time: `?` for shortcuts, the theme toggle, or drop a `.jsonl` file with
 - **The Claude paths have not been run against the live API.** No key was available while building, so the three routes are exercised only in their "AI drafting is off" state. The request shapes follow `@anthropic-ai/sdk` 0.133 (`output_config.format` with a JSON schema for triage). Run each once with a key before relying on them.
 - **No real Supabase project.** The migrations, RLS and the whole integration run on PGlite, which is real Postgres; two checks only a hosted project can answer are in `docs/PUBLISH.md`.
 - **Concurrency on a real Postgres.** The row lock that keeps batches for one deployment apart can't be shown on PGlite, which runs one connection; that test is skipped without `TEST_DATABASE_URL`.
-- **No deployment.** Nothing has been pushed or deployed. `docs/PUBLISH.md` has the exact commands for the GitHub repo, the Vercel demo and an optional Supabase project.
+- **Only the static demo is deployed.** The live demo runs with no database and no API key, so the integration, onboarding and Claude paths are not live anywhere. `docs/PUBLISH.md` has the commands for an optional private deployment with a real Supabase project.

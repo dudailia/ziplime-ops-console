@@ -1,6 +1,6 @@
 # Publishing
 
-Nothing here has been run. Each step creates something outside this machine, so each one is yours to run. Run them from `ops-console/`.
+Sections 0, 1 and 2 were run on 14 Oct 2026: the repo is https://github.com/dudailia/ziplime-ops-console and the demo is https://ziplime-ops-console.vercel.app. Linking the Vercel project connected it to the repo, so every push to `main` deploys to production. Section 3 has not been run. Run everything from `ops-console/`.
 
 ## 0. Before anything goes public
 

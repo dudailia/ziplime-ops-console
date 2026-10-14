@@ -16,30 +16,34 @@ function reduced() {
 /**
  * A KPI number that counts up from zero the first time it's shown.
  *
- * The final value is always in the markup: it reserves the width (so nothing
- * shifts) and it's what assistive tech reads. Until the count starts, the
- * moving copy is hidden by CSS, and a CSS fallback reveals it after 1.2 s if
- * script never runs.
+ * The final value is the only text in the markup, so screen readers, link
+ * previews and copied text all read it once. It also reserves the width, so
+ * nothing shifts. The moving digits are a CSS pseudo-element drawn from
+ * `data-n`, with empty alternative text so assistive tech skips it, and the
+ * real value is transparent while they run. It isn't a separate aria-hidden
+ * span because any extra box, even an empty one, puts a line break into
+ * innerText ("5\n of 10"). Until the count starts the value is transparent
+ * too, and a CSS fallback shows it after 1.2 s if script never runs.
  */
 export function CountUp({ value, id, format = String }: { value: number; id?: string; format?: (n: number) => string }) {
-  const live = useRef<HTMLSpanElement>(null);
+  const root = useRef<HTMLSpanElement>(null);
   const key = id ?? null;
 
   useLayoutEffect(() => {
-    const el = live.current;
+    const el = root.current;
     if (!el) return;
     const done = () => {
-      el.textContent = format(value);
+      el.dataset.n = format(value);
       el.dataset.state = "done";
     };
     if ((key && counted.has(key)) || value === 0 || reduced()) return done();
     if (key) counted.add(key);
-    el.textContent = format(0);
+    el.dataset.n = format(0);
     el.dataset.state = "counting";
     const start = performance.now();
     let frame = requestAnimationFrame(function tick(now) {
       const t = Math.min(1, (now - start) / DURATION);
-      el.textContent = format(Math.round(easeOut(t) * value));
+      el.dataset.n = format(Math.round(easeOut(t) * value));
       if (t < 1) frame = requestAnimationFrame(tick);
       else done();
     });
@@ -50,14 +54,8 @@ export function CountUp({ value, id, format = String }: { value: number; id?: st
   }, [value, key, format]);
 
   return (
-    <span className="countup inline-grid tabular-nums">
-      <span className="col-start-1 row-start-1 select-none opacity-0" aria-hidden>
-        {format(value)}
-      </span>
-      <span ref={live} className="col-start-1 row-start-1" data-state="pending" aria-hidden>
-        {format(value)}
-      </span>
-      <span className="sr-only">{format(value)}</span>
+    <span ref={root} className="countup relative inline-block tabular-nums" data-state="pending" data-n={format(value)}>
+      <span className="countup-value">{format(value)}</span>
     </span>
   );
 }
