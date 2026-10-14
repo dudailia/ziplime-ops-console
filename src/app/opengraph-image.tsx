@@ -33,6 +33,16 @@ const C = {
 // src/app/og; General Sans is fetched before the build (scripts/fetch-fonts.mjs).
 const font = (dir: string, name: string) => readFile(join(process.cwd(), "src/app", dir, name));
 
+// Drawn, not typed: none of the bundled fonts has "→", and next/og would fetch
+// the glyph from Google Fonts on every render (and fail with no network).
+function Arrow() {
+  return (
+    <svg width="18" height="10" viewBox="0 0 18 10">
+      <path d="M0 5h16M12 1l4 4-4 4" fill="none" stroke={C.ink2} strokeWidth="1.6" />
+    </svg>
+  );
+}
+
 export default async function OpenGraphImage() {
   const [display, mono, monoBold, pixel] = await Promise.all([
     font("fonts", "GeneralSans-Bold.woff"),
@@ -77,7 +87,13 @@ export default async function OpenGraphImage() {
 
         <div style={{ display: "flex", alignSelf: "flex-start", alignItems: "center", gap: 12, marginTop: 40, padding: "8px 14px", border: `1px solid ${C.rule}`, background: C.surface, ...label, color: C.ink2 }}>
           <div style={{ width: 8, height: 8, background: C.lime }} />
-          <span>Engine → dry run → console</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span>Engine</span>
+            <Arrow />
+            <span>dry run</span>
+            <Arrow />
+            <span>console</span>
+          </div>
           <span style={{ color: C.ink }}>{"// built on ziplime PR #39"}</span>
         </div>
 
