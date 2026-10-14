@@ -1,72 +1,95 @@
-# Design direction: the desk
+# Design direction: ships inside ziplime
 
-The console is a trading desk's back office, not a marketing site. People read it the way a desk reads a blotter: scanning columns, comparing numbers, looking for the one row that is wrong. Everything below serves that.
+The console should read as part of the ziplime product family: the team that built ziplime.limex.com should recognise their own visual language. The tokens below were measured from that site on 14 Oct 2026. It is still a back office, so the desk rules from before still hold: dense but calm, colour only for meaning, numbers first-class.
+
+What we never take: Limex's or ziplime's logo or wordmark. Our mark is our own small bar glyph with "ziplime ops console" set in lowercase JetBrains Mono, which their uppercase General Sans wordmark is not. The "Sample data. Fictional accounts." band and the "Unofficial concept" footer stay on every page.
 
 ## Principles
 
-1. **Dense but calm.** Lots of data on screen, almost no decoration. Colour is reserved for meaning, so a red mark always means a refused order and nothing else is red.
-2. **One accent, used sparingly.** Lime marks *where you are and what to do next*: the primary action on a screen, the current nav item, the selected session, focus, the tour's spotlight. Never a fill behind data, never a status.
-3. **Numbers are first-class.** Tabular figures everywhere. Numeric columns right-aligned. Counts never move when they change.
-4. **Alignment is a grid, not a vibe.** Panels share one 16 px inner gutter. Labels, values and table columns line up across panels on the same row.
-5. **Hierarchy from size and width, not colour.** Archivo's width axis does the work: wide and heavy for page titles and dates, condensed for dense table cells, normal for prose.
-6. **Motion explains a change or it doesn't happen.** See Motion.
+1. **Black ground, thin lines, square corners.** Panels are near-black boxes with 1px borders and no shadow. Corners are 0 on panels and buttons, 2px on small controls.
+2. **Lime is where you are and what to do next.** The primary action, the current page, focus, the selected session, the tour spotlight, and one word per headline as a solid block. On the session clock and order tape only, lime also marks "would send", because that is the engine's own green light. Lime is never a fill behind data.
+3. **Cyan belongs to the dot-matrix word.** One Doto word or phrase per hero, in cyan. Nothing else is cyan.
+4. **Mono for anything a machine wrote.** Data, labels, tickers, ids, code, timestamps and the big numbers are JetBrains Mono. Prose is Inter. Headlines are General Sans.
+5. **Status colours carry meaning and pass AA on black.** Red means refused (events) or needs help (health). Every status always comes with a word.
+6. **Motion explains or announces, once.** See Motion.
 
 ## Colour
 
-Event and health colours carry meaning and appear nowhere else. The accent is a fill with dark text on it in both themes, so it never has to pass contrast as text on white.
+Night is the default theme and the one to perfect. Day works and is finished, but secondary.
 
-| Token | Day | Night | Job |
+| Token | Night (default) | Day | Job |
 |---|---|---|---|
-| `ground` | `#eef0f2` | `#0d1215` | Page background |
-| `surface` | `#ffffff` | `#141a1e` | Panels |
-| `sunk` | `#f5f6f8` | `#10161a` | Hover, selected row, code wells |
-| `ink` / `ink-2` / `ink-3` | `#12181c` / `#4a5761` / `#5f6b75` | `#e4e9ec` / `#a4b0b8` / `#7a8790` | Text, three steps |
-| `rule` / `rule-strong` | `#dde1e5` / `#b3bcc4` | `#232c32` / `#3a464e` | Hairlines, control borders |
-| `accent` | `#c5ef3a` | `#c5ef3a` | Lime fill: primary button, current marker, spotlight |
-| `accent-ink` | `#4c7300` | `#c5ef3a` | Lime as text or a 2 px line (5.6:1 on white) |
-| `on-accent` | `#12181c` | `#0d1215` | Text on the lime fill |
-| `place` / `refuse` / `skip` / `cancel` | blue / red / amber / grey | lifted for dark | The four dry-run events |
-| `ok` / `warn` / `bad` | green / ochre / deep red | lifted for dark | Account health, always with a word |
+| `ground` | `#000000` | `#f6f4fb` | Page background, with the dot grid |
+| `surface` | `#0b0a10` | `#ffffff` | Panels, the ticker strip, the terminal |
+| `sunk` | `#16151c` | `#efedf5` | Hover, selected row, code wells |
+| `ink` | `#f2f0ff` | `#0b0a10` | Text |
+| `ink-2` | `#b4b1c2` | `#4a4757` | Secondary text |
+| `ink-3` | `#8f8c9b` | `#5e5b6a` | Muted text, mono labels |
+| `rule` | `#1e1d25` | `#e4e1ec` | 1px hairlines between and around panels |
+| `rule-strong` | `#6b6878` | `#868294` | Control borders (3:1 for UI boundaries) |
+| `accent` | `#a6f656` | `#a6f656` | Lime fill: primary button, current marker, highlight word, spotlight |
+| `on-accent` | `#261f48` | `#261f48` | Text on a lime button |
+| `on-highlight` | `#0b0a10` | `#0b0a10` | Text in a lime headline block |
+| `accent-ink` | `#a6f656` | `#3a7000` | Lime as text or a 2px line |
+| `pixel` | `#4dcfe7` | `#0a7489` | The Doto word only |
+| `place` | `#a6f656` | `#3a7000` | Would send (clock and tape) |
+| `refuse` | `#ff3355` | `#c8143c` | Refused |
+| `skip` | `#f5b83d` | `#8a5800` | Skipped below one lot |
+| `cancel` | `#8f8c9b` | `#5e5b6a` | Cancelled |
+| `ok` / `warn` / `bad` | `#3ddc84` / `#f5b83d` / `#ff5c7a` | `#11784b` / `#8a5800` / `#b01f3a` | Healthy / watch / needs help |
 
-All text tokens pass 4.5:1 on `surface` and `ground` in both themes. Night is the default look for the front door's hero shot, and day must be just as finished.
+Every text and status token passes 4.5:1 on `ground`, `surface` and `sunk` in both themes; `rule-strong` passes 3:1. `src/lib/design/contrast.test.ts` reads these values out of `globals.css` and fails the build if any drops below. Text on lime is 11.6:1 (`on-accent`) and 15:1 (`on-highlight`).
 
 ## Type
 
-- **Archivo** (variable, `wdth` 62 to 125). One family for everything except code.
-  - Page titles and session dates: wide (118%), weight 760, tracking -0.01em.
-  - Panel titles: semi-condensed (90%), weight 600, 15 px.
-  - Table cells, chips, meta: condensed (80%), 12 to 13 px.
-  - Prose: normal width, 14 px, 65 to 72 ch measure.
-- **IBM Plex Mono** only for things that are literally code or data: env vars, order ids, raw JSON lines.
-- Scale (px): 11, 12, 13, 14, 15, 18, 26, 34, 48. No fluid type in the app; the front door's headline is the one clamp.
+| Role | Face | Setting |
+|---|---|---|
+| Headlines (`t-title`) | General Sans 700 | Uppercase, tracking -0.02em, line height 1.05 |
+| Buttons (`t-btn`) | General Sans 600 | Uppercase, 13px (14px large), tracking 0.06em |
+| Hero word | Doto 800 | Cyan, same size as the headline |
+| Data, labels, numbers, tickers, code (`t-wide`, `t-label`, `font-mono`) | JetBrains Mono | Labels 11px uppercase, tracking 0.06em, with a 6px square lime bullet |
+| Body, table cells, prose | Inter | 14px, 65 to 72ch measure |
+
+General Sans is from Fontshare under the ITF Free Font License. The licence lets us self-host it on our own site but not redistribute it through a public repository, so the font files are not in git: `scripts/fetch-fonts.mjs` downloads the official files from Fontshare before each build, checks their SHA-256, and puts them in `src/app/fonts/` (ignored). The licence text is in `src/app/fonts/LICENSE-GeneralSans.txt`. Doto, JetBrains Mono and Inter come from Google Fonts through `next/font`, which self-hosts them. All four are preloaded and get fallback faces with matching metrics, so nothing shifts when they arrive.
+
+## Signature moves
+
+- **Dot grid.** A faint dotted grid on `ground`: 1.3px dots every 32px, 16% white in the hero and 7% behind the app.
+- **Lime block word.** One word per headline set in a solid lime block with `on-highlight` text, 0.12em side padding.
+- **Mono label with a square bullet.** `■ ENGINE → DRY RUN → CONSOLE`. Used for eyebrows, panel titles and rail groups.
+- **Terminal panel.** A `surface` box with a 1px border, a filename bar (lime square, the file path, a line-number chip, a pulsing status dot) and rows tagged like a chat: `ENGINE` and `CONSOLE`. Where ziplime's says LIVE, ours says DRY RUN, because nothing in this console is live and the label must not claim it is.
+- **Ticker strip.** A full-width mono strip with real seed events: account, symbol, outcome in its event colour.
+- **Buttons.** Primary: lime fill, `on-accent` text, uppercase General Sans, square. Hover goes to `ink`. Secondary: a 10% lavender wash with `ink` text.
 
 ## Layout
 
-- Desktop: a 224 px rail (full height, sticky), content in a 12-column grid with 16 px gaps.
-- Phone: brand row, sample band, content, and a 5-item tab bar on the bottom edge with 52 px targets.
-- Panels: 1 px `rule` border, 6 px radius, no shadow. Controls: 4 px radius. One elevation exists: the tour card and the shortcut sheet, with a soft offset shadow, because they float over the page.
-- Rows: 32 to 36 px in tables, hover tint on every row so the eye can track across.
+- Desktop: a 224px rail (full height, sticky), content in a 12-column grid with 16px gaps.
+- Phone: brand row, sample band, content, and a 5-item tab bar on the bottom edge with 52px targets.
+- Panels: 1px `rule` border, square, no shadow. One elevation exists: the tour card and the shortcut sheet, because they float over the page.
+- Rows: 32 to 36px in tables, hover tint on every row so the eye can track across.
 
 ## Motion
 
-Each animation has a job. Each element animates for 250 ms or less unless noted, use `cubic-bezier(0.23, 1, 0.32, 1)` (strong ease-out), and collapse to a plain fade or nothing under `prefers-reduced-motion`.
+Each animation has a job. UI motion is 250ms or less with `cubic-bezier(0.23, 1, 0.32, 1)`. Under `prefers-reduced-motion` everything below shows its final state at once, except fades that confirm an action.
 
 | Moment | Job | How |
 |---|---|---|
-| Session clock marks | Show the session happen in time order | Each mark fades and scales from 0.6 with a delay proportional to its minute, 450 ms total |
-| KPI numbers | Draw the eye once, on first view | Count up over 600 ms, once per page load; width reserved so nothing shifts; the real value is always what assistive tech reads |
-| Order tape rows | Show the list arrived | 140 ms fade and 4 px settle, 18 ms stagger, capped at 12 rows |
-| Guard highlights | Show each risky phrase being found | Highlights sweep in one after another, 90 ms apart |
-| Approve | Make the state change unmistakable | The new sent message or approved line flashes lime once and fades over 1.4 s; it never delays the click |
-| Page change | Keep continuity without waiting | 160 ms fade of the main column |
+| Hero terminal | Show what the console does with one engine line | Types the real dry-run line, then the explanation, once per page load. A Replay button runs it again. The full text is in the DOM from the start, so nothing shifts and screen readers read it whole |
+| Ticker | Show the engine is producing events | Scrolls slowly (90s a loop), pauses on hover, on focus and with its pause button |
+| Doto word | Announce the hero, like a dot display warming up | Flickers in once on load, 700ms |
+| Status dots | Show the feed is running | The lime square and dot pulse, 1.6s |
+| Session clock marks | Show the session happen in time order | Each mark fades and scales from 0.6 in minute order, 450ms total |
+| KPI numbers | Draw the eye once | Count up over 600ms, once per page load; the real value is the only text |
+| Order tape rows | Show the list arrived | 140ms fade and 4px settle, 18ms stagger, capped at 12 rows |
+| Guard highlights | Show each risky phrase being found | Sweep in one after another, 90ms apart |
+| Approve | Make the state change unmistakable | Flashes lime once and fades over 1.4s; never delays the click |
+| Page change | Keep continuity | 160ms fade of the main column |
 
-Never animated: keyboard shortcuts, sorting, filtering, typing. Data is never hidden while it animates for longer than the stagger window.
+Never animated: keyboard shortcuts, sorting, filtering, typing in a field.
 
 ## Anti-references
 
-- No Limex logo or wordmark. "ziplime" is set in plain Archivo as text.
-- No hero-metric cards, gradient text, glass, or decorative charts.
-- No eyebrow labels in caps above headings.
-- No icon-in-a-circle feature grids.
-
-Reduced motion: page, card and tape fades shorten to 120 ms with no movement; clock marks, guard sweeps and count-ups show their final state at once; press scaling is off; the approve flash stays because it confirms an action.
+- No Limex or ziplime logo or wordmark.
+- Cyan only on the Doto word; lime never as a status outside the clock and tape.
+- No rounded cards, gradients, glass or drop shadows on panels.
+- No decorative charts. The ticker and terminal show real seed data.

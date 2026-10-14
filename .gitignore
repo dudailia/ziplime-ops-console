@@ -44,3 +44,6 @@ yarn-error.log*
 
 # local database (PGlite data holds ingest secrets)
 /.data/
+
+# General Sans: fetched from Fontshare at build time, never committed (ITF FFL, see DESIGN.md)
+/src/app/fonts/*.woff2

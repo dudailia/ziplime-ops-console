@@ -1,104 +1,123 @@
 @import "tailwindcss";
 
-/* Tokens: DESIGN.md. Event and health colours carry meaning and nothing else uses them.
-   The accent is lime, used as a fill (with on-accent text) or a 2px line (accent-ink). */
+/* Tokens: DESIGN.md. Night is the default; day is data-theme="light", and
+   data-theme="auto" follows the system. Event and health colours carry meaning
+   and nothing else uses them. Lime is a fill (on-accent / on-highlight text on
+   it) or a 2px line (accent-ink); cyan (pixel) is only the Doto word.
+   src/lib/design/contrast.test.ts checks every text colour here against the
+   three backgrounds. */
 :root {
-  --ground: #eef0f2;
-  --surface: #ffffff;
-  --sunk: #f5f6f8;
-  --ink: #12181c;
-  --ink-2: #4a5761;
-  --ink-3: #5f6b75;
-  --rule: #dde1e5;
-  --rule-strong: #b3bcc4;
-  --place: #2453cc;
-  --refuse: #c22f29;
-  --skip: #925c0e;
-  --cancel: #5f6b75;
-  --place-soft: #e6ecfb;
-  --refuse-soft: #fbe9e7;
-  --skip-soft: #f7efe1;
-  --accent: #c5ef3a;
-  --accent-ink: #4c7300;
-  --on-accent: #12181c;
-  --accent-edge: #9cc21c;
-  --accent-soft: #f1fbd3;
-  --ok: #17794f;
-  --warn: #8a5a00;
-  --bad: #a8252b;
-  --none: #5f6b75;
-  --focus: #12181c;
-  --focus-halo: #c5ef3a;
-  --scrim: rgb(13 18 21 / 0.45);
-  --lift: 0 12px 32px -8px rgb(13 18 21 / 0.28), 0 2px 6px rgb(13 18 21 / 0.12);
+  --ground: #000000;
+  --surface: #0b0a10;
+  --sunk: #16151c;
+  --ink: #f2f0ff;
+  --ink-2: #b4b1c2;
+  --ink-3: #8f8c9b;
+  --rule: #1e1d25;
+  --rule-strong: #6b6878;
+  --place: #a6f656;
+  --refuse: #ff3355;
+  --skip: #f5b83d;
+  --cancel: #8f8c9b;
+  --place-soft: #16220b;
+  --refuse-soft: #2a0d14;
+  --skip-soft: #2a1f0b;
+  --accent: #a6f656;
+  --accent-ink: #a6f656;
+  --on-accent: #261f48;
+  --on-highlight: #0b0a10;
+  --accent-edge: #a6f656;
+  --accent-soft: #18240c;
+  --pixel: #4dcfe7;
+  --wash: rgb(211 204 255 / 0.1);
+  --ok: #3ddc84;
+  --warn: #f5b83d;
+  --bad: #ff5c7a;
+  --none: #8f8c9b;
+  --focus: #a6f656;
+  --focus-halo: transparent;
+  --dot: rgb(255 255 255 / 0.07);
+  --dot-hero: rgb(255 255 255 / 0.16);
+  --scrim: rgb(0 0 0 / 0.6);
+  --lift: 0 16px 40px -8px rgb(0 0 0 / 0.7), 0 2px 8px rgb(0 0 0 / 0.5);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --ground: #f6f4fb;
+  --surface: #ffffff;
+  --sunk: #efedf5;
+  --ink: #0b0a10;
+  --ink-2: #4a4757;
+  --ink-3: #5e5b6a;
+  --rule: #e4e1ec;
+  --rule-strong: #868294;
+  --place: #3a7000;
+  --refuse: #c8143c;
+  --skip: #8a5800;
+  --cancel: #5e5b6a;
+  --place-soft: #eef8dd;
+  --refuse-soft: #fde8ec;
+  --skip-soft: #f8eedb;
+  --accent: #a6f656;
+  --accent-ink: #3a7000;
+  --on-accent: #261f48;
+  --on-highlight: #0b0a10;
+  --accent-edge: #6fae1f;
+  --accent-soft: #eef8dd;
+  --pixel: #0a7489;
+  --wash: rgb(38 31 72 / 0.07);
+  --ok: #11784b;
+  --warn: #8a5800;
+  --bad: #b01f3a;
+  --none: #5e5b6a;
+  --focus: #0b0a10;
+  --focus-halo: #a6f656;
+  --dot: rgb(11 10 16 / 0.09);
+  --dot-hero: rgb(11 10 16 / 0.16);
+  --scrim: rgb(11 10 16 / 0.45);
+  --lift: 0 12px 32px -8px rgb(11 10 16 / 0.28), 0 2px 6px rgb(11 10 16 / 0.12);
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --ground: #0d1215;
-    --surface: #141a1e;
-    --sunk: #10161a;
-    --ink: #e4e9ec;
-    --ink-2: #a4b0b8;
-    --ink-3: #7a8790;
-    --rule: #232c32;
-    --rule-strong: #3a464e;
-    --place: #7ea3ff;
-    --refuse: #ff6f64;
-    --skip: #e2aa4c;
-    --cancel: #8b98a1;
-    --place-soft: #18233d;
-    --refuse-soft: #34191a;
-    --skip-soft: #2e2416;
-    --accent: #c5ef3a;
-    --accent-ink: #c5ef3a;
-    --on-accent: #0d1215;
-  --accent-edge: #c5ef3a;
-    --accent-soft: #1f2a10;
-    --ok: #49c38f;
-    --warn: #e0b45a;
-    --bad: #ff7a72;
-    --none: #7a8790;
-    --focus: #c5ef3a;
-  --focus-halo: transparent;
-    --scrim: rgb(0 0 0 / 0.55);
-    --lift: 0 16px 40px -8px rgb(0 0 0 / 0.6), 0 2px 8px rgb(0 0 0 / 0.4);
-    color-scheme: dark;
+@media (prefers-color-scheme: light) {
+  :root[data-theme="auto"] {
+    --ground: #f6f4fb;
+    --surface: #ffffff;
+    --sunk: #efedf5;
+    --ink: #0b0a10;
+    --ink-2: #4a4757;
+    --ink-3: #5e5b6a;
+    --rule: #e4e1ec;
+    --rule-strong: #868294;
+    --place: #3a7000;
+    --refuse: #c8143c;
+    --skip: #8a5800;
+    --cancel: #5e5b6a;
+    --place-soft: #eef8dd;
+    --refuse-soft: #fde8ec;
+    --skip-soft: #f8eedb;
+    --accent: #a6f656;
+    --accent-ink: #3a7000;
+    --on-accent: #261f48;
+    --on-highlight: #0b0a10;
+    --accent-edge: #6fae1f;
+    --accent-soft: #eef8dd;
+    --pixel: #0a7489;
+    --wash: rgb(38 31 72 / 0.07);
+    --ok: #11784b;
+    --warn: #8a5800;
+    --bad: #b01f3a;
+    --none: #5e5b6a;
+    --focus: #0b0a10;
+    --focus-halo: #a6f656;
+    --dot: rgb(11 10 16 / 0.09);
+    --dot-hero: rgb(11 10 16 / 0.16);
+    --scrim: rgb(11 10 16 / 0.45);
+    --lift: 0 12px 32px -8px rgb(11 10 16 / 0.28), 0 2px 6px rgb(11 10 16 / 0.12);
+    color-scheme: light;
   }
-}
-
-:root[data-theme="dark"] {
-  --ground: #0d1215;
-  --surface: #141a1e;
-  --sunk: #10161a;
-  --ink: #e4e9ec;
-  --ink-2: #a4b0b8;
-  --ink-3: #7a8790;
-  --rule: #232c32;
-  --rule-strong: #3a464e;
-  --place: #7ea3ff;
-  --refuse: #ff6f64;
-  --skip: #e2aa4c;
-  --cancel: #8b98a1;
-  --place-soft: #18233d;
-  --refuse-soft: #34191a;
-  --skip-soft: #2e2416;
-  --accent: #c5ef3a;
-  --accent-ink: #c5ef3a;
-  --on-accent: #0d1215;
-  --accent-edge: #c5ef3a;
-  --accent-soft: #1f2a10;
-  --ok: #49c38f;
-  --warn: #e0b45a;
-  --bad: #ff7a72;
-  --none: #7a8790;
-  --focus: #c5ef3a;
-  --focus-halo: transparent;
-  --scrim: rgb(0 0 0 / 0.55);
-  --lift: 0 16px 40px -8px rgb(0 0 0 / 0.6), 0 2px 8px rgb(0 0 0 / 0.4);
-  color-scheme: dark;
 }
 
 @theme inline {
@@ -121,44 +140,106 @@
   --color-accent-soft: var(--accent-soft);
   --color-accent-ink: var(--accent-ink);
   --color-on-accent: var(--on-accent);
+  --color-on-highlight: var(--on-highlight);
   --color-accent-edge: var(--accent-edge);
-  --radius-panel: 6px;
+  --color-pixel: var(--pixel);
+  --color-wash: var(--wash);
+  --radius-panel: 0px;
   --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-bad: var(--bad);
   --color-none: var(--none);
-  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-general-sans), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+  --font-pixel: var(--font-doto), var(--font-jetbrains-mono), monospace;
 }
 
 html {
   background: var(--ground);
 }
 
+/* The faint dotted grid sits on the page itself; panels are opaque, so it
+   only shows in the gutters. The hero has a stronger one of its own. */
 body {
-  background: var(--ground);
+  background-color: var(--ground);
+  background-image: radial-gradient(circle, var(--dot) 1.3px, transparent 1.6px);
+  background-size: 32px 32px;
   color: var(--ink);
   font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.45;
-  font-feature-settings: "tnum" 1;
+}
+/* Tabular figures where columns of numbers line up. Not page-wide: Inter's tnum
+   also widens the hyphen, which spaced out "mean-reversion" and "T-1042". */
+table {
+  font-variant-numeric: tabular-nums;
+}
+/* Column heads read as mono labels, like the rest of ziplime's data. */
+thead th {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-/* Archivo's width axis does the typographic work. */
-.t-cond {
-  font-stretch: 80%;
-}
-.t-semi {
-  font-stretch: 90%;
+/* Type roles (DESIGN.md). The class names predate the ziplime look and are kept
+   so the markup doesn't churn: t-title is the uppercase General Sans headline,
+   t-wide is mono for numbers, dates and data, t-semi and t-cond are Inter. */
+.t-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
 }
 .t-wide {
-  font-stretch: 118%;
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
 }
-.t-title {
-  font-stretch: 118%;
-  font-weight: 760;
-  letter-spacing: -0.01em;
-  line-height: 1.1;
+.t-semi,
+.t-cond {
+  font-family: var(--font-sans);
+}
+/* Mono label with a small square lime bullet: "■ ENGINE → DRY RUN". */
+.t-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.t-label.bullet::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  vertical-align: 1px;
+  background: var(--accent);
+}
+/* Buttons in General Sans, uppercase, like ziplime's. */
+.t-btn {
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.t-pixel {
+  font-family: var(--font-pixel);
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--pixel);
+}
+/* One word per headline in a solid lime block. */
+.t-highlight {
+  display: inline-block;
+  padding: 0 0.12em;
+  line-height: 0.9;
+  background: var(--accent);
+  color: var(--on-highlight);
 }
 
 :focus-visible {
@@ -236,10 +317,10 @@ kbd.kbd {
   padding: 0 0.35em;
   border: 1px solid var(--rule-strong);
   border-bottom-width: 2px;
-  border-radius: 4px;
+  border-radius: 2px;
   background: var(--sunk);
   color: var(--ink-2);
-  font: 600 11px/1.5 var(--font-sans);
+  font: 600 11px/1.5 var(--font-mono);
   text-align: center;
 }
 

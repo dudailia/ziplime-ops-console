@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
     ];
   },
   partialPrefetching: true,
+  // Turbopack's build cache (on by default in 16.4) shipped the previous
+  // globals.css on the first build after an edit: the Tailwind loader's output
+  // wasn't invalidated. Reproduced with a probe rule; off, every build is fresh.
+  // scripts/check-css.mjs fails the build if it ever happens again.
+  experimental: { turbopackFileSystemCacheForBuild: false },
   turbopack: {
     rules: {
       // Seed dry-run files load as plain text: import.meta.glob(..., { query: "?raw" }).

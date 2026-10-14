@@ -3,8 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/fetch-fonts.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/fetch-fonts.mjs",
     "build": "next build",
+    "postbuild": "node scripts/check-css.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",

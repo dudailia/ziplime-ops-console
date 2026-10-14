@@ -28,7 +28,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: `npx next dev -p ${PORT}`,
+    command: `npm run dev -- -p ${PORT}`,
     // The proxy answers 401 without credentials, which Playwright counts as up.
     url: `http://localhost:${PORT}/`,
     timeout: 240_000,

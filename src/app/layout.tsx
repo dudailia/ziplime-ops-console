@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, IBM_Plex_Mono } from "next/font/google";
+import { Doto, Inter, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { Suspense, type ReactNode } from "react";
 import { Shell } from "@/components/shell/Shell";
 import { DatasetProvider } from "@/lib/data/DatasetProvider";
@@ -8,16 +9,22 @@ import type { Dataset } from "@/lib/data/types";
 import { StoreProvider } from "@/lib/store/StoreProvider";
 import "./globals.css";
 
-const archivo = Archivo({
-  variable: "--font-archivo",
-  subsets: ["latin"],
-  axes: ["wdth"],
-});
+// Type roles: DESIGN.md. next/font self-hosts and preloads all four, and gives
+// each a fallback face with matching metrics, so nothing shifts when they load.
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+const jetbrainsMono = JetBrains_Mono({ variable: "--font-jetbrains-mono", subsets: ["latin"] });
+const doto = Doto({ variable: "--font-doto", subsets: ["latin"], weight: "800" });
 
-const plexMono = IBM_Plex_Mono({
-  variable: "--font-plex-mono",
-  subsets: ["latin"],
-  weight: ["400", "500"],
+// General Sans (Fontshare, ITF Free Font License): scripts/fetch-fonts.mjs
+// downloads it before every build, because the licence doesn't allow the files
+// in a public repository. See src/app/fonts/LICENSE-GeneralSans.txt.
+const generalSans = localFont({
+  variable: "--font-general-sans",
+  src: [
+    { path: "./fonts/GeneralSans-Semibold.woff2", weight: "600" },
+    { path: "./fonts/GeneralSans-Bold.woff2", weight: "700" },
+  ],
+  adjustFontFallback: "Arial",
 });
 
 const DESCRIPTION =
@@ -36,19 +43,23 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#eef0f2" },
-    { media: "(prefers-color-scheme: dark)", color: "#0d1215" },
-  ],
+  themeColor: "#000000",
 };
 
-// Applies the saved theme before first paint, so dark mode doesn't flash.
+// Applies the saved theme before first paint, so it never flashes. Night is the
+// default; "light" and "auto" are opt-in. The html element already says "dark",
+// so without script (or without storage) the page is dark.
 // Also marks the page as scripted, so count-ups can hide their first frame.
-const THEME_SCRIPT = `document.documentElement.classList.add("js");try{var t=localStorage.getItem("ziplime-ops-console:theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+const THEME_SCRIPT = `document.documentElement.classList.add("js");try{var t=localStorage.getItem("ziplime-ops-console:theme");if(t==="light"||t==="auto")document.documentElement.dataset.theme=t}catch(e){}`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${archivo.variable} ${plexMono.variable} antialiased`} suppressHydrationWarning>
+    <html
+      lang="en"
+      data-theme="dark"
+      className={`${inter.variable} ${jetbrainsMono.variable} ${doto.variable} ${generalSans.variable} antialiased`}
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
