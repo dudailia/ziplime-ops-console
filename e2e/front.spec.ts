@@ -46,6 +46,9 @@ test.describe("with motion", () => {
     const raw = await term.locator("[data-speed=engine]").getAttribute("data-type");
     expect(raw).toContain('"symbol": "TSLA"');
     expect(await term.textContent()).toContain(raw);
+    // Measure after the page's own fade-in (template.tsx): under its translateY
+    // the rect is computed in float32 and can be off by 2^-14 px.
+    await page.locator(".page-in").evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
     const height = await term.evaluate((el) => el.getBoundingClientRect().height);
     await expect(term).toHaveAttribute("data-state", "done", { timeout: 10_000 });
     expect(await term.evaluate((el) => el.getBoundingClientRect().height)).toBe(height);
