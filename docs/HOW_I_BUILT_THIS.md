@@ -6,7 +6,7 @@ ziplime, Limex's open-source engine, had an open issue (#5) asking for a dry run
 
 ## How I worked with AI
 
-Claude Code wrote most of the code, from plans I approved. Each stage was a plan in `PLAN.md`, then code, tests and the production build, then a commit: 2 commits on the ziplime branch, 26 here. For the integration layer I was away, so a separate Claude Code session reviewed the plan as a strict senior engineer; its 17 findings, two of them blockers, were fixed before any code (`PLAN.md` 15.10).
+Claude Code wrote most of the code, from plans I approved. Each stage was a plan in `PLAN.md`, then code, tests and the production build, then a commit: 2 commits on the ziplime branch, 31 here. For the integration layer I was away, so a separate Claude Code session reviewed the plan as a strict senior engineer; its 17 findings, two of them blockers, were fixed before any code (`PLAN.md` 15.10).
 
 ## How I verified it
 
@@ -44,9 +44,9 @@ Counted when this page was written.
 
 | | |
 |---|---|
-| Commits | 26 here, 2 on ziplime's `feat/dry-run-orders` |
-| Unit and integration tests (vitest) | 322 in 18 files, 2 skipped on purpose (one needs a real Postgres) |
-| Browser tests (Playwright) | 32 in the main suite (3 skipped by design), 2 in the ingest suite |
+| Commits | 31 here, 2 on ziplime's `feat/dry-run-orders` |
+| Unit and integration tests (vitest) | 326 in 19 files, 2 skipped on purpose (one needs a real Postgres) |
+| Browser tests (Playwright) | 36 in the main suite (3 skipped by design), 2 in the ingest suite |
 | Forwarder tests (pytest) | 19 |
 | ziplime dry-run tests | 13 test functions in `test_lime_dry_run.py` |
 | Seed data | 503 dry-run lines written by the engine, 14 deployments, 135 sessions, 10 accounts, 30 signups, 7 tickets |
