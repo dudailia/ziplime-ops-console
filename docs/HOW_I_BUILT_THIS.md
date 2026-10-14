@@ -2,7 +2,7 @@
 
 ## What I built and why
 
-ziplime, Limex's open-source engine, had an open issue (#5) asking for a dry run that writes orders to a file instead of sending them to the broker. I wrote it as PR #39 to Limex-com/ziplime: every order still goes through lot rounding, the fail-closed risk limits, the deadline and Lime's `validate_order`, then goes to a JSON Lines file instead of `place_order`. This console reads those files: a portal that tells a trader why an order didn't go out, and a CRM where the Limex team sees who needs help. Its sample data is the engine's own output, made with the test suite's fake Lime client, so nothing uses real credentials or trades live. The last stage connects the two: a forwarder next to the engine sends new lines to a signed webhook, and the console stores them in Postgres.
+ziplime, Limex's open-source engine, had an open issue (#5) asking for a dry run that writes orders to a file instead of sending them to the broker. I built it with Claude Code as PR #39 to Limex-com/ziplime: every order still goes through lot rounding, the fail-closed risk limits, the deadline and Lime's `validate_order`, then goes to a JSON Lines file instead of `place_order`. This console reads those files: a portal that tells a trader why an order didn't go out, and a CRM where the Limex team sees who needs help. Its sample data is the engine's own output, made with the test suite's fake Lime client, so nothing uses real credentials or trades live. The last stage connects the two: a forwarder next to the engine sends new lines to a signed webhook, and the console stores them in Postgres.
 
 ## How I worked with AI
 
