@@ -233,7 +233,7 @@ export function TourLayer() {
         <div
           aria-hidden
           data-testid="tour-spotlight"
-          className="tour-spotlight pointer-events-none fixed z-40 rounded-[8px]"
+          className="tour-spotlight pointer-events-none fixed z-40 rounded-[2px]"
           style={{ top: rect.top - PAD, left: rect.left - PAD, width: rect.width + PAD * 2, height: rect.height + PAD * 2 }}
         />
       )}
@@ -251,7 +251,7 @@ export function TourLayer() {
         <div className="flex items-center gap-3">
           <ol className="flex gap-1" aria-hidden>
             {TOUR.map((s, i) => (
-              <li key={s.id} className={`h-1 w-5 rounded-full ${i < tour.step ? "bg-ink-3" : i === tour.step ? "bg-accent-ink" : "bg-rule"}`} />
+              <li key={s.id} className={`h-1 w-5 rounded-none ${i < tour.step ? "bg-ink-3" : i === tour.step ? "bg-accent-ink" : "bg-rule"}`} />
             ))}
           </ol>
           <p id="tour-step" className="t-cond text-[12px] text-ink-2">
@@ -261,7 +261,7 @@ export function TourLayer() {
             type="button"
             onClick={() => act({ type: "pause" })}
             aria-label="Pause the tour"
-            className="press -mr-1 ml-auto rounded-[4px] p-1 text-ink-3 hover:bg-sunk hover:text-ink"
+            className="press -mr-1 ml-auto rounded-[2px] p-1 text-ink-3 hover:bg-sunk hover:text-ink"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
               <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" />
@@ -275,25 +275,25 @@ export function TourLayer() {
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {!here ? (
-            <button type="button" className="press rounded-[4px] border border-accent-edge bg-accent px-3 py-1.5 text-[13px] font-semibold text-on-accent" onClick={() => act({ type: "goto", step: tour.step })}>
+            <button type="button" className="press rounded-[2px] border border-accent-edge bg-accent px-3 py-1.5 text-[13px] font-semibold text-on-accent" onClick={() => act({ type: "goto", step: tour.step })}>
               Go to {step.page}
             </button>
           ) : (
             <>
               {tour.step > 0 && (
-                <button type="button" className="press rounded-[4px] border border-rule-strong px-3 py-1.5 text-[13px] font-semibold hover:bg-sunk" onClick={() => act({ type: "back" })}>
+                <button type="button" className="press rounded-[2px] border border-rule-strong px-3 py-1.5 text-[13px] font-semibold hover:bg-sunk" onClick={() => act({ type: "back" })}>
                   Back
                 </button>
               )}
               {step.action && hasAction && (
-                <button type="button" className="press rounded-[4px] border border-rule-strong px-3 py-1.5 text-[13px] font-semibold hover:bg-sunk" onClick={pressAction}>
+                <button type="button" className="press rounded-[2px] border border-rule-strong px-3 py-1.5 text-[13px] font-semibold hover:bg-sunk" onClick={pressAction}>
                   {step.action.label}
                 </button>
               )}
               <button
                 type="button"
                 data-testid="tour-next"
-                className="press ml-auto rounded-[4px] border border-accent-edge bg-accent px-3 py-1.5 text-[13px] font-semibold text-on-accent"
+                className="press ml-auto rounded-[2px] border border-accent-edge bg-accent px-3 py-1.5 text-[13px] font-semibold text-on-accent"
                 onClick={() => act({ type: "next" })}
               >
                 {last ? "Finish" : "Next"}

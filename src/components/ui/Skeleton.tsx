@@ -5,8 +5,8 @@ export function PageSkeleton({ label, panels = [180, 320] }: { label: string; pa
     <div role="status" aria-live="polite" className="flex flex-col gap-4">
       <span className="sr-only">{label}</span>
       <div aria-hidden className="mb-1 flex flex-col gap-2">
-        <div className="h-8 w-56 rounded-[4px] bg-rule" />
-        <div className="h-4 w-[min(520px,90%)] rounded-[4px] bg-rule opacity-70" />
+        <div className="h-8 w-56 rounded-[2px] bg-rule" />
+        <div className="h-4 w-[min(520px,90%)] rounded-[2px] bg-rule opacity-70" />
       </div>
       {panels.map((h, i) => (
         <div key={i} aria-hidden className="rounded-panel border border-rule bg-surface" style={{ height: h }}>

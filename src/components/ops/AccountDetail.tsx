@@ -194,7 +194,7 @@ export function AccountDetail() {
                   aria-label="Deployment"
                   value={chartDeployment}
                   onChange={(e) => setChartDeployment(e.target.value)}
-                  className="rounded-[4px] border border-rule bg-surface px-2 py-0.5 text-[12px] text-ink"
+                  className="rounded-[2px] border border-rule bg-surface px-2 py-0.5 text-[12px] text-ink"
                 >
                   <option value="all">All deployments</option>
                   {summary.deployments.map((d) => (

@@ -30,7 +30,7 @@ export function DraftEditor({
             value={subject}
             readOnly={readOnly}
             onChange={(e) => onChange({ subject: e.target.value, body })}
-            className="rounded-[4px] border border-rule bg-surface px-2 py-1.5 text-[13px] text-ink read-only:bg-sunk"
+            className="rounded-[2px] border border-rule bg-surface px-2 py-1.5 text-[13px] text-ink read-only:bg-sunk"
           />
         </label>
       )}
@@ -41,7 +41,7 @@ export function DraftEditor({
           readOnly={readOnly}
           onChange={(e) => onChange({ subject, body: e.target.value })}
           rows={Math.min(24, Math.max(6, body.split("\n").reduce((n, l) => n + Math.max(1, Math.ceil(l.length / 78)), 1)))}
-          className="min-h-32 rounded-[4px] border border-rule bg-surface px-2.5 py-2 text-[13px] leading-relaxed text-ink [field-sizing:content] read-only:bg-sunk"
+          className="min-h-32 rounded-[2px] border border-rule bg-surface px-2.5 py-2 text-[13px] leading-relaxed text-ink [field-sizing:content] read-only:bg-sunk"
         />
       </label>
       {subjectHits.length > 0 && (

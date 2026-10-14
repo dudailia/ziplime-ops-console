@@ -35,7 +35,7 @@ function Answers({ s }: { s: Signup }) {
               return (
                 <span
                   key={o}
-                  className={`t-cond rounded-[4px] border px-1.5 py-0.5 text-[12px] ${on ? "border-ink bg-ink font-semibold text-surface" : "border-rule text-ink-3"}`}
+                  className={`t-cond rounded-[2px] border px-1.5 py-0.5 text-[12px] ${on ? "border-ink bg-ink font-semibold text-surface" : "border-rule text-ink-3"}`}
                 >
                   {o}
                 </span>
@@ -47,9 +47,9 @@ function Answers({ s }: { s: Signup }) {
       <div className="flex items-start gap-2 text-[12px]">
         <span
           aria-hidden
-          className={`mt-0.5 inline-block h-3.5 w-6 shrink-0 rounded-full border ${s.wantsPod ? "border-ink bg-ink" : "border-rule-strong bg-sunk"}`}
+          className={`mt-0.5 inline-block h-3.5 w-6 shrink-0 rounded-none border ${s.wantsPod ? "border-ink bg-ink" : "border-rule-strong bg-sunk"}`}
         >
-          <span className={`block size-2.5 translate-y-[1px] rounded-full bg-surface ${s.wantsPod ? "translate-x-[11px]" : "translate-x-[1px] bg-ink-3"}`} />
+          <span className={`block size-2.5 translate-y-[1px] rounded-none bg-surface ${s.wantsPod ? "translate-x-[11px]" : "translate-x-[1px] bg-ink-3"}`} />
         </span>
         <span className={s.wantsPod ? "font-semibold text-ink" : "text-ink-3"}>{POD_TOGGLE}</span>
       </div>
@@ -112,7 +112,7 @@ function TriageCard({ s, rec }: { s: Signup; rec: IntakeRecord | undefined }) {
 /** The approved line. Flashes once when the approval just happened. */
 function Approved({ at, children }: { at: string; children: ReactNode }) {
   const fresh = useFresh(at);
-  return <p className={`-mx-2 rounded-[4px] px-2 py-1 text-[13px] text-ink ${fresh ? "approve-flash" : ""}`}>{children}</p>;
+  return <p className={`-mx-2 rounded-[2px] px-2 py-1 text-[13px] text-ink ${fresh ? "approve-flash" : ""}`}>{children}</p>;
 }
 
 const APPROVE_ERRORS: Record<string, string> = {
@@ -186,7 +186,7 @@ function Detail({ s }: { s: Signup }) {
   return (
     <div className="flex flex-col gap-4">
       <Panel
-        title={<span className="break-all">{s.email}</span>}
+        title={<span className="break-all tracking-normal normal-case">{s.email}</span>}
         aside={<span>Signed up {stampET(s.ts)}</span>}
       >
         <div className="px-4 py-3">

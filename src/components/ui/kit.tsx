@@ -51,7 +51,7 @@ export function Panel({
     <section id={id} data-tour={tour} className={`min-w-0 overflow-hidden rounded-panel border border-rule bg-surface ${className}`}>
       {(title || aside) && (
         <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-rule px-4 py-2.5">
-          {title && <h2 className="t-semi text-[15px] font-semibold text-ink">{title}</h2>}
+          {title && <h2 className="t-label bullet text-ink-2">{title}</h2>}
           {aside && <div className="ml-auto text-[12px] text-ink-2">{aside}</div>}
         </header>
       )}
@@ -95,12 +95,14 @@ export function Button({
   className?: string;
   tour?: string;
 }) {
-  // Primary is the one lime control on a screen: the next thing to do.
+  // Primary is the one lime control on a screen: the next thing to do. Like
+  // ziplime's, it goes to ink on hover. Secondary is their lavender wash.
   const styles = {
     primary:
-      "border border-accent-edge bg-accent text-on-accent hover:brightness-[1.04] disabled:border-rule disabled:bg-sunk disabled:text-ink-3 disabled:hover:brightness-100",
-    secondary: "border border-rule-strong bg-surface text-ink hover:border-ink hover:bg-sunk disabled:border-rule disabled:bg-surface disabled:text-ink-3",
-    quiet: "text-ink-2 underline hover:text-ink disabled:text-ink-3 disabled:no-underline",
+      "t-btn border border-accent bg-accent text-on-accent hover:border-ink hover:bg-ink hover:text-ground disabled:border-rule disabled:bg-sunk disabled:text-ink-3",
+    secondary:
+      "t-btn border border-rule-strong bg-wash text-ink hover:border-ink disabled:border-rule disabled:bg-transparent disabled:text-ink-3",
+    quiet: "text-[13px] font-semibold text-ink-2 underline hover:text-ink disabled:text-ink-3 disabled:no-underline",
   }[kind];
   return (
     <button
@@ -109,7 +111,7 @@ export function Button({
       disabled={disabled}
       title={title}
       data-tour={tour}
-      className={`press rounded-[4px] px-3 py-1.5 text-[13px] font-semibold transition-[background-color,border-color,filter,transform] duration-150 disabled:cursor-not-allowed ${styles} ${className}`}
+      className={`press px-3 py-1.5 text-[12px] transition-[background-color,border-color,color,transform] duration-150 disabled:cursor-not-allowed ${styles} ${className}`}
     >
       {children}
     </button>
@@ -132,8 +134,8 @@ export function Chip({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`t-cond inline-flex items-center gap-1.5 rounded-[4px] border px-2 py-1 text-[13px] transition-colors duration-150 ${
-        active ? "border-ink bg-surface font-semibold text-ink" : "border-rule bg-sunk text-ink-2 hover:border-rule-strong hover:text-ink"
+      className={`t-cond inline-flex items-center gap-1.5 rounded-[2px] border px-2 py-1 text-[13px] transition-colors duration-150 ${
+        active ? "border-ink bg-sunk font-semibold text-ink" : "border-rule bg-surface text-ink-2 hover:border-rule-strong hover:text-ink"
       } ${className}`}
     >
       {children}
@@ -144,9 +146,9 @@ export function Chip({
 export function Stat({ label, value, tone, note }: { label: ReactNode; value: ReactNode; tone?: string; note?: ReactNode }) {
   return (
     <div className="min-w-0">
-      <div className="text-[12px] text-ink-2">{label}</div>
-      <div className={`t-wide text-[26px] font-[750] leading-tight tabular-nums ${tone ?? "text-ink"}`}>{value}</div>
-      {note && <div className="text-[12px] text-ink-3">{note}</div>}
+      <div className="t-label">{label}</div>
+      <div className={`t-wide mt-0.5 text-[24px] font-[700] leading-tight tabular-nums ${tone ?? "text-ink"}`}>{value}</div>
+      {note && <div className="font-mono text-[11px] text-ink-3">{note}</div>}
     </div>
   );
 }

@@ -95,7 +95,7 @@ export function AccountsView() {
                 i % 2 ? "border-l" : ""
               } ${i > 1 ? "border-t sm:border-t-0" : ""} ${i === 2 ? "sm:border-l" : ""} ${level === l ? "bg-sunk" : ""}`}
             >
-              {level === l && <span aria-hidden className="absolute inset-x-4 bottom-0 h-[3px] rounded-t-sm bg-accent-ink" />}
+              {level === l && <span aria-hidden className="absolute inset-x-4 bottom-0 h-[3px] bg-accent-ink" />}
               <span className="inline-flex items-center gap-1.5 text-[12px] text-ink-2">
                 <HealthDot level={l} />
                 {HEALTH_LABEL[l]}
@@ -120,7 +120,7 @@ export function AccountsView() {
           placeholder="Name, company, account number"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="ml-auto w-full rounded-[4px] border border-rule bg-surface px-2 py-1.5 text-[13px] placeholder:text-ink-3 sm:w-64"
+          className="ml-auto w-full rounded-[2px] border border-rule bg-surface px-2 py-1.5 text-[13px] placeholder:text-ink-3 sm:w-64"
         />
       </div>
 

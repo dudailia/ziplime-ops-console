@@ -10,7 +10,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   return (
     <button
       type="button"
-      className="press shrink-0 rounded-[4px] border border-rule-strong bg-surface px-2 py-1 text-[12px] font-semibold text-ink hover:border-ink hover:bg-sunk"
+      className="press shrink-0 rounded-[2px] border border-rule-strong bg-surface px-2 py-1 text-[12px] font-semibold text-ink hover:border-ink hover:bg-sunk"
       aria-label={label}
       onClick={async () => {
         try {
@@ -37,7 +37,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 function Block({ text, label }: { text: string; label: string }) {
   return (
     <div className="flex items-start gap-2">
-      <pre className="min-w-0 flex-1 whitespace-pre-wrap break-all rounded-[4px] border border-rule bg-sunk px-3 py-2 font-mono text-[12px] leading-relaxed text-ink">{text}</pre>
+      <pre className="min-w-0 flex-1 whitespace-pre-wrap break-all rounded-[2px] border border-rule bg-sunk px-3 py-2 font-mono text-[12px] leading-relaxed text-ink">{text}</pre>
       <CopyButton text={text} label={label} />
     </div>
   );
@@ -54,7 +54,7 @@ export function IngestSetup({ deploymentId, secret, profile = STARTER_PROFILE }:
     .map(([k, v]) => `${k}=${v}`)
     .join("\n");
   return (
-    <div data-testid="ingest-setup" className="flex flex-col gap-3 rounded-[4px] border border-accent-edge bg-surface p-3 text-[13px]">
+    <div data-testid="ingest-setup" className="flex flex-col gap-3 rounded-[2px] border border-accent-edge bg-surface p-3 text-[13px]">
       <div>
         <p className="font-semibold text-ink">
           Ingest key for <Env>{deploymentId}</Env>

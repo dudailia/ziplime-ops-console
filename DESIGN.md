@@ -7,7 +7,7 @@ What we never take: Limex's or ziplime's logo or wordmark. Our mark is our own s
 ## Principles
 
 1. **Black ground, thin lines, square corners.** Panels are near-black boxes with 1px borders and no shadow. Corners are 0 on panels and buttons, 2px on small controls.
-2. **Lime is where you are and what to do next.** The primary action, the current page, focus, the selected session, the tour spotlight, and one word per headline as a solid block. On the session clock and order tape only, lime also marks "would send", because that is the engine's own green light. Lime is never a fill behind data.
+2. **Lime is where you are and what to do next.** The primary action, the current page, focus, the selected session, the tour spotlight, and one word per headline as a solid block. Wherever dry-run events are drawn (the session clock, the order tape, the history chart, event counts), lime also marks "would send", because that is the engine's own green light. Lime is never a fill behind text.
 3. **Cyan belongs to the dot-matrix word.** One Doto word or phrase per hero, in cyan. Nothing else is cyan.
 4. **Mono for anything a machine wrote.** Data, labels, tickers, ids, code, timestamps and the big numbers are JetBrains Mono. Prose is Inter. Headlines are General Sans.
 5. **Status colours carry meaning and pass AA on black.** Red means refused (events) or needs help (health). Every status always comes with a word.
@@ -47,7 +47,7 @@ Every text and status token passes 4.5:1 on `ground`, `surface` and `sunk` in bo
 | Headlines (`t-title`) | General Sans 700 | Uppercase, tracking -0.02em, line height 1.05 |
 | Buttons (`t-btn`) | General Sans 600 | Uppercase, 13px (14px large), tracking 0.06em |
 | Hero word | Doto 800 | Cyan, same size as the headline |
-| Data, labels, numbers, tickers, code (`t-wide`, `t-label`, `font-mono`) | JetBrains Mono | Labels 11px uppercase, tracking 0.06em, with a 6px square lime bullet |
+| Data, labels, numbers, tickers, code (`t-wide`, `t-label`, `font-mono`) | JetBrains Mono | Labels 11px uppercase, tracking 0.06em, with a 6px square lime bullet. A label that is data (an email) keeps its case |
 | Body, table cells, prose | Inter | 14px, 65 to 72ch measure |
 
 General Sans is from Fontshare under the ITF Free Font License. The licence lets us self-host it on our own site but not redistribute it through a public repository, so the font files are not in git: `scripts/fetch-fonts.mjs` downloads the official files from Fontshare before each build, checks their SHA-256, and puts them in `src/app/fonts/` (ignored). The licence text is in `src/app/fonts/LICENSE-GeneralSans.txt`. Doto, JetBrains Mono and Inter come from Google Fonts through `next/font`, which self-hosts them. All four are preloaded and get fallback faces with matching metrics, so nothing shifts when they arrive.
@@ -90,6 +90,6 @@ Never animated: keyboard shortcuts, sorting, filtering, typing in a field.
 ## Anti-references
 
 - No Limex or ziplime logo or wordmark.
-- Cyan only on the Doto word; lime never as a status outside the clock and tape.
+- Cyan only on the Doto word; lime never as a status except "would send" on drawn events.
 - No rounded cards, gradients, glass or drop shadows on panels.
 - No decorative charts. The ticker and terminal show real seed data.

@@ -193,11 +193,11 @@ export function Readiness({ file, profile }: { file: ParsedFile; profile: Profil
       aside={
         <span className="inline-flex items-center gap-1.5">
           Last
-          <button type="button" aria-label="Fewer sessions" className="size-6 rounded-[4px] border border-rule leading-none hover:border-ink" onClick={() => setN(Math.max(1, n - 1))}>
+          <button type="button" aria-label="Fewer sessions" className="size-6 rounded-[2px] border border-rule leading-none hover:border-ink" onClick={() => setN(Math.max(1, n - 1))}>
             −
           </button>
           <span className="t-cond w-4 text-center font-semibold tabular-nums text-ink">{n}</span>
-          <button type="button" aria-label="More sessions" className="size-6 rounded-[4px] border border-rule leading-none hover:border-ink" onClick={() => setN(Math.min(10, n + 1))}>
+          <button type="button" aria-label="More sessions" className="size-6 rounded-[2px] border border-rule leading-none hover:border-ink" onClick={() => setN(Math.min(10, n + 1))}>
             +
           </button>
           sessions

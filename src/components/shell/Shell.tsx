@@ -40,7 +40,7 @@ function RailNav() {
     <nav aria-label="Main" className="flex flex-col gap-5">
       {GROUPS.map((group) => (
         <div key={group.label}>
-          <div className="t-semi px-3 pb-1.5 text-[12px] font-semibold text-ink-3">{group.label}</div>
+          <div className="t-label bullet px-3 pb-2">{group.label}</div>
           <ul className="flex flex-col">
             {group.items.map((item) => {
               const active = isActive(pathname, item.href);
@@ -54,11 +54,11 @@ function RailNav() {
                       active ? "bg-sunk font-semibold text-ink" : "text-ink-2 hover:bg-sunk hover:text-ink"
                     }`}
                   >
-                    {active && <span aria-hidden className="absolute inset-y-1 left-0 w-[3px] rounded-r-sm bg-accent-ink" />}
+                    {active && <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-accent" />}
                     <item.icon />
                     <span className="flex-1">{item.label}</span>
                     {badge > 0 && (
-                      <span className="t-cond min-w-5 rounded-[4px] bg-ink px-1 text-center text-[12px] font-semibold text-surface tabular-nums">
+                      <span className="min-w-5 border border-rule-strong px-1 text-center font-mono text-[11px] font-medium text-ink tabular-nums">
                         {badge}
                       </span>
                     )}
@@ -96,11 +96,11 @@ function PhoneNav() {
                   active ? "font-semibold text-ink" : "text-ink-2"
                 }`}
               >
-                <span aria-hidden className={`absolute inset-x-4 top-0 h-[3px] rounded-b-sm ${active ? "bg-accent-ink" : ""}`} />
+                <span aria-hidden className={`absolute inset-x-4 top-0 h-[3px] ${active ? "bg-accent" : ""}`} />
                 <item.icon />
                 <span className="t-cond">{item.short}</span>
                 {badge > 0 && (
-                  <span className="t-cond absolute right-[22%] top-1 min-w-4 rounded-[4px] bg-ink px-1 text-center text-[10px] font-semibold text-surface">
+                  <span className="absolute right-[22%] top-1 min-w-4 bg-ink px-1 text-center font-mono text-[10px] font-semibold text-ground">
                     {badge}
                   </span>
                 )}
@@ -113,23 +113,22 @@ function PhoneNav() {
   );
 }
 
-type Theme = "auto" | "light" | "dark";
+type Theme = "dark" | "light" | "auto";
 const THEME_KEY = "ziplime-ops-console:theme";
 const THEME_EVENT = "ziplime-theme";
 
 // The inline script in layout.tsx sets data-theme before first paint; this
 // reads it back, so the toggle never disagrees with what's on screen.
+// Night is the default, so only light and auto are saved.
 function readTheme(): Theme {
   const t = document.documentElement.dataset.theme;
-  return t === "light" || t === "dark" ? t : "auto";
+  return t === "light" || t === "auto" ? t : "dark";
 }
 
 function applyTheme(next: Theme) {
-  const root = document.documentElement;
-  if (next === "auto") root.removeAttribute("data-theme");
-  else root.setAttribute("data-theme", next);
+  document.documentElement.setAttribute("data-theme", next);
   try {
-    if (next === "auto") window.localStorage.removeItem(THEME_KEY);
+    if (next === "dark") window.localStorage.removeItem(THEME_KEY);
     else window.localStorage.setItem(THEME_KEY, next);
   } catch {}
   window.dispatchEvent(new Event(THEME_EVENT));
@@ -141,18 +140,18 @@ function subscribeTheme(cb: () => void) {
 }
 
 function ThemeToggle() {
-  const theme = useSyncExternalStore(subscribeTheme, readTheme, () => "auto" as Theme);
+  const theme = useSyncExternalStore(subscribeTheme, readTheme, () => "dark" as Theme);
   const choose = applyTheme;
   return (
-    <div role="radiogroup" aria-label="Theme" className="flex overflow-hidden rounded-[4px] border border-rule text-[12px]">
-      {(["auto", "light", "dark"] as const).map((t) => (
+    <div role="radiogroup" aria-label="Theme" className="flex overflow-hidden border border-rule font-mono text-[11px]">
+      {(["dark", "light", "auto"] as const).map((t) => (
         <button
           key={t}
           type="button"
           role="radio"
           aria-checked={theme === t}
           onClick={() => choose(t)}
-          className={`t-cond flex-1 px-2 py-1 capitalize ${theme === t ? "bg-ink text-surface" : "text-ink-2 hover:text-ink"}`}
+          className={`flex-1 px-2 py-1 capitalize ${theme === t ? "bg-ink text-ground" : "text-ink-2 hover:text-ink"}`}
         >
           {t}
         </button>
@@ -176,7 +175,7 @@ function ResetDemo({ compact = false }: { compact?: boolean }) {
         <span className="text-ink-2">{compact ? "Reset?" : "Clear every change?"}</span>
         <button
           type="button"
-          className="rounded-[4px] bg-ink px-2 py-0.5 font-semibold text-surface"
+          className="rounded-[2px] bg-ink px-2 py-0.5 font-semibold text-ground"
           onClick={() => {
             resetDemo();
             setAsking(false);
@@ -195,7 +194,7 @@ function ResetDemo({ compact = false }: { compact?: boolean }) {
     <button
       type="button"
       onClick={() => setAsking(true)}
-      className="rounded-[4px] border border-rule px-2 py-1 text-[12px] text-ink-2 hover:border-rule-strong hover:text-ink"
+      className="rounded-[2px] border border-rule px-2 py-1 text-[12px] text-ink-2 hover:border-rule-strong hover:text-ink"
     >
       {done ? "Demo reset" : "Reset demo"}
     </button>
@@ -222,9 +221,9 @@ function ResumeTour() {
     <button
       type="button"
       onClick={() => act({ type: "resume" })}
-      className="press flex items-center gap-2 rounded-[4px] border border-rule-strong bg-surface px-2 py-1 text-left text-[12px] font-semibold text-ink hover:bg-sunk"
+      className="press flex items-center gap-2 rounded-[2px] border border-rule-strong bg-surface px-2 py-1 text-left text-[12px] font-semibold text-ink hover:bg-sunk"
     >
-      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent-ink" />
+      <span aria-hidden className="h-1.5 w-1.5 rounded-none bg-accent-ink" />
       Resume tour, step {tour.step + 1} of {TOUR.length}
     </button>
   );
@@ -234,7 +233,7 @@ function AiLine() {
   const status = useAiStatus();
   return (
     <div className="text-[12px] leading-snug text-ink-2">
-      <span className={`mr-1.5 inline-block size-1.5 rounded-full align-middle ${status?.enabled ? "bg-ok" : "bg-ink-3"}`} />
+      <span className={`mr-1.5 inline-block size-1.5 rounded-none align-middle ${status?.enabled ? "bg-ok" : "bg-ink-3"}`} />
       {status === null ? "Checking AI…" : status.enabled ? `AI drafting on (${status.model})` : "AI drafting is off"}
     </div>
   );
@@ -244,10 +243,10 @@ function AiLine() {
 export function BrandMark({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 20 20" aria-hidden className="shrink-0">
-      <rect x="0.5" y="0.5" width="19" height="19" rx="4" fill="#12181c" stroke="var(--rule-strong)" strokeOpacity="0.6" />
-      <rect x="4.5" y="9" width="2.4" height="6.5" rx="0.6" fill="#e4e9ec" opacity="0.55" />
-      <rect x="8.8" y="6.5" width="2.4" height="9" rx="0.6" fill="#e4e9ec" opacity="0.8" />
-      <rect x="13.1" y="4" width="2.4" height="11.5" rx="0.6" fill="#c5ef3a" />
+      <rect x="0.5" y="0.5" width="19" height="19" fill="#0b0a10" stroke="var(--rule-strong)" />
+      <rect x="4.5" y="9" width="2.4" height="6.5" fill="#f2f0ff" opacity="0.55" />
+      <rect x="8.8" y="6.5" width="2.4" height="9" fill="#f2f0ff" opacity="0.8" />
+      <rect x="13.1" y="4" width="2.4" height="11.5" fill="#a6f656" />
     </svg>
   );
 }
@@ -256,9 +255,9 @@ function Brand() {
   return (
     <Link href="/" className="flex items-center gap-2 whitespace-nowrap leading-none">
       <BrandMark />
-      <span>
-        <span className="t-wide text-[17px] font-[800] tracking-[-0.01em] text-ink">ziplime</span>
-        <span className="t-cond ml-1 text-[15px] font-medium text-ink-2">Ops Console</span>
+      {/* Lowercase mono on purpose: never ziplime's uppercase wordmark. */}
+      <span className="font-mono text-[14px] tracking-[-0.01em]">
+        <span className="font-bold text-ink">ziplime</span> <span className="text-ink-2">ops console</span>
       </span>
     </Link>
   );
@@ -273,7 +272,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="sticky top-0 flex h-dvh flex-col gap-6 overflow-y-auto py-5">
           <div className="px-3">
             <Brand />
-            <p className="mt-1.5 text-[12px] leading-snug text-ink-3">On ziplime&apos;s Lime dry run</p>
+            <p className="mt-2 font-mono text-[11px] leading-snug text-ink-3">on ziplime&apos;s Lime dry run</p>
           </div>
           <Suspense fallback={null}>
             <RailNav />
@@ -295,9 +294,9 @@ export function Shell({ children }: { children: ReactNode }) {
             <ResetDemo compact />
           </div>
         </div>
-        <div className="flex items-center gap-3 border-b border-rule bg-sunk px-4 py-1.5 lg:px-8">
-          <p className="t-semi text-[12px] font-semibold text-ink-2">
-            <span className="mr-1.5 inline-block size-2 rounded-[1px] border border-ink-2 align-[-1px]" />
+        <div className="flex items-center gap-3 border-b border-rule bg-surface px-4 py-1.5 lg:px-8">
+          <p className="font-mono text-[11px] font-medium tracking-[0.04em] text-ink-2">
+            <span className="mr-2 inline-block size-2 border border-ink-2 align-[-1px]" />
             Sample data. Fictional accounts.
           </p>
           <div className="ml-auto lg:hidden">

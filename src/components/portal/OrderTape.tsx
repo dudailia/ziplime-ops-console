@@ -137,7 +137,7 @@ export function OrderTape({
             aria-label="Symbol"
             value={filter.symbol}
             onChange={(ev) => setFilter({ ...filter, symbol: ev.target.value })}
-            className="rounded-[4px] border border-rule bg-surface px-2 py-1 text-[13px] text-ink"
+            className="rounded-[2px] border border-rule bg-surface px-2 py-1 text-[13px] text-ink"
           >
             <option value="">All symbols</option>
             {symbols.map((s) => (
@@ -148,7 +148,7 @@ export function OrderTape({
             aria-label="Side"
             value={filter.side}
             onChange={(ev) => setFilter({ ...filter, side: ev.target.value as TapeFilter["side"] })}
-            className="rounded-[4px] border border-rule bg-surface px-2 py-1 text-[13px] text-ink"
+            className="rounded-[2px] border border-rule bg-surface px-2 py-1 text-[13px] text-ink"
           >
             <option value="">Buys and sells</option>
             <option value="buy">Buys</option>
@@ -161,7 +161,7 @@ export function OrderTape({
             placeholder="Order id or line"
             value={filter.query}
             onChange={(ev) => setFilter({ ...filter, query: ev.target.value })}
-            className="min-w-0 flex-1 rounded-[4px] border border-rule bg-surface px-2 py-1 text-[13px] text-ink placeholder:text-ink-3 sm:w-40 sm:flex-none"
+            className="min-w-0 flex-1 rounded-[2px] border border-rule bg-surface px-2 py-1 text-[13px] text-ink placeholder:text-ink-3 sm:w-40 sm:flex-none"
           />
         </div>
         {filter.group && (
@@ -174,7 +174,7 @@ export function OrderTape({
         )}
       </div>
 
-      <div className={`hidden border-b border-rule px-4 py-1.5 text-[12px] text-ink-3 ${GRID}`}>
+      <div className={`t-label hidden border-b border-rule px-4 py-1.5 ${GRID}`}>
         <span>ET</span>
         <span>Event</span>
         <span>Symbol</span>
@@ -206,15 +206,15 @@ export function OrderTape({
                 onClick={() => onSelect(open ? null : e.line)}
                 className={`w-full px-4 py-1.5 text-left text-[13px] transition-colors duration-150 hover:bg-sunk ${GRID} flex flex-wrap items-center gap-x-3 gap-y-0.5`}
               >
-                <span className="t-cond tabular-nums text-ink-2">{formatMinute(e.clock.minuteET)}</span>
+                <span className="font-mono text-[12px] tabular-nums text-ink-2">{formatMinute(e.clock.minuteET)}</span>
                 <span className={`t-cond inline-flex items-center gap-1.5 font-semibold ${EVENT_TEXT[e.event]}`}>
                   <EventGlyph kind={e.event} size={11} />
                   {EVENT_WORD[e.event]}
                 </span>
-                <span className="t-cond font-semibold text-ink">{e.symbol ?? "?"}</span>
+                <span className="font-mono text-[12px] font-semibold text-ink">{e.symbol ?? "?"}</span>
                 <span className="t-cond text-ink-2">{side ?? ""}</span>
-                <span className={`t-cond tabular-nums text-ink md:text-right ${isCancelled ? "strike text-cancel" : ""}`}>{qty(e)}</span>
-                <span className="t-cond text-ink-2">
+                <span className={`font-mono text-[12px] tabular-nums text-ink md:text-right ${isCancelled ? "strike text-cancel" : ""}`}>{qty(e)}</span>
+                <span className="font-mono text-[12px] text-ink-2">
                   {e.event === "place" ? `${e.order_type}${e.limit_price ? ` ${e.limit_price}` : ""}` : ""}
                 </span>
                 <span className="t-cond w-full truncate text-ink-2 md:w-auto">{detail(e, profile, cancelledAt)}</span>

@@ -13,7 +13,7 @@ export function TourCta() {
         type="button"
         data-testid="tour-start"
         onClick={() => act(cta.action)}
-        className="press inline-flex items-center gap-2.5 rounded-[4px] border border-accent-edge bg-accent px-4 py-2.5 text-[14px] font-semibold text-on-accent transition-[filter,transform] duration-150 hover:brightness-[1.04]"
+        className="press t-btn inline-flex items-center gap-2.5 bg-accent px-[22px] py-[14px] text-[14px] text-on-accent transition-[background-color,transform] duration-150 hover:bg-ink"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
           <path d="M3.5 2.2v9.6L11.5 7z" fill="currentColor" />

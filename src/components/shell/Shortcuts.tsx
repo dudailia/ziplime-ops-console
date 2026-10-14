@@ -79,7 +79,7 @@ export function Shortcuts() {
         <button
           type="button"
           onClick={() => sheet.current?.close()}
-          className="press ml-auto rounded-[4px] px-2 py-1 text-[12px] text-ink-2 hover:bg-sunk hover:text-ink"
+          className="press ml-auto rounded-[2px] px-2 py-1 text-[12px] text-ink-2 hover:bg-sunk hover:text-ink"
         >
           Close <kbd className="kbd ml-1">Esc</kbd>
         </button>

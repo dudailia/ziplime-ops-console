@@ -18,9 +18,9 @@ function Toggle({ on, onChange, label }: { on: boolean; onChange: () => void; la
       aria-checked={on}
       aria-label={label}
       onClick={onChange}
-      className={`relative h-5 w-9 shrink-0 rounded-full border ${on ? "border-ink bg-ink" : "border-rule-strong bg-sunk"}`}
+      className={`relative h-5 w-9 shrink-0 rounded-none border ${on ? "border-ink bg-ink" : "border-rule-strong bg-sunk"}`}
     >
-      <span className={`absolute top-0.5 size-3.5 rounded-full ${on ? "left-[18px] bg-surface" : "left-0.5 bg-ink-3"}`} />
+      <span className={`absolute top-0.5 size-3.5 rounded-none ${on ? "left-[18px] bg-surface" : "left-0.5 bg-ink-3"}`} />
     </button>
   );
 }

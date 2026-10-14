@@ -96,7 +96,7 @@ export function PortalView() {
           <select
             value={upload ? d : deployment!.id}
             onChange={(ev) => go({ d: ev.target.value })}
-            className="max-w-[min(80vw,340px)] rounded-[4px] border border-rule-strong bg-surface px-2 py-1.5 text-[13px] font-semibold text-ink"
+            className="max-w-[min(80vw,340px)] rounded-[2px] border border-rule-strong bg-surface px-2 py-1.5 text-[13px] font-semibold text-ink"
           >
             {uploads.length > 0 && (
               <optgroup label="Opened in this tab">

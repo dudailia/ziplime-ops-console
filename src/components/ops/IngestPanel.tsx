@@ -117,7 +117,7 @@ export function IngestPanel({ deployments }: { deployments: DeploymentSummary[] 
               </ul>
             )}
             {rejected.length > 0 && (
-              <div className="mt-2 rounded-[4px] border border-rule bg-sunk px-3 py-2">
+              <div className="mt-2 rounded-[2px] border border-rule bg-sunk px-3 py-2">
                 <p className="text-[12px] font-semibold text-ink">Rejected lines</p>
                 <ul className="mt-1 text-[12px] text-ink-2">
                   {rejected.map((l) => (

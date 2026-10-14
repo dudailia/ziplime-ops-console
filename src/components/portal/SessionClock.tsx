@@ -99,8 +99,8 @@ export function SessionClock({
     <div className={header ? "overflow-hidden rounded-panel border border-rule bg-surface" : ""}>
       {header && (
       <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 pb-1 pt-3">
-        <h2 className="t-title text-[30px] text-ink sm:text-[38px]">{sessionLabel(session.date, true)}</h2>
-        <p className="text-[13px] text-ink-2">
+        <h2 className="t-title text-[24px] text-ink sm:text-[28px]">{sessionLabel(session.date, true)}</h2>
+        <p className="font-mono text-[12px] text-ink-2">
           09:30 to 16:00 ET. Buys tick up from the line, sells tick down.
           <span className="sm:hidden"> Scroll sideways for the full day.</span>
         </p>
@@ -126,7 +126,7 @@ export function SessionClock({
                 x={x(m)}
                 y={TOP - 12}
                 textAnchor={m === SESSION_CLOSE_MINUTE ? "end" : "middle"}
-                className="t-wide fill-ink text-[13px] font-[800]"
+                className="fill-ink-2 font-mono text-[11px] font-[500]"
               >
                 {m === SESSION_CLOSE_MINUTE ? "16:00" : formatMinute(m).replace(/^0/, "")}
               </text>
@@ -134,7 +134,7 @@ export function SessionClock({
           ))}
           <line x1={x(SESSION_OPEN_MINUTE)} x2={x(SESSION_OPEN_MINUTE)} y1={TOP - 6} y2={height - 8} stroke="var(--rule-strong)" />
           {hourStep === 60 && (
-            <text x={x(SESSION_OPEN_MINUTE)} y={TOP - 12} className="t-wide fill-ink-2 text-[11px] font-[700]">
+            <text x={x(SESSION_OPEN_MINUTE)} y={TOP - 12} className="fill-ink-3 font-mono text-[10px] font-[500]">
               9:30
             </text>
           )}
@@ -143,7 +143,7 @@ export function SessionClock({
           {lanes.map((symbol) => (
             <g key={symbol}>
               <line x1={GUTTER} x2={width - RIGHT} y1={laneY(symbol)} y2={laneY(symbol)} stroke="var(--rule-strong)" strokeOpacity={0.55} />
-              <text x={GUTTER - 10} y={laneY(symbol) + 4} textAnchor="end" className="t-cond fill-ink text-[13px] font-semibold">
+              <text x={GUTTER - 10} y={laneY(symbol) + 4} textAnchor="end" className="fill-ink font-mono text-[12px] font-semibold">
                 {symbol}
               </text>
             </g>
