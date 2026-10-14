@@ -14,7 +14,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "seed": "PYTHONDONTWRITEBYTECODE=1 ../ziplime/.venv/bin/python scripts/generate_seed.py",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test:forwarder": "PYTHONDONTWRITEBYTECODE=1 python3 -m pytest forwarder -q -p no:cacheprovider",
     "test:ingest": "playwright test -c playwright.ingest.config.ts",
     "db:migrate": "DB_TASK=migrate vitest run --config vitest.scripts.config.ts",
@@ -30,6 +30,7 @@
     "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.0",
     "@playwright/test": "^1.64.0",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",

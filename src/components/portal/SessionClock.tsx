@@ -106,7 +106,14 @@ export function SessionClock({
         </p>
       </div>
       )}
-      <div ref={frame} className="relative overflow-x-auto overscroll-x-contain">
+      <div
+        ref={frame}
+        // Scrolls sideways on a phone, so it takes focus: arrow keys scroll it.
+        tabIndex={0}
+        role="region"
+        aria-label={`Session clock, ${session.date}`}
+        className="relative overflow-x-auto overscroll-x-contain focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+      >
         <svg
           width={width}
           height={height}

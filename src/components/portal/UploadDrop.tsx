@@ -29,6 +29,9 @@ export function UploadButton({ onLoaded }: { onLoaded: (file: ParsedFile) => voi
         type="file"
         accept=".jsonl,.json,.txt,application/x-ndjson"
         className="sr-only"
+        // The button below opens it, so it isn't a second tab stop.
+        tabIndex={-1}
+        aria-label="Dry-run file (.jsonl)"
         data-testid="upload-input"
         onChange={async (ev) => {
           const f = ev.target.files?.[0];
@@ -51,6 +54,8 @@ export function UploadButton({ onLoaded }: { onLoaded: (file: ParsedFile) => voi
 /** Accepts a dropped file anywhere inside. */
 export function DropZone({ onLoaded, children }: { onLoaded: (file: ParsedFile) => void; children: ReactNode }) {
   const [over, setOver] = useState(false);
+  // A dropped file that can't be read used to vanish without a word.
+  const [error, setError] = useState<string | null>(null);
   return (
     <div
       onDragOver={(ev) => {
@@ -68,10 +73,19 @@ export function DropZone({ onLoaded, children }: { onLoaded: (file: ParsedFile) 
         const f = ev.dataTransfer.files?.[0];
         if (!f) return;
         const result = await readDryRunFile(f);
-        if (typeof result !== "string") onLoaded(result);
+        if (typeof result === "string") setError(result);
+        else {
+          setError(null);
+          onLoaded(result);
+        }
       }}
       className={`relative ${over ? "outline-2 outline-dashed outline-offset-4 outline-ink" : ""}`}
     >
+      {error && (
+        <p role="alert" className="mb-3 text-[12px] text-refuse" data-testid="drop-error">
+          {error}
+        </p>
+      )}
       {children}
     </div>
   );

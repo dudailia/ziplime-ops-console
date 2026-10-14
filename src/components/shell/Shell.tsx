@@ -288,6 +288,7 @@ export function Shell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="flex min-h-dvh min-w-0 flex-col">
+        <header>
         <div className="flex items-center gap-3 border-b border-rule bg-surface px-4 py-2.5 lg:hidden">
           <Brand />
           <div className="ml-auto">
@@ -303,6 +304,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <ResumeTour />
           </div>
         </div>
+        </header>
         <main className="min-w-0 flex-1 px-4 pb-10 pt-6 lg:px-8">{children}</main>
         {/* On a phone the footer clears the fixed tab bar (52 px plus the safe area). */}
         <footer className="border-t border-rule px-4 pb-[calc(76px+env(safe-area-inset-bottom))] pt-4 text-[12px] text-ink-3 lg:px-8 lg:pb-5">
