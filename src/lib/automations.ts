@@ -73,10 +73,22 @@ export function runRules(ds: Dataset, state: State, enabled: Record<RuleId, bool
     if (enabled["refusal-streak"]) {
       const recent = sessions.slice(-3);
       if (recent.length === 3 && recent.every((x) => x.counts.refuse > 0)) {
-        const id = `A-${d.id}-streak`;
+        // One ticket per streak: keyed to the first session of the unbroken run
+        // of refusal sessions, so a later streak after a clean session opens a
+        // new one even if this one was answered.
+        let first = sessions.length - 1;
+        while (first > 0 && sessions[first - 1].counts.refuse > 0) first--;
+        const since = sessions[first].date;
+        const id = `A-${d.id}-streak-${since}`;
         const trigger = `refusals on ${recent.map((x) => shortDate(x.date)).join(", ")}`;
         if (ticketIds.has(id)) {
-          out.lines.push({ rule: "refusal-streak", accountId: d.account, deployment: d.id, text: `Skipped: ticket ${id} already open.`, skipped: true });
+          out.lines.push({
+            rule: "refusal-streak",
+            accountId: d.account,
+            deployment: d.id,
+            text: `Skipped: the streak since ${shortDate(since)} already has ticket ${id}.`,
+            skipped: true,
+          });
         } else {
           const latest = recent.at(-1)!.events.filter((e): e is RefuseEvent => e.event === "refuse");
           const ticket: Ticket = {
