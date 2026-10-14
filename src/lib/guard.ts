@@ -28,24 +28,65 @@ export const CATEGORY_LABEL: Record<GuardCategory, string> = {
 
 type Pattern = { category: GuardCategory; re: RegExp; label: string };
 
+// Adverbs and hedges that sit between "you should" and the verb ("you should
+// definitely buy"). Short and closed, so a sentence about settings never matches.
+const HEDGE = "(?:(?:definitely|probably|really|seriously|certainly|just|also|still|maybe|perhaps|now|consider|think about|go ahead and|start)\\s+){0,3}";
+const TRADE_VERB = "(?:buy(?:ing)?|sell(?:ing)?|hold(?:ing)?|short(?:ing)?|dump(?:ing)?|load(?:ing)? up on|add(?:ing)? to|trim(?:ming)?|exit(?:ing)?)";
+const MOVE_VERB = "(?:go (?:up|down|higher|lower)|move (?:up|down|higher|lower)|head (?:up|down|higher|lower)|rise|fall|rally|drop|climb|surge|soar|crash|tank|rebound|recover|pop)";
+const PERCENT = "\\b\\d+(?:\\.\\d+)?\\s?%";
+
 const BASE: Pattern[] = [
   { category: "returns", label: "guarantee", re: /\bguarantee(?:d|s)?\b/gi },
   { category: "returns", label: "risk-free", re: /\brisk[- ]free\b/gi },
-  { category: "returns", label: "can't lose", re: /\b(?:can(?:'|’)?t|cannot|won(?:'|’)?t) lose\b/gi },
-  { category: "returns", label: "will make or earn", re: /\bwill (?:make|earn)\b/gi },
-  { category: "returns", label: "assured profit", re: /\bassured (?:profits?|returns?|gains?)\b/gi },
-  { category: "returns", label: "percent return", re: /\b\d+(?:\.\d+)?\s?%\s+(?:annual\s+)?(?:returns?|gains?|profits?|a (?:year|month))\b/gi },
+  { category: "returns", label: "zero risk", re: /\bzero[- ]risk\b|\bno[- ]risk (?:setups?|strateg(?:y|ies)|trades?|investments?|returns?|profits?|plays?)\b/gi },
+  { category: "returns", label: "can't lose", re: /\b(?:can(?:'|’)?t|cannot|won(?:'|’)?t) (?:lose|go wrong|miss)\b/gi },
+  {
+    category: "returns",
+    label: "will make or earn",
+    re: /(?:\b(?:will|should|could|can|would|going to)|'ll|’ll) (?:\w+ )?(?:make|earn|net) (?:you |them )?(?:money|a profit|profits?|returns?|gains?|a killing|\$\s?\d|\d)|(?:\bwill|'ll|’ll) (?:\w+ )?profit\b/gi,
+  },
+  { category: "returns", label: "assured profit", re: /\b(?:assured|sure|certain|easy) (?:profits?|returns?|gains?|money|thing|bet|win)\b/gi },
+  { category: "returns", label: "double your money", re: /\b(?:double|triple|grow|multiply) (?:your|their) (?:money|account|capital|investment)\b/gi },
+  {
+    category: "returns",
+    label: "percent return",
+    re: new RegExp(
+      `${PERCENT}\\s+(?:annual\\s+|annualized\\s+|monthly\\s+|yearly\\s+)?(?:returns?|gains?|profits?|a (?:year|month|week)|per (?:year|month|week|annum)|each (?:year|month)|every (?:year|month)|annually|monthly|yearly)\\b|\\b(?:returns?|gains?|profits?|yield) of (?:up to |around |about |over )?\\d+(?:\\.\\d+)?\\s?%`,
+      "gi",
+    ),
+  },
   { category: "returns", label: "outperform", re: /\boutperform(?:s|ed|ing)?\b/gi },
-  { category: "returns", label: "beat the market", re: /\bbeat(?:s|ing)? the market\b/gi },
-  { category: "advice", label: "you should buy/sell/hold", re: /\byou should (?:buy|sell|hold|short)\b/gi },
-  { category: "advice", label: "I recommend buying/selling", re: /\bI(?:'d|’d| would)? recommend (?:buying|selling|holding|shorting)\b/gi },
-  { category: "advice", label: "good investment", re: /\b(?:good|great|safe) investment\b/gi },
+  { category: "returns", label: "beat the market", re: /\bbeat(?:s|ing)? the (?:market|index|S&P|SPY)\b/gi },
+  { category: "advice", label: "you should buy/sell/hold", re: new RegExp(`\\byou(?:'d| would)? (?:should|ought to|need to|must|might want to|may want to|want to) ${HEDGE}${TRADE_VERB}\\b`, "gi") },
+  {
+    category: "advice",
+    label: "I recommend buying/selling",
+    re: new RegExp(
+      `\\b(?:I|we)(?:'d|’d| would)? (?:(?:strongly|really|definitely)\\s+)?(?:recommend|suggest|advise|encourage)(?: (?:that )?you)?(?: to)? (?:consider(?:ing)? )?${TRADE_VERB}\\b`,
+      "gi",
+    ),
+  },
+  { category: "advice", label: "consider buying/selling", re: new RegExp(`\\bconsider ${TRADE_VERB}\\b`, "gi") },
+  { category: "advice", label: "buy the dip", re: /\b(?:buy|sell|short) the (?:dip|rip|news|top|bottom)\b/gi },
+  { category: "advice", label: "good investment", re: /\b(?:good|great|safe|smart|solid) (?:investment|buy|bet|entry)\b/gi },
   { category: "advice", label: "price target", re: /\bprice targets?\b/gi },
-  { category: "advice", label: "will go up/down", re: /\bwill (?:go|move|head) (?:up|down|higher|lower)\b/gi },
-  { category: "advice", label: "now is a good time to", re: /\bnow is (?:a )?(?:good|great|the) time to\b/gi },
-  { category: "advice", label: "buy/sell now", re: /\b(?:buy|sell) (?:it |them )?now\b/gi },
-  { category: "other-clients", label: "other clients", re: /\bother (?:clients|customers|traders|users|accounts)\b/gi },
-  { category: "other-clients", label: "another client", re: /\banother (?:client|customer|trader|user|account)\b/gi },
+  {
+    category: "advice",
+    label: "will go up/down",
+    re: new RegExp(
+      `\\bwill (?:(?:likely|probably|definitely|surely|soon)\\s+)?${MOVE_VERB}\\b|\\b(?:is|are|'s|’s|looks?|seems?) (?:going|likely|expected|set|poised|about|due|ready) to ${MOVE_VERB}\\b`,
+      "gi",
+    ),
+  },
+  { category: "advice", label: "now is a good time to", re: /\bnow is (?:a )?(?:good|great|the|the right|the perfect) time to\b/gi },
+  { category: "advice", label: "buy/sell now", re: /\b(?:buy|sell) (?:it |them |more )?now\b/gi },
+  { category: "other-clients", label: "other clients", re: /\bother (?:clients|customers|traders|users|accounts|investors|members)\b/gi },
+  { category: "other-clients", label: "another client", re: /\banother (?:client|customer|trader|user|account|investor|member)\b/gi },
+  {
+    category: "other-clients",
+    label: "our clients",
+    re: /\b(?:(?:many|most|some|several|all|plenty|lots|a lot|a few|none) of )?our (?:other )?(?:clients|customers|traders|users|investors|members)\b/gi,
+  },
 ];
 
 const MONTH = "(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)";
