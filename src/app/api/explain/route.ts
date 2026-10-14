@@ -1,5 +1,6 @@
 import { aiClient, aiModel, aiOff, badRequest, textOf, upstreamError } from "@/lib/ai/server";
 import { guard } from "@/lib/guard";
+import { readJson } from "@/lib/http/body";
 
 // Explains one refusal reason that matched no built-in rule. The request
 // carries only that reason, its event and the deployment's risk profile.
@@ -16,12 +17,9 @@ Rules:
 type Body = { reason?: unknown; event?: unknown; symbol?: unknown; requestedAmount?: unknown; riskEnv?: unknown; validateOrders?: unknown };
 
 export async function POST(request: Request) {
-  let body: Body;
-  try {
-    body = (await request.json()) as Body;
-  } catch {
-    return badRequest("Body must be JSON.");
-  }
+  const read = await readJson(request);
+  if (!read.ok) return read.response;
+  const body = (read.value ?? {}) as Body;
   if (typeof body.reason !== "string" || body.reason.length === 0 || body.reason.length > 1000) {
     return badRequest("reason must be a string of 1 to 1000 characters.");
   }

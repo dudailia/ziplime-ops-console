@@ -9,6 +9,19 @@ const nextConfig: NextConfig = {
   // Loaded from node_modules at runtime: PGlite ships WebAssembly and data files.
   serverExternalPackages: ["@electric-sql/pglite", "pg"],
   cacheComponents: true,
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        ],
+      },
+    ];
+  },
   partialPrefetching: true,
   turbopack: {
     rules: {

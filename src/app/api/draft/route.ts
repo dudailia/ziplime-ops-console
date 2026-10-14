@@ -5,6 +5,7 @@ import { readiness } from "@/lib/dryrun/metrics";
 import { guard } from "@/lib/guard";
 import { fileOf } from "@/lib/data/lookup";
 import { getDataSource } from "@/lib/data/server";
+import { readJson } from "@/lib/http/body";
 import { linkedEvents } from "@/lib/inbox";
 
 // Drafts a support reply. The prompt carries only this account's data: the
@@ -25,12 +26,9 @@ type InMessage = { from?: unknown; author?: unknown; body?: unknown };
 type Body = { ticket?: { accountId?: unknown; subject?: unknown; messages?: unknown; links?: unknown } };
 
 export async function POST(request: Request) {
-  let body: Body;
-  try {
-    body = (await request.json()) as Body;
-  } catch {
-    return badRequest("Body must be JSON.");
-  }
+  const read = await readJson(request);
+  if (!read.ok) return read.response;
+  const body = (read.value ?? {}) as Body;
   const t = body.ticket;
   const ds = await (await getDataSource()).load();
   const account = ds.accounts.find((a) => a.id === t?.accountId);

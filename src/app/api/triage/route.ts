@@ -1,6 +1,7 @@
 import { aiClient, aiModel, aiOff, badRequest, textOf, upstreamError } from "@/lib/ai/server";
 import { guard } from "@/lib/guard";
 import { getDataSource } from "@/lib/data/server";
+import { readJson } from "@/lib/http/body";
 import { signupById } from "@/lib/intake";
 import { BROKERS, TRADER_TYPES, WORKSPACES, type TraderType, type WorkspaceKey } from "@/lib/intake/catalog";
 import { rulesTriage, type Triage } from "@/lib/intake/triage";
@@ -80,12 +81,9 @@ function valid(o: Partial<Out>): o is Out {
 }
 
 export async function POST(request: Request) {
-  let id: unknown;
-  try {
-    ({ id } = (await request.json()) as { id?: unknown });
-  } catch {
-    return badRequest("Body must be JSON.");
-  }
+  const read = await readJson(request);
+  if (!read.ok) return read.response;
+  const id = (read.value as { id?: unknown } | null)?.id;
   const ds = await (await getDataSource()).load();
   const signup = typeof id === "string" ? signupById(ds.signups, id) : undefined;
   if (!signup) return badRequest("Unknown signup id.");

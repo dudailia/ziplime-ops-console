@@ -91,3 +91,21 @@ test("the build log page shows docs/HOW_I_BUILT_THIS.md and is linked from every
     await expect(page.getByRole("heading", { level: 2, name: h })).toBeVisible();
   }
 });
+
+test("pages and API routes send the basic security headers", async ({ request }) => {
+  for (const path of ["/", "/ops", "/api/ai-status"]) {
+    const r = await request.get(path);
+    expect(r.headers()["x-content-type-options"], path).toBe("nosniff");
+    expect(r.headers()["x-frame-options"], path).toBe("DENY");
+    expect(r.headers()["referrer-policy"], path).toBe("strict-origin-when-cross-origin");
+  }
+});
+
+test("without a database the ingest and ops routes refuse cleanly, with no internals", async ({ request }) => {
+  const ingest = await request.post("/api/ingest/priya-growth", { data: { first_line: 1, lines: ["{}"] } });
+  expect(ingest.status()).toBe(503);
+  expect(await ingest.json()).toEqual({ error: "ingest_unavailable" });
+  const approve = await request.post("/api/ops/signups/su-001/approve", { data: { subject: "a", body: "b" } });
+  expect(approve.status()).toBe(503);
+  expect(await approve.json()).toEqual({ error: "needs_database" });
+});
