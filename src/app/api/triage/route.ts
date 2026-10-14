@@ -1,4 +1,4 @@
-import { aiClient, aiModel, aiOff, badRequest, textOf, upstreamError } from "@/lib/ai/server";
+import { aiClient, aiModel, aiOff, aiRequestRefused, badRequest, textOf, upstreamError } from "@/lib/ai/server";
 import { guard } from "@/lib/guard";
 import { getDataSource } from "@/lib/data/server";
 import { readJson } from "@/lib/http/body";
@@ -81,6 +81,8 @@ function valid(o: Partial<Out>): o is Out {
 }
 
 export async function POST(request: Request) {
+  const refused = aiRequestRefused(request);
+  if (refused) return refused;
   const read = await readJson(request);
   if (!read.ok) return read.response;
   const id = (read.value as { id?: unknown } | null)?.id;

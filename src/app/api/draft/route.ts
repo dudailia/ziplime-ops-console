@@ -1,4 +1,4 @@
-import { aiClient, aiModel, aiOff, badRequest, textOf, upstreamError } from "@/lib/ai/server";
+import { aiClient, aiModel, aiOff, aiRequestRefused, badRequest, textOf, upstreamError } from "@/lib/ai/server";
 import { otherClients } from "@/lib/crm";
 import { explain } from "@/lib/dryrun/explain";
 import { readiness } from "@/lib/dryrun/metrics";
@@ -26,6 +26,8 @@ type InMessage = { from?: unknown; author?: unknown; body?: unknown };
 type Body = { ticket?: { accountId?: unknown; subject?: unknown; messages?: unknown; links?: unknown } };
 
 export async function POST(request: Request) {
+  const refused = aiRequestRefused(request);
+  if (refused) return refused;
   const read = await readJson(request);
   if (!read.ok) return read.response;
   const body = (read.value ?? {}) as Body;

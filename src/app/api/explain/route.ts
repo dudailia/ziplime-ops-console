@@ -1,4 +1,4 @@
-import { aiClient, aiModel, aiOff, badRequest, textOf, upstreamError } from "@/lib/ai/server";
+import { aiClient, aiModel, aiOff, aiRequestRefused, badRequest, textOf, upstreamError } from "@/lib/ai/server";
 import { guard } from "@/lib/guard";
 import { readJson } from "@/lib/http/body";
 
@@ -17,6 +17,8 @@ Rules:
 type Body = { reason?: unknown; event?: unknown; symbol?: unknown; requestedAmount?: unknown; riskEnv?: unknown; validateOrders?: unknown };
 
 export async function POST(request: Request) {
+  const refused = aiRequestRefused(request);
+  if (refused) return refused;
   const read = await readJson(request);
   if (!read.ok) return read.response;
   const body = (read.value ?? {}) as Body;

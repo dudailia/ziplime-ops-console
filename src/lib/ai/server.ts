@@ -1,5 +1,6 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
+import { AI_OFF_MESSAGE, aiAccess, aiRequestProblem, type AiAccess } from "./access";
 
 // Current Sonnet unless ANTHROPIC_MODEL says otherwise (PLAN.md decision 2).
 export const DEFAULT_MODEL = "claude-sonnet-5-5";
@@ -8,8 +9,13 @@ export function aiModel(): string {
   return process.env.ANTHROPIC_MODEL?.trim() || DEFAULT_MODEL;
 }
 
+/** The data mode is inlined at build time (next.config.ts), so it is read by name here, not from the env object. */
+export function access(): AiAccess {
+  return aiAccess({ ...process.env, CONSOLE_DATA_MODE: process.env.CONSOLE_DATA_MODE });
+}
+
 export function aiEnabled(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY?.trim());
+  return access().enabled;
 }
 
 /** null without a key: every caller has a deterministic fallback. */
@@ -27,7 +33,14 @@ export function textOf(message: Anthropic.Message): string {
 }
 
 export function aiOff() {
-  return Response.json({ error: "AI drafting is off: ANTHROPIC_API_KEY is not set." }, { status: 503 });
+  const a = access();
+  return Response.json({ error: AI_OFF_MESSAGE[a.enabled ? "no_key" : a.reason] }, { status: 503 });
+}
+
+/** Same origin and JSON, or the response that refuses the request. */
+export function aiRequestRefused(request: Request): Response | null {
+  const problem = aiRequestProblem(request);
+  return problem ? Response.json({ error: problem.error }, { status: problem.status }) : null;
 }
 
 export function badRequest(message: string) {

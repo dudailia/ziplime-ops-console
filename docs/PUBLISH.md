@@ -29,6 +29,8 @@ The repo doesn't contain ziplime. `scripts/generate_seed.py` and the ingest test
 
 The demo is the static build: every page prerendered from the bundled seed. It must be built with `DATABASE_URL`, `OPS_PASSWORD` and `ANTHROPIC_API_KEY` all unset, because the data mode is fixed at build time.
 
+The code enforces the key rule as well: on a static build running on Vercel, the AI routes stay off even if `ANTHROPIC_API_KEY` is set, because the demo has no sign-in and anyone could spend the key (`src/lib/ai/access.ts`). Setting `ZIPLIME_ALLOW_PUBLIC_AI=true` overrides that; don't, unless the key has a spend limit you accept losing.
+
 ```sh
 npm i -g vercel@latest          # the installed CLI is 63.1.2; 64 is current
 vercel login
