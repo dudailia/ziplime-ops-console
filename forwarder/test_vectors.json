@@ -1,0 +1,13 @@
+{
+  "_note": "Shared by src/lib/ingest/ingest.test.ts and forwarder/test_forwarder.py, so the console and the forwarder can never sign or hash differently. Values computed independently with Python's hmac and hashlib.",
+  "signature": {
+    "secret_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "timestamp": "1791936000",
+    "body": "{\"file\":\"vector.jsonl\",\"first_line\":1,\"lines\":[\"{}\"]}",
+    "header": "v1=b5591b00c38ec1e0d0f1fc9bb93216331f8e5200e75ff0d5c47d93814ab39311"
+  },
+  "content_hash": {
+    "line": "{\"event\": \"place\", \"symbol\": \"ÅAPL\"}",
+    "sha256": "b9176bb5d95a0ac9e6765aac906fe2b127c61e54c76e4e4a75631ad0b1a9fc00"
+  }
+}

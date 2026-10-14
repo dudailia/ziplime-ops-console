@@ -17,10 +17,18 @@ const ET = new Intl.DateTimeFormat("en-US", {
 // The engine writes isoformat() of aware datetimes, so an offset is always
 // there. A timestamp without one would be read in the viewer's own zone.
 const ISO_WITH_OFFSET =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,9})?)?(Z|[+-]\d{2}:\d{2})$/;
+  /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}(:\d{2}(\.\d{1,9})?)?(Z|[+-](\d{2}):\d{2})$/;
 
+/**
+ * A real calendar date with an offset Postgres accepts. Date.parse alone is
+ * too lenient: it reads 30 February as 2 March and accepts year 0.
+ */
 export function isIsoWithOffset(value: string): boolean {
-  return ISO_WITH_OFFSET.test(value) && !Number.isNaN(Date.parse(value));
+  const m = ISO_WITH_OFFSET.exec(value);
+  if (!m || Number.isNaN(Date.parse(value))) return false;
+  const [year, month, day] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return year >= 1 && month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth && Number(m[7] ?? 0) <= 15;
 }
 
 export type EtParts = { date: string; minute: number; seconds: number };

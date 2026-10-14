@@ -1,0 +1,165 @@
+openapi: 3.1.0
+info:
+  title: ziplime Ops Console integration API
+  version: 1.0.0
+  description: |
+    How a ziplime dry run reaches the console. A forwarder next to the engine
+    (forwarder/ziplime_forwarder.py) reads new lines from the dry-run file and
+    posts them here, signed with the deployment's ingest key.
+
+    Available only when the console runs with a database (DATABASE_URL set at
+    build time and at runtime). The public static demo answers 503.
+
+    Signing: X-Ziplime-Signature is "v1=" followed by the lowercase hex
+    HMAC-SHA256 of "<X-Ziplime-Timestamp>.<raw request body bytes>", keyed with
+    the deployment's 32-byte secret. The timestamp is Unix seconds and must be
+    within 5 minutes of the server's clock. A worked example is in
+    forwarder/test_vectors.json.
+
+    Line numbers are positions in the deployment's stream. With one dry-run
+    file, as ziplime writes it (append only), they are the file's own line
+    numbers.
+servers:
+  - url: http://localhost:3000
+    description: Local development with DATABASE_URL=pglite:.data/dev
+paths:
+  /api/ingest/{deploymentId}:
+    post:
+      operationId: ingestDryRunLines
+      summary: Send new dry-run lines for one deployment
+      description: |
+        Idempotent. The same body sent twice stores nothing the second time and
+        returns the first call's response with "replay": true. Lines are
+        checked one by one; a bad line never blocks the good ones. Batches for
+        one deployment are applied one at a time.
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          schema: { type: string, pattern: "^[a-z0-9][a-z0-9-]{0,63}$" }
+        - name: X-Ziplime-Timestamp
+          in: header
+          required: true
+          schema: { type: string, pattern: "^\\d{10}$" }
+          description: Unix seconds when the request was signed.
+        - name: X-Ziplime-Signature
+          in: header
+          required: true
+          schema: { type: string, pattern: "^v1=[0-9a-f]{64}$" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IngestRequest" }
+            example:
+              file: greta-sector.jsonl
+              first_line: 22
+              lines:
+                - '{"account": "LX***66", "event": "refuse", "order_dt": "2026-10-02T14:27:00-04:00", "reason": "ValueError: Lime order count exceeds the per-invocation risk limit", "recorded_at": "2026-10-02T18:27:01.276588+00:00", "requested_amount": 41.0, "symbol": "XLI", "ziplime_order_id": "3e1167f6e7bb8e157fde"}'
+      responses:
+        "200":
+          description: The batch was checked. Each line has its own result.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IngestResponse" }
+        "400":
+          description: Signed correctly, but the body isn't a valid batch.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { error: bad_request, reason: '"lines" must be a non-empty array' }
+        "401":
+          description: |
+            "unauthorized": the signature is missing, malformed or wrong, or the
+            deployment has no ingest key. An unknown deployment gets the same
+            answer, so ids can't be probed. "stale_timestamp": the signature is
+            right but the timestamp is more than 5 minutes off.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: |
+            first_line is past the next line the server expects, so lines would
+            be missing. Resend from expected_at_most; lines already stored come
+            back as duplicates.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { error: gap, expected_at_most: 41 }
+        "413":
+          description: The body is over 1 MB.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "500":
+          description: Unexpected failure. The body carries only a request id; details are in the server log.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "503":
+          description: |
+            "ingest_unavailable": the console runs without a database (the
+            public demo). "misconfigured": the build and the runtime disagree
+            about DATABASE_URL.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+components:
+  schemas:
+    IngestRequest:
+      type: object
+      required: [first_line, lines]
+      additionalProperties: true
+      properties:
+        file:
+          type: [string, "null"]
+          maxLength: 255
+          description: The dry-run file's name, shown on the account page.
+        first_line:
+          type: integer
+          minimum: 1
+          description: Line number of the first entry in lines.
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          description: Consecutive lines, each without its trailing newline. At most 16 KB each.
+          items: { type: string }
+    LineResult:
+      type: object
+      required: [line, status]
+      properties:
+        line: { type: integer }
+        status:
+          type: string
+          enum: [accepted, duplicate, rejected, ignored]
+          description: |
+            accepted: stored. duplicate: this line number already holds this
+            exact line. rejected: see reason; lines the parser refuses are
+            stored as rejected so the console shows them. ignored: a blank line.
+        reason: { type: string }
+    IngestResponse:
+      type: object
+      required: [batch_id, deployment_id, replay, received, accepted, duplicate, rejected, ignored, results]
+      properties:
+        batch_id: { type: string, format: uuid, description: The batch that stored these lines. A replay returns the original id. }
+        deployment_id: { type: string }
+        replay: { type: boolean }
+        received: { type: integer }
+        accepted: { type: integer }
+        duplicate: { type: integer }
+        rejected: { type: integer }
+        ignored: { type: integer }
+        results:
+          type: array
+          items: { $ref: "#/components/schemas/LineResult" }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          enum: [ingest_unavailable, misconfigured, too_large, unauthorized, stale_timestamp, bad_request, gap, internal]
+        reason: { type: string }
+        expected_at_most: { type: integer }
+        request_id: { type: string }

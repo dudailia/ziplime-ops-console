@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PageSkeleton } from "@/components/ui/Skeleton";
 import { AccountDetail } from "@/components/ops/AccountDetail";
-import { serverDataset } from "@/lib/data/server";
+import { connection } from "next/server";
+import { BUILD_MODE, serverDataset } from "@/lib/data/server";
 import { STATIC_DATASET } from "@/lib/data/static";
 
 export async function generateMetadata({ params }: PageProps<"/ops/accounts/[id]">): Promise<Metadata> {
@@ -19,10 +20,24 @@ export function generateStaticParams() {
   return STATIC_DATASET.accounts.map((a) => ({ id: a.id }));
 }
 
+// Database mode reads the title at request time; this tells Next.js that is
+// on purpose. It renders nothing, and a static build never includes it.
+async function RequestTime() {
+  await connection();
+  return null;
+}
+
 export default function AccountPage() {
   return (
-    <Suspense fallback={<PageSkeleton label="Loading the account…" />}>
-      <AccountDetail />
-    </Suspense>
+    <>
+      <Suspense fallback={<PageSkeleton label="Loading the account…" />}>
+        <AccountDetail />
+      </Suspense>
+      {BUILD_MODE === "database" && (
+        <Suspense>
+          <RequestTime />
+        </Suspense>
+      )}
+    </>
   );
 }

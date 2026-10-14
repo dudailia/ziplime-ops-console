@@ -118,6 +118,29 @@ describe("parseDryRun defensively", () => {
     expect(parsed.events).toHaveLength(1);
   });
 
+  it("rejects dates that don't exist, instead of rolling them over", () => {
+    // Date.parse reads 30 February as 2 March. Found while matching the parser to Postgres.
+    const parsed = parseDryRun(
+      jsonl(
+        place({ recorded_at: "2026-02-30T15:00:00+00:00" }),
+        place({ recorded_at: "0000-01-01T00:00:00+00:00" }),
+        place({ recorded_at: "2026-10-01T10:00:00+23:00" }),
+        place({ recorded_at: "2024-02-29T15:00:00+00:00" }),
+      ),
+      "f",
+    );
+    expect(parsed.errors.map((e) => e.line)).toEqual([1, 2, 3]);
+    expect(parsed.events.map((e) => e.line)).toEqual([4]);
+  });
+
+  it("rejects a NUL character and a decimal too big to be a number", () => {
+    const parsed = parseDryRun(jsonl(place({ symbol: "AA\u0000PL" }), place({ quantity: "1e400" })), "f");
+    expect(parsed.errors.map((e) => e.message)).toEqual([
+      "place: contains a NUL character (\\u0000)",
+      'place: "quantity" must be a decimal string, got "1e400"',
+    ]);
+  });
+
   it("rejects an unknown event, a missing event and a non-object line", () => {
     const parsed = parseDryRun(jsonl({ event: "fill", recorded_at: "x" }, { symbol: "AAPL" }, [1, 2], 42), "f");
     expect(parsed.errors.map((e) => e.message)).toEqual([

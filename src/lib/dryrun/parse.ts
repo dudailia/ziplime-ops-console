@@ -85,7 +85,7 @@ function checkField(name: string, kind: FieldKind, value: unknown): string | nul
     case "nullable-decimal":
       if (value === null && kind === "nullable-decimal") return null;
       if (typeof value !== "string") return `"${name}" must be a string, got ${describe(value)}`;
-      if (!DECIMAL.test(value)) return `"${name}" must be a decimal string, got ${JSON.stringify(value)}`;
+      if (!DECIMAL.test(value) || !Number.isFinite(Number(value))) return `"${name}" must be a decimal string, got ${JSON.stringify(value)}`;
       if (kind === "decimal" ? Number(value) < 0 : Number(value) <= 0) {
         return `"${name}" must be ${kind === "decimal" ? "zero or more" : "more than zero"}, got ${value}`;
       }
@@ -139,6 +139,8 @@ export function parseRecord(raw: string, line: number): Unplaced | ParseError {
   }
   const spec = SPECS[event as EventKind];
   const problems: string[] = [];
+  // The engine never writes a NUL character, and Postgres can't store one.
+  if (raw.includes("\\u0000")) problems.push("contains a NUL character (\\u0000)");
   for (const [name, kind] of Object.entries(spec)) {
     if (!(name in record)) {
       problems.push(`missing "${name}"`);
