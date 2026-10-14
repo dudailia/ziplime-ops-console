@@ -182,26 +182,25 @@ export function refusalRate(counts: EventCounts): number {
   return attempts === 0 ? 0 : counts.refuse / attempts;
 }
 
+/**
+ * Where one line sits on the ET clock by itself. That is final for every line
+ * but a cancel, which moves to the session of the order it cancels when an
+ * earlier line placed it (placeOnClock).
+ */
+export function ownClock(e: Unplaced): ClockPosition {
+  // No order_dt on a cancel: its time is when it was written.
+  const source = e.event !== "cancel" && e.order_dt ? "order_dt" : "recorded_at";
+  const at = toEt(e.event !== "cancel" && e.order_dt ? e.order_dt : e.recorded_at);
+  return { session: at.date, minuteET: at.minute, source };
+}
+
 function placeOnClock(events: Unplaced[]): DryRunEvent[] {
   const placeSession = new Map<string, string>();
   const placed: DryRunEvent[] = [];
   for (const e of events) {
-    let clock: ClockPosition;
-    if (e.event === "cancel") {
-      // No order_dt on a cancel: its time is when it was written, its session
-      // the one of the order it cancels.
-      const at = toEt(e.recorded_at);
-      clock = {
-        session: placeSession.get(e.dry_run_id) ?? at.date,
-        minuteET: at.minute,
-        source: "recorded_at",
-      };
-    } else {
-      const source = e.order_dt ? "order_dt" : "recorded_at";
-      const at = toEt(e.order_dt ?? e.recorded_at);
-      clock = { session: at.date, minuteET: at.minute, source };
-      if (e.event === "place") placeSession.set(e.dry_run_id, at.date);
-    }
+    const own = ownClock(e);
+    const clock = e.event === "cancel" ? { ...own, session: placeSession.get(e.dry_run_id) ?? own.session } : own;
+    if (e.event === "place") placeSession.set(e.dry_run_id, own.session);
     placed.push({ ...e, clock } as DryRunEvent);
   }
   return placed;

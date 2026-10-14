@@ -4,7 +4,7 @@
 
 import type { Sql } from "../db/db";
 import type { LineResult } from "../data/types";
-import { isParseError, parseDryRun, parseRecord, type Unplaced } from "../dryrun/parse";
+import { isParseError, ownClock, parseRecord, type Unplaced } from "../dryrun/parse";
 import { sha256Hex } from "./signature";
 import { LIMITS, type IngestRequest, type IngestResponse } from "./types";
 
@@ -22,7 +22,7 @@ export type StoreOutcome =
   | { kind: "gap"; expectedAtMost: number }
   | { kind: "unknown_deployment" };
 
-type Existing = { line_no: number; content_hash: string; raw_line: string; status: string; session_date: string | null };
+type Existing = { line_no: number; content_hash: string };
 
 type Pending = {
   line: number;
@@ -114,9 +114,12 @@ export async function storeBatch(sql: Sql, input: StoreInput): Promise<StoreOutc
     return { kind: "gap", expectedAtMost: nextLine };
   }
 
+  // Only the stored lines this batch can collide with: its own line numbers, or its content.
+  const hashes = request.lines.map((raw) => sha256Hex(raw));
   const existing = await sql.query<Existing>(
-    "select line_no, content_hash, raw_line, status, session_date::text as session_date from public.dry_run_events where deployment_id = $1",
-    [dep],
+    `select line_no, content_hash from public.dry_run_events
+     where deployment_id = $1 and (line_no between $2 and $3 or content_hash = any($4::text[]))`,
+    [dep, request.first_line, request.first_line + request.lines.length - 1, hashes],
   );
   const byLine = new Map(existing.map((e) => [Number(e.line_no), e]));
   const byHash = new Map(existing.map((e) => [e.content_hash, Number(e.line_no)]));
@@ -128,7 +131,7 @@ export async function storeBatch(sql: Sql, input: StoreInput): Promise<StoreOutc
     const line = request.first_line + i;
     if (raw.includes("\n")) return results.push({ line, status: "rejected", reason: "A line can't contain a newline" });
     if (raw.trim() === "") return results.push({ line, status: "ignored", reason: "Blank line" });
-    const hash = sha256Hex(raw);
+    const hash = hashes[i];
     const here = byLine.get(line);
     if (here) {
       return here.content_hash === hash
@@ -152,24 +155,26 @@ export async function storeBatch(sql: Sql, input: StoreInput): Promise<StoreOutc
     results.push({ line, status: "accepted" });
   });
 
-  // Session dates come from the whole stream: a cancel belongs to the session of the order it cancels.
-  const sessionOf = sessionDates([
-    ...existing.filter((e) => e.status === "accepted").map((e) => ({ line: Number(e.line_no), raw: e.raw_line })),
-    ...pending.filter((p) => p.record).map((p) => ({ line: p.line, raw: p.raw })),
-  ]);
-
   await sql.query(
     `insert into public.ingest_batches (id, deployment_id, status, file, body_sha256, first_line, line_count, result)
      values ($1, $2, 'stored', $3, $4, $5, $6, '{}')`,
     [batchId, dep, request.file, bodySha, request.first_line, request.lines.length],
   );
 
+  // Each new line goes in on its own ET date. A cancel's session is settled below.
   const resultAt = new Map(results.map((r) => [r.line, r]));
+  const touched = new Set<string>();
+  const orderIds = new Set<string>();
   for (const p of pending) {
     const r = resultAt.get(p.line)!;
     if (p.record) {
-      const ok = await attempt(sql, INSERT_ACCEPTED, [dep, batchId, p.line, p.raw, p.hash, ...columns(p.record), sessionOf.get(p.line)]);
-      if (ok) continue;
+      const session = ownClock(p.record).session;
+      const ok = await attempt(sql, INSERT_ACCEPTED, [dep, batchId, p.line, p.raw, p.hash, ...columns(p.record), session]);
+      if (ok) {
+        touched.add(session);
+        if (p.record.event === "place" || p.record.event === "cancel") orderIds.add(p.record.dry_run_id);
+        continue;
+      }
       r.status = "rejected";
       r.reason = DB_REFUSED;
       p.reason = DB_REFUSED;
@@ -178,23 +183,45 @@ export async function storeBatch(sql: Sql, input: StoreInput): Promise<StoreOutc
     await attempt(sql, INSERT_REJECTED, [dep, batchId, p.line, p.raw, p.hash, p.reason]);
   }
 
-  // An earlier line can move to another session only if a hole before it was filled; keep them right.
-  for (const e of existing) {
-    const now = sessionOf.get(Number(e.line_no));
-    if (e.status === "accepted" && now && now !== e.session_date) {
-      await sql.query("update public.dry_run_events set session_date = $3 where deployment_id = $1 and line_no = $2", [dep, e.line_no, now]);
+  // A cancel belongs to the session of the latest earlier place with its
+  // dry_run_id, or to its own date if there is none. Only cancels sharing an id
+  // with a line in this batch can change: a new cancel, or an older one whose
+  // place was a hole until now (that is how a filled hole moves a later line).
+  if (orderIds.size > 0) {
+    const cancels = await sql.query<{ line_no: number; raw_line: string; session_date: string; place_session: string | null }>(
+      `select c.line_no, c.raw_line, c.session_date::text as session_date,
+         (select p.session_date::text from public.dry_run_events p
+          where p.deployment_id = c.deployment_id and p.status = 'accepted' and p.event = 'place'
+            and p.dry_run_id = c.dry_run_id and p.line_no < c.line_no
+          order by p.line_no desc limit 1) as place_session
+       from public.dry_run_events c
+       where c.deployment_id = $1 and c.status = 'accepted' and c.event = 'cancel' and c.dry_run_id = any($2::text[])`,
+      [dep, [...orderIds]],
+    );
+    for (const c of cancels) {
+      const record = parseRecord(c.raw_line, Number(c.line_no));
+      const session = c.place_session ?? (isParseError(record) ? c.session_date : ownClock(record).session);
+      if (session === c.session_date) continue;
+      await sql.query("update public.dry_run_events set session_date = $3 where deployment_id = $1 and line_no = $2", [dep, c.line_no, session]);
+      touched.add(c.session_date);
+      touched.add(session);
     }
   }
 
-  await sql.query("delete from public.sessions where deployment_id = $1", [dep]);
-  await sql.query(
-    `insert into public.sessions (deployment_id, date, place, refuse, skip, cancel)
-     select deployment_id, session_date,
-       count(*) filter (where event = 'place'), count(*) filter (where event = 'refuse'),
-       count(*) filter (where event = 'skip'), count(*) filter (where event = 'cancel')
-     from public.dry_run_events where deployment_id = $1 and status = 'accepted' group by deployment_id, session_date`,
-    [dep],
-  );
+  // Recount only the sessions this batch changed.
+  if (touched.size > 0) {
+    const dates = [...touched];
+    await sql.query("delete from public.sessions where deployment_id = $1 and date = any($2::date[])", [dep, dates]);
+    await sql.query(
+      `insert into public.sessions (deployment_id, date, place, refuse, skip, cancel)
+       select deployment_id, session_date,
+         count(*) filter (where event = 'place'), count(*) filter (where event = 'refuse'),
+         count(*) filter (where event = 'skip'), count(*) filter (where event = 'cancel')
+       from public.dry_run_events where deployment_id = $1 and status = 'accepted' and session_date = any($2::date[])
+       group by deployment_id, session_date`,
+      [dep, dates],
+    );
+  }
   await sql.query("update public.deployments set next_line = greatest(next_line, $2) where id = $1", [dep, request.first_line + request.lines.length]);
 
   const tally = (s: LineResult["status"]) => results.filter((r) => r.status === s).length;
@@ -215,15 +242,6 @@ export async function storeBatch(sql: Sql, input: StoreInput): Promise<StoreOutc
   );
   await audit(sql, actor, "ingest.stored", dep, { batch_id: batchId, accepted: response.accepted, duplicate: response.duplicate, rejected: response.rejected }, requestId);
   return { kind: "stored", response };
-}
-
-/** Line number -> ET session date, from the one parser the console has. */
-export function sessionDates(lines: { line: number; raw: string }[]): Map<number, string> {
-  const max = lines.reduce((m, l) => Math.max(m, l.line), 0);
-  const text = new Array<string>(max).fill("");
-  for (const l of lines) text[l.line - 1] = l.raw;
-  const file = parseDryRun(text.join("\n") + "\n", "stream");
-  return new Map(file.events.map((e) => [e.line, e.clock.session]));
 }
 
 export async function audit(sql: Sql, actor: string, action: string, target: string, detail: Record<string, unknown>, requestId: string | null) {

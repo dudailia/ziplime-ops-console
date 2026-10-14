@@ -5,7 +5,7 @@
 import { randomUUID } from "node:crypto";
 import type { Db, Sql } from "../db/db";
 import { DUMMY_SECRET, parseHeaders, sha256Hex, signatureMatches, timestampFresh, type Headers } from "./signature";
-import { storeBatch } from "./store";
+import { storeBatch, type StoreOutcome } from "./store";
 import { LIMITS, type IngestHttpResult, type IngestRequest } from "./types";
 
 const DEPLOYMENT_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -67,6 +67,19 @@ export function parseBody(bytes: Uint8Array): IngestRequest | string {
   return { file, first_line: v.first_line, lines: v.lines };
 }
 
+/** The response for what the store did. */
+export function httpResult(outcome: StoreOutcome): IngestHttpResult {
+  switch (outcome.kind) {
+    case "stored":
+    case "replay":
+      return { status: 200, body: outcome.response };
+    case "gap":
+      return { status: 409, body: { error: "gap", expected_at_most: outcome.expectedAtMost } };
+    case "unknown_deployment":
+      return { status: 401, body: { error: "unauthorized" } };
+  }
+}
+
 export async function handleIngest(db: Db, deploymentId: string, body: Uint8Array, headers: Headers, now: Date): Promise<IngestHttpResult> {
   const requestId = randomUUID();
   const knownShape = DEPLOYMENT_ID.test(deploymentId);
@@ -104,15 +117,7 @@ export async function handleIngest(db: Db, deploymentId: string, body: Uint8Arra
     }
 
     const outcome = await db.tx((sql) => storeBatch(sql, { deploymentId, batchId: randomUUID(), bodySha, request, actor, requestId }));
-    switch (outcome.kind) {
-      case "stored":
-      case "replay":
-        return { status: 200, body: outcome.response };
-      case "gap":
-        return { status: 409, body: { error: "gap", expected_at_most: outcome.expectedAtMost } };
-      case "unknown_deployment":
-        return { status: 401, body: { error: "unauthorized" } };
-    }
+    return httpResult(outcome);
   } catch (exc) {
     console.error(`[ingest] request ${requestId} failed`, exc);
     return { status: 500, body: { error: "internal", request_id: requestId } };

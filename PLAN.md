@@ -411,7 +411,7 @@ Then, in one transaction that starts with `select ... from deployments where id 
    - the same text earlier in this batch: `rejected`, "same record as line M"
    - the parser rejects it: `rejected` with the parser's reason, stored with `status = rejected`
    - otherwise `accepted`
-4. Insert with `on conflict do nothing returning`, so a race can never turn into a 500. Recompute session dates over the whole stream with the parser. Replace `sessions` from accepted events. Set `next_line = greatest(next_line, first_line + n)`. Store the response on the batch row and write the audit row.
+4. Insert with `on conflict do nothing returning`, so a race can never turn into a 500. Each new line gets its own ET date (`ownClock`, the parser's rule). Cancels sharing a `dry_run_id` with the batch are settled from their place, looked up in SQL, so a filled hole still moves a later cancel. Recount only the `sessions` rows the batch touched. (Until 14 Oct 2026 this step re-parsed the whole stream and rebuilt `sessions`; `store.diff.test.ts` checks the two give the same database.) Set `next_line = greatest(next_line, first_line + n)`. Store the response on the batch row and write the audit row.
 
 Response 200: `{ batch_id, deployment_id, replay, received, accepted, duplicate, rejected, ignored, results: [{ line, status, reason? }] }`. A bad line never blocks the good ones. Any unexpected error: 500 `internal` with a request id; details only in the server log.
 
@@ -463,7 +463,6 @@ In database mode, Approve on a Beta signup calls the approve route. One transact
 ### 15.9 Known limits, written down on purpose
 
 - `load()` reads the whole dataset per request. Fine for tens of accounts; per-page queries are the next step.
-- Session recompute reads the whole stream on every batch. Fine for thousands of lines, not millions.
 - No rate limiting beyond the per-minute counting of refused calls; a real deployment puts the route behind the platform's limiter.
 - Secrets are stored as plain bytes in a schema only the service role can read. Supabase Vault is the next step.
 - The trader claim mapping (a custom access token hook) is described, not built. There is no trader login.
