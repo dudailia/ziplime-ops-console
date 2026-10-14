@@ -142,3 +142,37 @@ describe("explain, edges", () => {
     expect(splitReason("no type here")).toEqual({ type: null, message: "no type here" });
   });
 });
+
+// The engine writes symbols with Python's !r, which switches to double quotes
+// when the value holds a single quote. Strings below are what Python printed.
+describe("explain, symbols in either of Python's quoting styles", () => {
+  const symbolCases: [string, string, string][] = [
+    [`ValueError: Lime order symbol "O'NEIL" is not allowlisted`, "allowlist", "O'NEIL"],
+    ["ValueError: Lime order symbol 'BRK.B' is not allowlisted", "allowlist", "BRK.B"],
+    [`ValueError: Lime returned no current quote for "O'NEIL"; a market order cannot be bounded without one`, "no-quote", "O'NEIL"],
+    ["ValueError: Lime returned no current quote for 'BRK.B'; a market order cannot be bounded without one", "no-quote", "BRK.B"],
+    [`ValueError: Lime quote for "O'NEIL" carries no usable price`, "no-quote", "O'NEIL"],
+    ["ValueError: Lime quote for 'BRK.B' carries no usable price", "no-quote", "BRK.B"],
+    [`ValueError: Lime position/order symbol "O'NEIL" is absent from assets.sqlite. Add it.`, "asset-missing", "O'NEIL"],
+    ["ValueError: Lime position/order symbol 'BRK.B' is absent from assets.sqlite. Add it.", "asset-missing", "BRK.B"],
+  ];
+  it.each(symbolCases)("%s", (reason, ruleId, symbol) => {
+    const x = explain(refuse(reason, { symbol }));
+    expect(x?.ruleId).toBe(ruleId);
+    expect(x?.title).toContain(symbol);
+    expect(x?.title).not.toMatch(/["]/);
+  });
+
+  it("reads an account id in double quotes", () => {
+    expect(explain(refuse(`RuntimeError: Lime account "LX'17" is not available to these credentials.`))?.ruleId).toBe("account");
+  });
+
+  it.each(["O'NEIL", "BRK.B"])("reads a skip for %s (the skip line has no quotes)", (symbol) => {
+    const skip: SkipEvent = { ...refuse(""), event: "skip", symbol, requested_amount: 0.5, reason: `0.5 ${symbol} is below one lot (1 share); order not sent` } as unknown as SkipEvent;
+    expect(explain(skip)?.happened).toContain(`0.5 ${symbol}`);
+  });
+
+  it("does not accept mismatched quotes", () => {
+    expect(explain(refuse(`ValueError: Lime order symbol 'TSLA" is not allowlisted`))).toBeNull();
+  });
+});

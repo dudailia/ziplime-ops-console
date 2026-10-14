@@ -62,17 +62,20 @@ const BROKER_MESSAGES: { pattern: RegExp; happened: string; change: string }[] =
   },
 ];
 
+// The engine writes symbols with Python's !r: single quotes, or double quotes
+// when the value holds a single quote ("O'NEIL"). (['"])(.+?)\1 takes either,
+// so the symbol is m[2].
 const RULES: Rule[] = [
   {
     id: "allowlist",
-    patterns: [/^Lime order symbol '([^']+)' is not allowlisted$/],
+    patterns: [/^Lime order symbol (['"])(.+?)\1 is not allowlisted$/],
     build: (m, _e, p) => {
       const list = p?.riskEnv?.ZIPLIME_ALLOWED_SYMBOLS;
       return {
-        title: `${m[1]} isn't on the allowlist`,
-        happened: `The strategy asked for ${m[1]}, and ZIPLIME_ALLOWED_SYMBOLS doesn't include it${list ? ` (it allows ${list.split(",").join(", ")})` : ""}. The engine stopped the order before asking Lime.`,
+        title: `${m[2]} isn't on the allowlist`,
+        happened: `The strategy asked for ${m[2]}, and ZIPLIME_ALLOWED_SYMBOLS doesn't include it${list ? ` (it allows ${list.split(",").join(", ")})` : ""}. The engine stopped the order before asking Lime.`,
         setting: "ZIPLIME_ALLOWED_SYMBOLS",
-        change: `Add ${m[1]} to the list if the strategy is meant to trade it, or set it to * to allow every symbol. If ${m[1]} is a surprise, the strategy's universe is wider than you think.`,
+        change: `Add ${m[2]} to the list if the strategy is meant to trade it, or set it to * to allow every symbol. If ${m[2]} is a surprise, the strategy's universe is wider than you think.`,
       };
     },
   },
@@ -171,12 +174,12 @@ const RULES: Rule[] = [
   {
     id: "no-quote",
     patterns: [
-      /^Lime returned no current quote for '([^']+)'; a market order cannot be bounded without one$/,
-      /^Lime quote for '([^']+)' carries no usable price$/,
+      /^Lime returned no current quote for (['"])(.+?)\1; a market order cannot be bounded without one$/,
+      /^Lime quote for (['"])(.+?)\1 carries no usable price$/,
     ],
     build: (m) => ({
-      title: `No usable quote for ${m[1]}`,
-      happened: `The notional cap needs a price to check a market order against, and Lime returned none for ${m[1]}. The engine fails closed: no quote, no order.`,
+      title: `No usable quote for ${m[2]}`,
+      happened: `The notional cap needs a price to check a market order against, and Lime returned none for ${m[2]}. The engine fails closed: no quote, no order.`,
       setting: "ZIPLIME_MAX_ORDER_NOTIONAL_USD (needs a quote)",
       change: "Use a limit order for this symbol, or let the strategy retry on the next bar. Don't remove the cap to get around it.",
     }),
@@ -226,7 +229,7 @@ const RULES: Rule[] = [
   {
     id: "account",
     patterns: [
-      /^Lime account '.*' is not available to these credentials\.$/,
+      /^Lime account (['"]).*\1 is not available to these credentials\.$/,
       /^Several Lime accounts are available\./,
       /^Lime returned no brokerage accounts for these credentials\.$/,
     ],
@@ -239,12 +242,12 @@ const RULES: Rule[] = [
   },
   {
     id: "asset-missing",
-    patterns: [/^Lime position\/order symbol '([^']+)' is absent from assets\.sqlite\./],
+    patterns: [/^Lime position\/order symbol (['"])(.+?)\1 is absent from assets\.sqlite\./],
     build: (m) => ({
-      title: `${m[1]} isn't in the asset database`,
-      happened: `The engine looked ${m[1]} up in assets.sqlite on each US listing venue and didn't find it.`,
+      title: `${m[2]} isn't in the asset database`,
+      happened: `The engine looked ${m[2]} up in assets.sqlite on each US listing venue and didn't find it.`,
       setting: "assets.sqlite",
-      change: `Add ${m[1]} with its listing MIC, then rerun.`,
+      change: `Add ${m[2]} with its listing MIC, then rerun.`,
     }),
   },
 ];
