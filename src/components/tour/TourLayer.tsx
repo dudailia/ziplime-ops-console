@@ -19,13 +19,26 @@ function prefersReducedMotion() {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/** How long a step keeps its target on screen against scrolls the visitor didn't make. */
+/** How long, from when the target appears, a step keeps it on screen against scrolls the visitor didn't make. */
 const SETTLE_MS = 4000;
 const SCROLL_KEYS = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "]);
 
-function inView(r: DOMRect) {
-  const need = Math.min(r.height, 80);
-  return Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0) >= need;
+/**
+ * True when the target sits in the part of the screen nothing covers. On a
+ * phone the card and the tab bar cover the bottom, so that part doesn't count.
+ * A target taller than the free space counts once its top is showing.
+ */
+function inView(r: DOMRect, cover: number) {
+  const free = window.innerHeight - cover;
+  if (r.height <= free) return r.top >= -1 && r.bottom <= free + 1;
+  return r.top >= -1 && r.top <= 32;
+}
+
+function scrollToTarget(el: HTMLElement, phone: boolean) {
+  const behavior = prefersReducedMotion() ? "auto" : "smooth";
+  // On a phone the card covers the bottom, so the target goes near the top; elsewhere, the middle.
+  if (phone) window.scrollBy({ top: el.getBoundingClientRect().top - 12, behavior });
+  else el.scrollIntoView({ block: "center", behavior });
 }
 
 /**
@@ -39,7 +52,7 @@ function inView(r: DOMRect) {
  * step, if the target is off screen and nothing is scrolling, scroll to it
  * again. The visitor's own wheel, touch or scroll keys end that at once.
  */
-function useTarget(selector: string | null, actionSelector: string | null) {
+function useTarget(selector: string | null, actionSelector: string | null, cover: { current: number }) {
   const [rect, setRect] = useState<Rect | null>(null);
   const [hasAction, setHasAction] = useState(false);
   useEffect(() => {
@@ -51,7 +64,12 @@ function useTarget(selector: string | null, actionSelector: string | null) {
     let lastY = -1;
     let stillFrames = 0;
     let scrolls = 0;
-    const until = performance.now() + SETTLE_MS;
+    let yAtScroll = -1;
+    let scrolledAt = 0;
+    let moved = false;
+    let stuck = false;
+    // The window starts when the target first exists, so a slow page load doesn't use it up.
+    let until = 0;
     const mine = () => (userScrolled = true);
     const onKey = (e: KeyboardEvent) => {
       if (SCROLL_KEYS.has(e.key)) userScrolled = true;
@@ -61,17 +79,27 @@ function useTarget(selector: string | null, actionSelector: string | null) {
     window.addEventListener("keydown", onKey);
     const tick = () => {
       const el = document.querySelector<HTMLElement>(selector);
+      if (el && until === 0) until = performance.now() + SETTLE_MS;
       let next: Rect | null = null;
       if (el) {
         const y = window.scrollY;
         stillFrames = y === lastY ? stillFrames + 1 : 0;
         lastY = y;
         let r = el.getBoundingClientRect();
-        // The first scroll goes at once; later ones wait until scrolling has stopped.
-        if (!userScrolled && !inView(r) && performance.now() < until && (scrolls === 0 || stillFrames >= 3)) {
+        const phone = window.innerWidth < PHONE;
+        // The first scroll always goes, at once. Later ones wait until scrolling has stopped,
+        // and stop for good once a scroll no longer moves the page (the target is as far as it goes).
+        if (y !== yAtScroll) moved = true;
+        // A smooth scroll can take a few frames to start on a busy page, so give it time.
+        if (scrolls > 0 && !moved && performance.now() - scrolledAt > 600) stuck = true;
+        const again = scrolls > 0 && !stuck && stillFrames >= 3 && !inView(r, phone ? cover.current : 0);
+        if (!userScrolled && performance.now() < until && (scrolls === 0 || again)) {
           scrolls += 1;
           stillFrames = 0;
-          el.scrollIntoView({ block: "center", behavior: prefersReducedMotion() ? "auto" : "smooth" });
+          yAtScroll = y;
+          scrolledAt = performance.now();
+          moved = false;
+          scrollToTarget(el, phone);
           r = el.getBoundingClientRect();
         }
         next = { top: Math.round(r.top), left: Math.round(r.left), width: Math.round(r.width), height: Math.round(r.height) };
@@ -95,7 +123,7 @@ function useTarget(selector: string | null, actionSelector: string | null) {
       window.removeEventListener("keydown", onKey);
       setRect(null);
     };
-  }, [selector, actionSelector]);
+  }, [selector, actionSelector, cover]);
   return { rect, hasAction };
 }
 
@@ -123,10 +151,29 @@ export function TourLayer() {
   const running = tour.status === "running";
   const step = TOUR[tour.step];
   const here = running && onStepPage(step, pathname, params);
-  const { rect, hasAction } = useTarget(here ? step.target : null, here ? (step.action?.target ?? null) : null);
+  // What the docked card and the tab bar cover on a phone, for the in-view check.
+  const cover = useRef(0);
+  const { rect, hasAction } = useTarget(here ? step.target : null, here ? (step.action?.target ?? null) : null, cover);
   const card = useRef<HTMLDivElement>(null);
   const [cardH, setCardH] = useState(180);
   const [vw, vh] = useViewport();
+  // The phone card sits 60 px above the bottom edge, over the tab bar.
+  useEffect(() => {
+    cover.current = cardH + 68;
+  }, [cardH]);
+
+  // On a phone, room at the bottom of the page while the tour runs, so a target
+  // near the end (the run log) can still scroll up above the card.
+  const phoneTour = running && vw < PHONE;
+  useEffect(() => {
+    if (!phoneTour) return;
+    const body = document.body;
+    const before = body.style.paddingBottom;
+    body.style.paddingBottom = `${cardH + 68}px`;
+    return () => {
+      body.style.paddingBottom = before;
+    };
+  }, [phoneTour, cardH]);
   const last = tour.step === TOUR.length - 1;
 
   // Move focus to the card on every step, so the sentence is read and Enter/Tab land on its buttons.
