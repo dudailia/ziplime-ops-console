@@ -72,7 +72,7 @@ test("portal, upload, CRM, intake, inbox and rules work end to end without an AP
 });
 
 test("no page scrolls sideways", async ({ page }) => {
-  for (const path of ["/", "/portal", "/ops", "/ops/accounts/wen-li", "/ops/intake", "/ops/inbox", "/ops/automations"]) {
+  for (const path of ["/", "/portal", "/ops", "/ops/accounts/wen-li", "/ops/intake", "/ops/inbox", "/ops/automations", "/about"]) {
     await page.goto(path);
     await page.waitForLoadState("networkidle");
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

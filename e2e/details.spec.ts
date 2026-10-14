@@ -41,6 +41,7 @@ test("every page has its own title, an icon and a share image", async ({ page, r
     "/ops/intake": "Beta intake | ziplime Ops Console",
     "/ops/inbox": "Support inbox | ziplime Ops Console",
     "/ops/automations": "Automations | ziplime Ops Console",
+    "/about": "How I built this | ziplime Ops Console",
   };
   for (const [path, title] of Object.entries(titles)) {
     await page.goto(path);
@@ -72,11 +73,21 @@ test("pages load without layout shift", async ({ page }) => {
       }
     }).observe({ type: "layout-shift", buffered: true });
   });
-  for (const path of ["/", "/portal", "/ops", "/ops/accounts/wen-li", "/ops/intake", "/ops/inbox", "/ops/automations"]) {
+  for (const path of ["/", "/portal", "/ops", "/ops/accounts/wen-li", "/ops/intake", "/ops/inbox", "/ops/automations", "/about"]) {
     await page.goto(path);
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(1200);
     const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);
     expect(cls, path).toBeLessThan(0.05);
+  }
+});
+
+test("the build log page shows docs/HOW_I_BUILT_THIS.md and is linked from every page", async ({ page }) => {
+  await page.goto("/ops");
+  await page.getByRole("link", { name: "How this was built" }).click();
+  await expect(page).toHaveURL(/\/about$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("How I built this");
+  for (const h of ["What I built and why", "How I worked with AI", "How I verified it", "What AI got wrong, and how it was caught", "What I would do differently", "Numbers"]) {
+    await expect(page.getByRole("heading", { level: 2, name: h })).toBeVisible();
   }
 });

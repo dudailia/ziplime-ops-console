@@ -312,7 +312,10 @@ export function Shell({ children }: { children: ReactNode }) {
             <a className="underline hover:text-ink" href="https://github.com/Limex-com/ziplime">
               ziplime
             </a>{" "}
-            engine. Sample data.
+            engine. Sample data.{" "}
+            <Link className="ml-2 underline hover:text-ink" href="/about">
+              How this was built
+            </Link>
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-3 lg:hidden">
             <AiLine />
