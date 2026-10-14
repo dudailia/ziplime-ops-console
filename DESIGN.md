@@ -74,7 +74,7 @@ Each animation has a job. UI motion is 250ms or less with `cubic-bezier(0.23, 1,
 
 | Moment | Job | How |
 |---|---|---|
-| Hero terminal | Show what the console does with one engine line | Types the real dry-run line, then the explanation, once per page load. A Replay button runs it again. The full text is in the DOM from the start, so nothing shifts and screen readers read it whole |
+| Hero terminal | Show what the console does with one engine line | Types the real dry-run line (4ms a character), then the explanation (5ms), about 4s in all, once per page load. A Replay button runs it again. The full text is in the DOM from the start, so nothing shifts and screen readers read it whole |
 | Ticker | Show the engine is producing events | Scrolls slowly (90s a loop), pauses on hover, on focus and with its pause button |
 | Doto word | Announce the hero, like a dot display warming up | Flickers in once on load, 700ms |
 | Status dots | Show the feed is running | The lime square and dot pulse, 1.6s |

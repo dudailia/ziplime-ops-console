@@ -7,8 +7,8 @@ import type { HeroLine } from "@/lib/front";
 let played = false;
 
 // Milliseconds per character, and the pause between the two rows.
-const ENGINE_MS = 6;
-const CONSOLE_MS = 12;
+const ENGINE_MS = 4;
+const CONSOLE_MS = 5;
 const GAP_MS = 350;
 
 function reduced() {

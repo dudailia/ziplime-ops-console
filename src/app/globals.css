@@ -435,6 +435,42 @@ mark.guard-hit {
   font-weight: 500;
 }
 
+/* Status squares and dots pulse, like a running feed. */
+.pulse {
+  animation: pulse 1.6s ease infinite;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* The Doto word warms up once, like a dot display switching on. */
+.flicker {
+  animation: flicker 700ms steps(1, end) 200ms both;
+}
+@keyframes flicker {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.6;
+  }
+  25% {
+    opacity: 0.1;
+  }
+  40% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  65%,
+  100% {
+    opacity: 1;
+  }
+}
+
 /* Hero terminal: the caret sits where typing is, and only while it is. */
 .terminal .caret {
   display: none;
@@ -449,7 +485,8 @@ mark.guard-hit {
   background: var(--accent);
 }
 
-/* Ticker: one copy of the list, in one line. */
+/* Ticker: one copy of the list. The first pass starts full, later passes
+   enter from the right; --first, --loop and --enter are measured in Ticker.tsx. */
 .ticker-strip {
   overflow: hidden;
   white-space: nowrap;
@@ -461,6 +498,30 @@ mark.guard-hit {
 .ticker-track {
   display: inline-block;
 }
+.ticker-track[data-run="true"] {
+  animation:
+    ticker-first var(--first) linear,
+    ticker-loop var(--loop) linear var(--first) infinite;
+}
+.ticker-strip:hover .ticker-track,
+.ticker-strip:focus-within .ticker-track,
+.ticker-strip[data-paused="true"] .ticker-track {
+  animation-play-state: paused;
+}
+@keyframes ticker-first {
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes ticker-loop {
+  from {
+    transform: translateX(var(--enter));
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
 /* Count-ups: the real value is the only text. While the count runs it is
    transparent (still read by assistive tech) and the moving digits are drawn
    from data-n by a pseudo-element whose alternative text is empty, so screen
@@ -501,6 +562,20 @@ mark.guard-hit {
   }
   .press:active:not(:disabled) {
     transform: none;
+  }
+  /* The front door shows its final state: no flicker, no pulse, no typing
+     (HeroTerminal checks the same query), and the ticker stands still and
+     scrolls sideways by hand instead. */
+  .flicker,
+  .pulse,
+  .ticker-track[data-run="true"] {
+    animation: none;
+  }
+  .ticker-strip {
+    overflow-x: auto;
+  }
+  .ticker-pause {
+    display: none;
   }
 }
 
