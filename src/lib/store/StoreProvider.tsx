@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { ParsedFile } from "../dryrun/types";
 import { initialState, reducer, revive, STORAGE_KEY, type Action, type State } from "./state";
 
@@ -75,8 +75,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
 
+const SEED_STATE = initialState();
+const noop = () => () => {};
+
+/**
+ * False while this component is hydrating, true after. A Suspense boundary can
+ * hydrate after saved state has loaded; reading the seed until then keeps its
+ * first render identical to the server HTML.
+ */
+function useHydrated(): boolean {
+  return useSyncExternalStore(noop, () => true, () => false);
+}
+
 export function useStore(): Store {
   const store = useContext(StoreContext);
   if (!store) throw new Error("useStore outside StoreProvider");
-  return store;
+  const here = useHydrated();
+  const seedView = useMemo(() => ({ ...store, state: SEED_STATE, hydrated: false }), [store]);
+  return here ? store : seedView;
 }
