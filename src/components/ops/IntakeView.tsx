@@ -6,6 +6,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { useAiStatus } from "@/lib/ai/useAiStatus";
 import { stampET } from "@/lib/format";
 import { useDataset } from "@/lib/data/DatasetProvider";
+import type { Onboarded } from "@/lib/data/source";
 import { BROKERS, BROKERS_MORE, WORKSPACE_NOTE, workspaceName } from "@/lib/intake/catalog";
 import { activeTriage, currentEmail, decisionOf, intakeHits, intakeStatus, STATUS_LABEL, type IntakeStatus } from "@/lib/intake/status";
 import { rulesTriage, type Triage } from "@/lib/intake/triage";
@@ -15,6 +16,7 @@ import { allAccounts, REVIEWER, type IntakeRecord } from "@/lib/store/state";
 import { AiOffNote, Button, Check, Chip, PageTitle, Panel } from "@/components/ui/kit";
 import { useFresh } from "@/components/ui/useFresh";
 import { DraftEditor } from "@/components/ui/DraftEditor";
+import { IngestSetup } from "./IngestSetup";
 
 const PRIORITY_TONE = { high: "text-bad", normal: "text-ink-2", low: "text-ink-3" } as const;
 
@@ -113,12 +115,25 @@ function Approved({ at, children }: { at: string; children: ReactNode }) {
   return <p className={`-mx-2 rounded-[4px] px-2 py-1 text-[13px] text-ink ${fresh ? "approve-flash" : ""}`}>{children}</p>;
 }
 
+const APPROVE_ERRORS: Record<string, string> = {
+  already_decided: "Someone already decided this signup. Showing the current state.",
+  guard_flagged: "The server's guard flagged the email. Edit it first.",
+  unknown_signup: "This signup isn't in the database.",
+  unauthorized: "Sign in again to approve.",
+};
+
 function Detail({ s }: { s: Signup }) {
   const { state, dispatch } = useStore();
   const ds = useDataset();
+  const router = useRouter();
   const ai = useAiStatus();
   const rec = state.intake[s.id];
-  const decision = decisionOf(ds, state, s.id);
+  // Database mode: the server creates the account, deployment and key, and returns the key once.
+  const [onboarded, setOnboarded] = useState<Onboarded | null>(null);
+  const [approving, setApproving] = useState(false);
+  const [approveError, setApproveError] = useState<string | null>(null);
+  const decision =
+    decisionOf(ds, state, s.id) ?? (onboarded ? { kind: "approved" as const, by: "you", at: onboarded.account.joined, accountId: onboarded.account.id } : undefined);
   const status = intakeStatus(ds, state, s);
   const email = currentEmail(s, rec);
   const hits = intakeHits(ds, state, s);
@@ -141,7 +156,32 @@ function Detail({ s }: { s: Signup }) {
     }
   };
 
-  const account = decision?.accountId ? allAccounts(ds, state).find((a) => a.id === decision.accountId) : undefined;
+  const account = decision?.accountId ? (allAccounts(ds, state).find((a) => a.id === decision.accountId) ?? onboarded?.account) : undefined;
+
+  const approve = async () => {
+    const at = new Date().toISOString();
+    if (ds.source !== "postgres") {
+      dispatch({ type: "intake/approve", id: s.id, by: REVIEWER, at, email });
+      return;
+    }
+    setApproving(true);
+    setApproveError(null);
+    try {
+      const res = await fetch(`/api/ops/signups/${s.id}/approve`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(email) });
+      const body = (await res.json()) as Onboarded & { error?: string };
+      if (!res.ok) {
+        setApproveError(APPROVE_ERRORS[body.error ?? ""] ?? `Approval failed (HTTP ${res.status}).`);
+        if (res.status === 409) router.refresh();
+        return;
+      }
+      setOnboarded(body);
+      router.refresh();
+    } catch {
+      setApproveError("Couldn't reach the console. Nothing was approved.");
+    } finally {
+      setApproving(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -230,19 +270,29 @@ function Detail({ s }: { s: Signup }) {
               <Button
                 kind="primary"
                 tour="approve-signup"
-                disabled={status === "flagged"}
+                disabled={status === "flagged" || approving}
                 title={status === "flagged" ? "The guard flagged the email. Edit it first." : undefined}
-                onClick={() => dispatch({ type: "intake/approve", id: s.id, by: REVIEWER, at: new Date().toISOString(), email })}
+                onClick={approve}
               >
-                Approve and create account
+                {approving ? "Approving…" : "Approve and create account"}
               </Button>
               <Button kind="secondary" onClick={() => dispatch({ type: "intake/dismiss", id: s.id, by: REVIEWER, at: new Date().toISOString() })}>
                 Dismiss
               </Button>
-              <span className="text-[12px] text-ink-3">Approving creates a Beta account in the CRM and marks the email as sent.</span>
+              <span className="text-[12px] text-ink-3">
+                {ds.source === "postgres"
+                  ? "Approving creates the account, its first deployment and an ingest key."
+                  : "Approving creates a Beta account in the CRM and marks the email as sent."}
+              </span>
+              {approveError && <p className="w-full text-[12px] text-refuse">{approveError}</p>}
             </>
           )}
         </div>
+        {onboarded && (
+          <div className="border-t border-rule px-4 py-3">
+            <IngestSetup deploymentId={onboarded.deployment.id} secret={onboarded.secret} profile={onboarded.deployment.riskEnv} />
+          </div>
+        )}
       </Panel>
     </div>
   );

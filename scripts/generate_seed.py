@@ -23,10 +23,15 @@ What this script supplies:
 Run it with ziplime's own virtualenv; nothing is installed or written there:
 
     PYTHONDONTWRITEBYTECODE=1 ../ziplime/.venv/bin/python scripts/generate_seed.py
+
+--out DIR writes the files somewhere else and never touches data/seed;
+--only ID generates one deployment. The end-to-end ingest test uses both.
+The output is deterministic: the same seed gives the same bytes.
 """
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import datetime
 import heapq
@@ -44,8 +49,7 @@ from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent.parent
 ZIPLIME = (ROOT.parent / "ziplime").resolve()
-OUT = ROOT / "data" / "seed"
-DRYRUNS = OUT / "dryruns"
+SEED = ROOT / "data" / "seed"
 
 if not (ZIPLIME / "ziplime" / "exchanges" / "lime_trader_sdk").is_dir():
     sys.exit(f"ziplime checkout not found at {ZIPLIME}")
@@ -604,19 +608,29 @@ def count_events(path: Path) -> dict[str, int]:
 
 
 def main() -> None:
-    accounts = {a["id"]: a for a in json.loads((OUT / "accounts.json").read_text())["accounts"]}
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--out", type=Path, default=SEED, help="where to write dryruns/ and manifest.json (default data/seed)")
+    parser.add_argument("--only", action="append", help="generate only this deployment id (repeatable)")
+    args = parser.parse_args()
+    out = args.out.resolve()
+    dryruns = out / "dryruns"
+    chosen = [d for d in DEPLOYMENTS if not args.only or d.id in args.only]
+    if args.only and len(chosen) != len(set(args.only)):
+        sys.exit(f"unknown deployment in --only: {sorted(set(args.only) - {d.id for d in DEPLOYMENTS})}")
+
+    accounts = {a["id"]: a for a in json.loads((SEED / "accounts.json").read_text())["accounts"]}
     install_clock()
-    DRYRUNS.mkdir(parents=True, exist_ok=True)
-    for stale in DRYRUNS.glob("*.jsonl"):
-        stale.unlink()  # the engine appends; start from empty files
+    dryruns.mkdir(parents=True, exist_ok=True)
+    for dep in chosen:
+        (dryruns / f"{dep.id}.jsonl").unlink(missing_ok=True)  # the engine appends; start from empty files
 
     days = sessions()
     manifest_deployments = []
-    for dep in DEPLOYMENTS:
+    for dep in chosen:
         account = accounts[dep.account]
         rng = random.Random(dep.seed)
         CLOCK.reset(random.Random(dep.seed * 7919))
-        path = DRYRUNS / f"{dep.id}.jsonl"
+        path = dryruns / f"{dep.id}.jsonl"
         prices = dict({**dep.symbols, **dep.extra_symbols})
         active = dep.active_sessions or range(len(days))
         ran = []
@@ -662,7 +676,7 @@ def main() -> None:
         },
         "deployments": manifest_deployments,
     }
-    (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
+    (out / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ import type { IngestResponse } from "../ingest/types";
 import type { Signup } from "../intake/types";
 import type { PlanKey } from "../plans";
 import type { Account, Deployment, RiskEnv } from "../seed";
+import { approveSignup, rotateKey } from "./onboarding";
 import type { DataSource } from "./source";
 import { STATIC_DATASET } from "./static";
 import type { Dataset, IngestBatchView, SignupDecision } from "./types";
@@ -233,11 +234,7 @@ export function postgresSource(db: Db): DataSource {
     kind: "postgres",
     load: () => asClaims(db, OPS, readDataset),
     ingest: (deploymentId, body, headers, now) => handleIngest(db, deploymentId, body, headers, now),
-    approveSignup: async () => {
-      throw new Error("approveSignup is built in part 5");
-    },
-    rotateKey: async () => {
-      throw new Error("rotateKey is built in part 5");
-    },
+    approveSignup: (input) => db.tx((sql) => approveSignup(sql, input)),
+    rotateKey: (deploymentId, by) => db.tx((sql) => rotateKey(sql, deploymentId, by)),
   };
 }

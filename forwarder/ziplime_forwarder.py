@@ -290,9 +290,12 @@ class Forwarder:
 
     def _report(self, first: int, result: dict) -> None:
         received = result.get("received", 0)
+        span = f"Lines {first} to {first + received - 1}"
+        if result.get("replay"):
+            self.log(f"{span}: the console already had this exact batch; nothing new stored.")
+            return
         parts = [f"{result.get(k, 0)} {k}" for k in ("accepted", "duplicate", "rejected", "ignored") if result.get(k)]
-        replay = " (already stored)" if result.get("replay") else ""
-        self.log(f"Lines {first} to {first + received - 1}: {', '.join(parts) or 'nothing new'}{replay}.")
+        self.log(f"{span}: {', '.join(parts) or 'nothing new'}.")
         for r in result.get("results", []):
             if r.get("status") == "rejected":
                 self.log(f"  line {r.get('line')} rejected: {r.get('reason')}")

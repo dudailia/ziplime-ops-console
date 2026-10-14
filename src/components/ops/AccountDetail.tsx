@@ -15,6 +15,7 @@ import { Env, EVENT_TEXT, PageTitle, Panel } from "@/components/ui/kit";
 import { HEALTH_TEXT, HealthBadge, HealthDot } from "./HealthBadge";
 import { HistoryChart } from "./HistoryChart";
 import { AccountTickets } from "./AccountTickets";
+import { IngestPanel } from "./IngestPanel";
 
 type Entry = { at: string; text: ReactNode; by: string; kind: string };
 
@@ -126,8 +127,11 @@ export function AccountDetail() {
   const chartFiles = summary.deployments.filter((d) => chartDeployment === "all" || d.deployment.id === chartDeployment);
   const points = groupSessions(chartFiles.flatMap((d) => d.file.events)).map((s) => ({ date: s.date, counts: s.counts }));
 
+  // Database mode keeps the approval on the signup row, not in this browser's activity.
+  const stored = account.fromIntake ? ds.decisions[account.fromIntake] : undefined;
   const entries: Entry[] = [
     ...state.activity.filter((a) => a.accountId === account.id).map((a) => ({ at: a.at, text: a.text, by: a.by, kind: a.kind })),
+    ...(stored?.kind === "approved" ? [{ at: stored.at, text: "Approved from Beta intake. First deployment and ingest key created.", by: stored.by, kind: "intake" }] : []),
     { at: `${account.joined}T09:00:00-04:00`, text: `Joined the ${plan.name} plan`, by: "system", kind: "joined" },
     ...summary.deployments
       .filter((d) => d.file.sessions.length > 0)
@@ -220,6 +224,8 @@ export function AccountDetail() {
               </ul>
             )}
           </Panel>
+
+          <IngestPanel deployments={summary.deployments} />
         </div>
 
         <div className="flex min-w-0 flex-col gap-4 xl:col-span-4">

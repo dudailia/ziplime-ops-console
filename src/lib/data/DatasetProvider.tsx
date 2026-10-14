@@ -27,12 +27,12 @@ export function DatasetProvider({ dataset, children }: { dataset: Dataset | null
 function RefreshOnNavigate() {
   const pathname = usePathname();
   const router = useRouter();
-  const first = useRef(true);
+  // Compare the path itself: the router object can change after a refresh,
+  // and refreshing on that would loop.
+  const shown = useRef(pathname);
   useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
+    if (shown.current === pathname) return;
+    shown.current = pathname;
     router.refresh();
   }, [pathname, router]);
   return null;
