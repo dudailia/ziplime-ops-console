@@ -14,8 +14,10 @@ export type AiAccess = { enabled: true } | { enabled: false; reason: "no_key" | 
 
 export function aiAccess(env: Env = process.env): AiAccess {
   if (!env.ANTHROPIC_API_KEY?.trim()) return { enabled: false, reason: "no_key" };
-  // Vercel sets VERCEL=1 at build and at run time. A static build there is the public demo.
-  const publicDemo = env.CONSOLE_DATA_MODE !== "database" && env.VERCEL === "1";
+  // A static build has no sign-in. Served anywhere but next dev on your own machine
+  // (Vercel, next start, Docker), it is a public demo, so AI stays off: fail closed,
+  // whatever the host. Vercel sets VERCEL=1; other hosts set NODE_ENV=production.
+  const publicDemo = env.CONSOLE_DATA_MODE !== "database" && (env.VERCEL === "1" || env.NODE_ENV !== "development");
   if (publicDemo && env.ZIPLIME_ALLOW_PUBLIC_AI !== "true") return { enabled: false, reason: "public_demo" };
   return { enabled: true };
 }
@@ -23,7 +25,7 @@ export function aiAccess(env: Env = process.env): AiAccess {
 export const AI_OFF_MESSAGE: Record<"no_key" | "public_demo", string> = {
   no_key: "AI drafting is off: ANTHROPIC_API_KEY is not set.",
   public_demo:
-    "AI drafting is off on the public demo: it has no sign-in, so a key would let anyone spend it. Run the console locally or in database mode.",
+    "AI drafting is off on the public demo: it has no sign-in, so a key would let anyone spend it. Run the console with npm run dev or in database mode.",
 };
 
 /**

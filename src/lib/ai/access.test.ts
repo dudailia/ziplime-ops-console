@@ -9,9 +9,20 @@ describe("aiAccess", () => {
     expect(aiAccess({ ANTHROPIC_API_KEY: "  " })).toEqual({ enabled: false, reason: "no_key" });
   });
 
-  it("is on with a key on your own machine, static or database", () => {
-    expect(aiAccess({ ANTHROPIC_API_KEY: KEY })).toEqual({ enabled: true });
-    expect(aiAccess({ ANTHROPIC_API_KEY: KEY, CONSOLE_DATA_MODE: "database" })).toEqual({ enabled: true });
+  it("is on with a key in next dev, static or database", () => {
+    expect(aiAccess({ ANTHROPIC_API_KEY: KEY, NODE_ENV: "development" })).toEqual({ enabled: true });
+    expect(aiAccess({ ANTHROPIC_API_KEY: KEY, NODE_ENV: "development", CONSOLE_DATA_MODE: "database" })).toEqual({ enabled: true });
+  });
+
+  it("stays off on a static production build on any host, not only Vercel (pre-ship review, 14 Oct)", () => {
+    // next start, Docker, Netlify, Render: none of them set VERCEL, and the static build has no sign-in.
+    expect(aiAccess({ ANTHROPIC_API_KEY: KEY, NODE_ENV: "production" })).toEqual({ enabled: false, reason: "public_demo" });
+    expect(aiAccess({ ANTHROPIC_API_KEY: KEY, NODE_ENV: "production", CONSOLE_DATA_MODE: "database" })).toEqual({ enabled: true });
+    expect(aiAccess({ ANTHROPIC_API_KEY: KEY, NODE_ENV: "production", ZIPLIME_ALLOW_PUBLIC_AI: "true" })).toEqual({ enabled: true });
+  });
+
+  it("treats a missing NODE_ENV as production", () => {
+    expect(aiAccess({ ANTHROPIC_API_KEY: KEY })).toEqual({ enabled: false, reason: "public_demo" });
   });
 
   it("stays off on the public static demo even when someone adds a key", () => {

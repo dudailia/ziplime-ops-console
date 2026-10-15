@@ -85,7 +85,7 @@ ANTHROPIC_MODEL=claude-sonnet-5-5   # optional; this is the default
 
 The key stays on the server. Three routes use it: `/api/explain`, `/api/draft` and `/api/triage`. They take only JSON from the console's own origin, so another site can't make a signed-in reviewer's browser spend tokens. `/api/ai-status` reports only whether AI is on and, if not, why.
 
-A static build running on Vercel is the public demo, which has no sign-in, so it keeps AI off even with a key set (`src/lib/ai/access.ts`). `ZIPLIME_ALLOW_PUBLIC_AI=true` overrides that. Don't set it unless you accept that anyone on the internet can spend the key. Each prompt carries one account's or one signup's data. `/api/draft` looks up the linked dry-run lines server side, in that account's own files.
+A static build has no sign-in, so served by anything but `npm run dev` (Vercel, `npm start`, Docker) it counts as the public demo and keeps AI off even with a key set (`src/lib/ai/access.ts`). Database mode sits behind Basic auth and is not affected. `ZIPLIME_ALLOW_PUBLIC_AI=true` overrides that. Don't set it unless you accept that anyone on the internet can spend the key. Each prompt carries one account's or one signup's data. `/api/draft` looks up the linked dry-run lines server side, in that account's own files.
 
 ### With a database
 
