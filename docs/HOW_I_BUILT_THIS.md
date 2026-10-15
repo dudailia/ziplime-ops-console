@@ -94,7 +94,7 @@ Counted after the second review, 14 Oct 2026.
 
 | | |
 |---|---|
-| Commits | 58 here, 2 on ziplime's `feat/dry-run-orders` |
+| Commits | 60 here, 2 on ziplime's `feat/dry-run-orders` |
 | Unit and integration tests (vitest) | 475 in 26 files with `npm run test:full` (468 in `npm test`, which runs 20 of the 200 ingest streams), 2 skipped on purpose (one needs a real Postgres) |
 | Browser tests (Playwright) | 68 in the main suite (4 run on one screen size only), 2 in the ingest suite |
 | Forwarder tests (pytest) | 23 |
