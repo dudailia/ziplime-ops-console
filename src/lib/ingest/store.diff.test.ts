@@ -16,7 +16,8 @@ import { httpResult } from "./http";
 import { sha256Hex } from "./signature";
 import { storeBatch, type StoreInput } from "./store";
 
-const SEEDS = Number(process.env.STORE_DIFF_SEEDS ?? 200);
+// 20 streams in npm test, all 200 in npm run test:full (STORE_DIFF_SEEDS=200).
+const SEEDS = Number(process.env.STORE_DIFF_SEEDS ?? 20);
 const TEST_ONLY_CONSTRAINT = "alter table public.dry_run_events add constraint test_only_no_zzzz check (symbol is distinct from 'ZZZZ')";
 
 let before: Db;

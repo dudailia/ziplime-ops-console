@@ -104,9 +104,10 @@ Keyboard: `?` shows every shortcut. `t` starts or resumes the tour, `g` then a l
 ## Tests
 
 ```
-npm test               # vitest: 437 tests in 25 files, 2 skipped on purpose (one needs a real Postgres); about a minute
+npm test               # vitest: 468 tests in 26 files, 2 skipped on purpose (one needs a real Postgres); about 15 s. Run it on every change.
+npm run test:full      # the same, with the old-versus-new ingest store on all 200 streams, not 20: 475 tests, about 75 s. Run it before a merge or after touching src/lib/ingest/store.ts.
 npm run test:forwarder # pytest: 23 forwarder tests
-npm run test:e2e       # Playwright over the production build, desktop and a 390 px phone: 66 tests (4 run on one size only)
+npm run test:e2e       # Playwright over the production build, desktop and a 390 px phone: 68 tests (4 run on one size only)
 npm run test:ingest    # the end-to-end ingest test on a fresh database: 2 tests
 npm run bench:ingest   # what one 500-line webhook batch costs at 0, 10,000 and 19,500 stored lines
 npm run lint && npm run typecheck && npm run build
@@ -119,7 +120,7 @@ What they cover:
 - **Schema and RLS** (`src/lib/db/schema.test.ts`): a trader sees only their rows in every table, ops sees all, no claims sees nothing, `anon` has no privilege, keys can't be read, writes are refused, and a sanity test fails when RLS is off.
 - **Contract** (`src/lib/data/contract.test.ts`): the same checks on the static source and on PGlite seeded through the ingest path.
 - **Ingest** (`src/lib/ingest/ingest.test.ts`): the shared signature vector, strict headers, every line outcome, replay, gap, each refusal, no internals in a 500, no secret in the audit log. A concurrency test runs when `TEST_DATABASE_URL` points at a real Postgres.
-- **Ingest store, old against new** (`src/lib/ingest/store.diff.test.ts`): the store before 14 Oct 2026 and the current one on 200 random streams (out of order, overlaps, replays, gaps, holes filled later, late cancels, rejected lines). After every batch both databases must match row for row and return the same response, and a 10-line batch on 2,000 stored lines must read under 100 rows.
+- **Ingest store, old against new** (`src/lib/ingest/store.diff.test.ts`): the store before 14 Oct 2026 and the current one on 20 random streams in `npm test` and 200 in `npm run test:full` (out of order, overlaps, replays, gaps, holes filled later, late cancels, rejected lines). After every batch both databases must match row for row and return the same response, and a 10-line batch on 2,000 stored lines must read under 100 rows.
 - **The guard against real phrasings** (`src/lib/guard.corpus.test.ts`): 34 kinds of advice and return promises it must catch, 23 support sentences it must pass, and every text the console writes itself, which must never trip it.
 - **Browser checks beyond the walk-through**: axe on every page in both themes (`e2e/a11y.spec.ts`), the Content-Security-Policy with zero violations on every page (`e2e/csp.spec.ts`), and the build's traced files (`e2e/trace.spec.ts`).
 - **Onboarding and ops auth**: one key per approval, 409 the second time, the server-side guard, key rotation, Basic auth, same-origin, JSON only.

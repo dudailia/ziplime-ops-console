@@ -73,7 +73,7 @@ The change was gated on `store.diff.test.ts`, which runs the old store and the n
 **Still open:**
 
 - The keyboard test the review saw fail once on a cold server passed every run here, so I didn't check whether a key pressed before the page hydrates is lost.
-- `npm test` takes about a minute now, most of it the 200 streams.
+- `npm test` runs 20 of the streams and takes about 15 s; `npm run test:full` runs all 200 in about 75 s.
 - The CSP allows inline scripts. Next's bootstrap needs them unless every page gets a nonce, and a nonce would make the prerendered demo dynamic.
 - The new index (`20261014120000_dry_run_id_index.sql`) has to be pushed to any real database. None exists yet.
 - A browser that saved demo state before the streak fix opens a second ticket for the same streak on its next run. Reset demo clears it.
@@ -87,8 +87,8 @@ Counted after the second review, 14 Oct 2026.
 | | |
 |---|---|
 | Commits | 51 here, 2 on ziplime's `feat/dry-run-orders` |
-| Unit and integration tests (vitest) | 437 in 25 files, 2 skipped on purpose (one needs a real Postgres) |
-| Browser tests (Playwright) | 66 in the main suite (4 run on one screen size only), 2 in the ingest suite |
+| Unit and integration tests (vitest) | 475 in 26 files with `npm run test:full` (468 in `npm test`, which runs 20 of the 200 ingest streams), 2 skipped on purpose (one needs a real Postgres) |
+| Browser tests (Playwright) | 68 in the main suite (4 run on one screen size only), 2 in the ingest suite |
 | Forwarder tests (pytest) | 23 |
 | ziplime dry-run tests | 13 test functions in `test_lime_dry_run.py` |
 | Seed data | 503 dry-run lines written by the engine, 14 deployments, 135 sessions, 10 accounts, 30 signups, 7 tickets |

@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "test:full": "STORE_DIFF_SEEDS=200 vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "seed": "PYTHONDONTWRITEBYTECODE=1 ../ziplime/.venv/bin/python scripts/generate_seed.py",
