@@ -79,6 +79,11 @@ export function DropZone({ onLoaded, children }: { onLoaded: (file: ParsedFile) 
           onLoaded(result);
         }
       }}
+      // The "Open a .jsonl file" button sits inside the zone: a file picked there
+      // replaces whatever a failed drop said.
+      onChange={(ev) => {
+        if (ev.target instanceof HTMLInputElement && ev.target.type === "file") setError(null);
+      }}
       className={`relative ${over ? "outline-2 outline-dashed outline-offset-4 outline-ink" : ""}`}
     >
       {error && (

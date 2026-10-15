@@ -38,3 +38,23 @@ test("a dropped file that can't be loaded says why", async ({ page }) => {
   await zone.dispatchEvent("drop", { dataTransfer: drop });
   await expect(page.getByTestId("drop-error")).toContainText("huge.jsonl is 10.0 MB. The limit is 10 MB.");
 });
+
+test("loading a good file after a failed drop clears the drop error", async ({ page }) => {
+  // Pre-ship review, 14 Oct: the "Open a .jsonl file" button sits inside the drop zone,
+  // so the stale alert stayed above the newly loaded file.
+  await page.goto("/portal");
+  const drop = await page.evaluateHandle(() => {
+    const dt = new DataTransfer();
+    dt.items.add(new File(["x".repeat(10 * 1024 * 1024 + 1)], "huge.jsonl", { type: "application/x-ndjson" }));
+    return dt;
+  });
+  const zone = page.locator("main h1").first();
+  await zone.dispatchEvent("dragover", { dataTransfer: drop });
+  await zone.dispatchEvent("drop", { dataTransfer: drop });
+  await expect(page.getByTestId("drop-error")).toBeVisible();
+
+  const line = JSON.stringify({ account: "LX***99", broker_validated: true, client_order_id: "a", dry_run_id: "dryrun-a", event: "place", limit_price: null, order_dt: "2026-10-12T10:00:00-04:00", order_type: "market", quantity: "5", recorded_at: "2026-10-12T14:00:01+00:00", requested_amount: 5, route: "auto", side: "buy", symbol: "AAPL", time_in_force: "day", ziplime_order_id: "a" });
+  await page.getByTestId("upload-input").setInputFiles({ name: "mine.jsonl", mimeType: "application/x-ndjson", buffer: Buffer.from([line, '{"event": "place"'].join("\n") + "\n") });
+  await expect(page.getByText("1 line couldn't be read. The other 1 loaded.")).toBeVisible();
+  await expect(page.getByTestId("drop-error")).toHaveCount(0);
+});
