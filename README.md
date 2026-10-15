@@ -107,8 +107,8 @@ Keyboard: `?` shows every shortcut. `t` starts or resumes the tour, `g` then a l
 npm test               # vitest: 468 tests in 26 files, 2 skipped on purpose (one needs a real Postgres); about 15 s. Run it on every change.
 npm run test:full      # the same, with the old-versus-new ingest store on all 200 streams, not 20: 475 tests, about 75 s. Run it before a merge or after touching src/lib/ingest/store.ts.
 npm run test:forwarder # pytest: 23 forwarder tests
-npm run test:link-check # node --test: 27 offline tests for tools/link-check (fixtures, no network)
-npm run test:e2e       # Playwright over the production build, desktop and a 390 px phone: 68 tests (4 run on one size only)
+npm run test:link-check # node --test: 37 offline tests for tools/link-check (fixtures, no network)
+npm run test:e2e       # Playwright over the production build, desktop and a 390 px phone: 78 tests (9 run on one size only)
 npm run test:ingest    # the end-to-end ingest test on a fresh database: 2 tests
 npm run bench:ingest   # what one 500-line webhook batch costs at 0, 10,000 and 19,500 stored lines
 npm run lint && npm run typecheck && npm run build

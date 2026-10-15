@@ -87,7 +87,7 @@ The change was gated on `store.diff.test.ts`, which runs the old store and the n
 
 **After that ship.** A key pressed in the first moments after load was lost. On a CPU slowed 6x, the page paints 18 to 348 ms before React attaches its keyboard listener, and a `?` pressed in that window did nothing. The fixed theme script in the page head now also queues up to 8 keys, and the shortcuts replay them once they're listening. The test holds the scripts back on the slowed CPU and presses `?` on the painted page; it failed before.
 
-**The first 90-day task: a link check.** `tools/link-check/` checks the links on five public Limex start pages, one level deep, with Node and `fetch` only. It reads and obeys every `robots.txt`, sends one request per second per host, and sends HEAD before GET. Discord invites go to Discord's invite API, because a dead invite's page still answers 200. The first run found one thing a status check cannot see. www.limex.com answers every path with 200 and the same app shell, so `/privacy` looks alive while the browser shows "404". The tool asks each host for a made-up path, and a link that gets that same page and is missing from the sitemap is listed as probably broken, to confirm in a browser. Reports are git-ignored: a list of another company's broken links doesn't belong in a public repo.
+**The first 90-day task: a link check.** `tools/link-check/` checks the links on five public Limex start pages, one level deep, with Node and `fetch` only. It reads and obeys every `robots.txt`, sends one request per second per host, follows redirects by hand so every hop gets the same checks, never asks a private address, and sends HEAD before GET. Discord invites go to Discord's invite API, because a dead invite's page still answers 200. The first run found one thing a status check cannot see. www.limex.com answers every path with 200 and the same app shell, so `/privacy` looks alive while the browser shows "404". The tool asks each host for a made-up path, and a link that gets that same page and is missing from the sitemap is listed as probably broken, to confirm in a browser. Reports are git-ignored: a list of another company's broken links doesn't belong in a public repo. A fresh review before this ship found that the first version let redirects skip robots.txt and the delay, sent the GET retry in the same instant as the HEAD, and would request private addresses. Each is fixed with a test that failed first, and the spacing test runs on a virtual clock, so removing the delay fails it.
 
 **How AI was used.** The review ran as a separate Claude Code session from the one that built the console, so it read the code cold. Every fix, in the review and after it, came with a test that failed on the old code first, and each commit message says what that test showed.
 
@@ -99,7 +99,8 @@ Counted after the second review, 14 Oct 2026.
 |---|---|
 | Commits | 60 here, 2 on ziplime's `feat/dry-run-orders` |
 | Unit and integration tests (vitest) | 475 in 26 files with `npm run test:full` (468 in `npm test`, which runs 20 of the 200 ingest streams), 2 skipped on purpose (one needs a real Postgres) |
-| Browser tests (Playwright) | 68 in the main suite (4 run on one screen size only), 2 in the ingest suite |
+| Browser tests (Playwright) | 78 in the main suite (9 run on one screen size only), 2 in the ingest suite |
+| Link check tests (node --test) | 37, offline |
 | Forwarder tests (pytest) | 23 |
 | ziplime dry-run tests | 13 test functions in `test_lime_dry_run.py` |
 | Seed data | 503 dry-run lines written by the engine, 14 deployments, 135 sessions, 10 accounts, 30 signups, 7 tickets |
