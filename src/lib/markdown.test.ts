@@ -27,13 +27,14 @@ describe("markdown", () => {
 describe("docs/HOW_I_BUILT_THIS.md", () => {
   const blocks = parseMarkdown(DOC);
 
-  it("has the six sections, in order", () => {
+  it("has the seven sections, in order", () => {
     expect(blocks.filter((b) => b.kind === "h2").map((b) => b.kind === "h2" && b.text)).toEqual([
       "What I built and why",
       "How I worked with AI",
       "How I verified it",
       "What AI got wrong, and how it was caught",
       "What I would do differently",
+      "A second review, 14 Oct 2026",
       "Numbers",
     ]);
   });

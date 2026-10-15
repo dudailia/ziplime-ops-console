@@ -83,7 +83,9 @@ ANTHROPIC_API_KEY=... npm run dev
 ANTHROPIC_MODEL=claude-sonnet-5-5   # optional; this is the default
 ```
 
-The key stays on the server. Three routes use it: `/api/explain`, `/api/draft` and `/api/triage`. `/api/ai-status` reports only whether a key is set. Each prompt carries one account's or one signup's data. `/api/draft` looks up the linked dry-run lines server side, in that account's own files.
+The key stays on the server. Three routes use it: `/api/explain`, `/api/draft` and `/api/triage`. They take only JSON from the console's own origin, so another site can't make a signed-in reviewer's browser spend tokens. `/api/ai-status` reports only whether AI is on and, if not, why.
+
+A static build running on Vercel is the public demo, which has no sign-in, so it keeps AI off even with a key set (`src/lib/ai/access.ts`). `ZIPLIME_ALLOW_PUBLIC_AI=true` overrides that. Don't set it unless you accept that anyone on the internet can spend the key. Each prompt carries one account's or one signup's data. `/api/draft` looks up the linked dry-run lines server side, in that account's own files.
 
 ### With a database
 
@@ -102,10 +104,11 @@ Keyboard: `?` shows every shortcut. `t` starts or resumes the tour, `g` then a l
 ## Tests
 
 ```
-npm test               # vitest: 326 tests, 2 skipped on purpose (one needs a real Postgres)
-npm run test:forwarder # pytest: 19 forwarder tests
-npm run test:e2e       # Playwright over the production build, desktop and a 390 px phone: 36 tests (3 run on one size only)
-npm run test:ingest    # the end-to-end ingest test on a fresh database
+npm test               # vitest: 437 tests in 25 files, 2 skipped on purpose (one needs a real Postgres); about 40 s
+npm run test:forwarder # pytest: 23 forwarder tests
+npm run test:e2e       # Playwright over the production build, desktop and a 390 px phone: 66 tests (4 run on one size only)
+npm run test:ingest    # the end-to-end ingest test on a fresh database: 2 tests
+npm run bench:ingest   # what one 500-line webhook batch costs at 0, 10,000 and 19,500 stored lines
 npm run lint && npm run typecheck && npm run build
 ```
 
@@ -116,6 +119,9 @@ What they cover:
 - **Schema and RLS** (`src/lib/db/schema.test.ts`): a trader sees only their rows in every table, ops sees all, no claims sees nothing, `anon` has no privilege, keys can't be read, writes are refused, and a sanity test fails when RLS is off.
 - **Contract** (`src/lib/data/contract.test.ts`): the same checks on the static source and on PGlite seeded through the ingest path.
 - **Ingest** (`src/lib/ingest/ingest.test.ts`): the shared signature vector, strict headers, every line outcome, replay, gap, each refusal, no internals in a 500, no secret in the audit log. A concurrency test runs when `TEST_DATABASE_URL` points at a real Postgres.
+- **Ingest store, old against new** (`src/lib/ingest/store.diff.test.ts`): the store before 14 Oct 2026 and the current one on 200 random streams (out of order, overlaps, replays, gaps, holes filled later, late cancels, rejected lines). After every batch both databases must match row for row and return the same response, and a 10-line batch on 2,000 stored lines must read under 100 rows.
+- **The guard against real phrasings** (`src/lib/guard.corpus.test.ts`): 25 kinds of advice and return promises it must catch, 10 support sentences it must pass, and every text the console writes itself, which must never trip it.
+- **Browser checks beyond the walk-through**: axe on every page in both themes (`e2e/a11y.spec.ts`), the Content-Security-Policy with zero violations on every page (`e2e/csp.spec.ts`), and the build's traced files (`e2e/trace.spec.ts`).
 - **Onboarding and ops auth**: one key per approval, 409 the second time, the server-side guard, key rotation, Basic auth, same-origin, JSON only.
 - **Forwarder** (`forwarder/test_forwarder.py`, against a real local HTTP server): batching by lines and bytes, the held-back half line, resume, retry with the same body, no retry on 401, gap rewind, rotation (with a warning naming the old file's unsent bytes), a shrunk file, a private secret file.
 - **End to end** (`e2e-ingest/ingest.spec.ts`): the real seed generator writes a file from the engine, a signup is approved in the UI, the real forwarder sends the file, and the account page and every portal session match counts taken from the file with plain `JSON.parse`. Then: a second run sends nothing, a resend stores nothing, a tampered signature and an old timestamp get 401, a malformed line is rejected and shown, `data/seed` is untouched. It passed three runs in a row, each on a new database.
@@ -201,7 +207,7 @@ Motion has a job or doesn't happen: the hero terminal types one real engine line
 - **Health and readiness use the same window**: each deployment's last 5 sessions (`RECENT_SESSIONS`), health as of the manifest's `asOf` (2026-10-12) so the colours don't drift. With readiness on 3 sessions, Jonas Weber's breakout passed "no recent refusals" in the portal while the CRM had it on watch for the same refusals; now both agree.
   - **Needs help**: 20% or more of orders refused, or 2 or more Lime rejections.
   - **Watch**: 5% or more refused, 1 Lime rejection, a stale run, `validate_orders=False`, or a reason with no built-in explanation.
-- **The guard is a phrase check, not a compliance system.** The UI says that wherever it runs.
+- **The guard is a phrase check, not a compliance system.** The UI says that wherever it runs. Until 14 Oct 2026 it caught only the textbook forms and let 18 of 21 everyday phrasings through; `guard.corpus.test.ts` now holds the phrasings it must catch. A phrasing not in that list can still get past it, which is why a person approves every reply.
 
 ## Demo script (3 minutes)
 

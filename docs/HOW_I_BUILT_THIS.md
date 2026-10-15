@@ -6,7 +6,7 @@ ziplime, Limex's open-source engine, had an open issue (#5) asking for a dry run
 
 ## How I worked with AI
 
-Claude Code wrote most of the code, from plans I approved. Each stage was a plan in `PLAN.md`, then code, tests and the production build, then a commit: 2 commits on the ziplime branch, 37 here. For the integration layer I was away, so a separate Claude Code session reviewed the plan as a strict senior engineer; its 17 findings, two of them blockers, were fixed before any code (`PLAN.md` 15.10).
+Claude Code wrote most of the code, from plans I approved. Each stage was a plan in `PLAN.md`, then code, tests and the production build, then a commit: 2 commits on the ziplime branch, 37 here for the build and 14 more from the review below. For the integration layer I was away, so a separate Claude Code session reviewed the plan as a strict senior engineer; its 17 findings, two of them blockers, were fixed before any code (`PLAN.md` 15.10).
 
 ## How I verified it
 
@@ -38,16 +38,58 @@ Claude Code wrote most of the code, from plans I approved. Each stage was a plan
 - Run the tests against a real Postgres as well as PGlite. The concurrency test that matters most for the webhook is skipped here.
 - Query per page instead of loading the whole dataset on every request, before there are more than a few dozen accounts.
 
+## A second review, 14 Oct 2026
+
+After the build, a separate Claude Code session audited the live deploy (`3747839`) as a reviewer, not as its author. It reproduced every finding before fixing it, fixed seven bugs in four commits and listed five things it left open. A third session applied those commits on my Mac, checked them, fixed the open items, and found one more test problem.
+
+**The guard was the worst finding.** It is the check that stops a reply giving investment advice or promising returns, and it knew only the textbook forms. Of 21 everyday phrasings, such as "You should definitely buy more AAPL", "We recommend buying the dip", "You'll make 20% per year" and "zero risk", it let 18 through. The patterns now allow a short closed list of hedges and cover recommend, suggest and advise, price predictions, percent-per-period returns and no-risk promises. `guard.corpus.test.ts` holds 25 phrasings it must catch and 10 support sentences it must pass, and it runs the guard over every text the console writes itself, none of which may trip it. On the production build, the first sentence above blocks Approve (`docs/screenshots/audit/guard-blocks-approve.png`).
+
+**The other bugs, each with a test that failed first:**
+
+- Claude on the public demo. The demo has no sign-in, so the AI routes are open to anyone, and only a sentence in `docs/PUBLISH.md` kept the key off Vercel. Found by reading the routes. A static build on Vercel now keeps AI off even with a key, and the AI routes take only JSON from the console's own origin.
+- Skip reasons with an exponent. The engine writes a fraction with Python's `:g`, which gives `4e-05` below 0.0001, and the skip pattern had no exponent, so float noise turned a healthy deployment amber. Found by reading the engine source.
+- Accessibility. axe on every page in both themes found an unlabelled file input, a sideways-scrolling session clock the keyboard couldn't reach, and top bars outside any landmark. All fixed; `e2e/a11y.spec.ts` runs axe on every page.
+- A phone layout shift of 0.13 on the portal against the test's own 0.05 limit, because the loading skeleton was shorter than the screen. Found by the existing test.
+- A dropped file over 10 MB vanished without a message. Found by trying it. It shows the same error as the button now.
+- `npm run typecheck` failed on a fresh clone. It generates the route types first now.
+- A front-page test failed once on this Mac, by 2^-14 px. It measured the terminal while the page's 160 ms fade-in still had a transform on it. Found by repeating it 100 times and then holding the fade halfway, which gave the same number. The test waits for the fade now.
+- Symbols with a quote in them. Python's `!r` writes O'NEIL in double quotes, and five explanation patterns accepted only single quotes. Found by reading the engine's format strings.
+- Refusal-streak tickets opened once per deployment, ever, so a second streak weeks later was logged as "already open". Found by the review reading the rule. The ticket id now carries the streak's first session.
+- The forwarder skipped a replaced file's unsent tail without a word. It records the file size at each read and warns with the byte count, or says it can't tell.
+- The link preview fetched "→" from Google Fonts on every render. Found with a test that blocks the network. The arrow is drawn now.
+- The build traced the whole project into the server output (252 project files, from `README.md` to every screenshot) because of a path held in a variable in `migrate.ts`. Found from the build warning. It traces 33 files now, and `e2e/trace.spec.ts` reads the trace after every build.
+- No Content-Security-Policy. Production now sends one, and `e2e/csp.spec.ts` loads every page with zero violations.
+
+**The ingest benchmark.** Every webhook batch read every stored line, re-parsed the whole stream and rebuilt the sessions table, so a batch got slower as the stream grew. Now each new line goes in on its own date, a cancel's session is looked up from its place in SQL, and only the sessions the batch touched are recounted. On this Mac, 40 batches of 500 lines on PGlite (`npm run bench:ingest`):
+
+| Stored lines | Before | After |
+|---|---|---|
+| 0 | 314 ms | 299 ms |
+| 10,000 | 420 ms | 294 ms |
+| 19,500 | 557 ms | 298 ms |
+
+The change was gated on `store.diff.test.ts`, which runs the old store and the new one side by side on 200 random streams, 3,128 batches, and requires the same rows and the same response after every batch. They differ in one case, tested on its own: the old store let a place line the database had just refused set a cancel's session until the next batch.
+
+**Still open:**
+
+- The keyboard test the review saw fail once on a cold server passed every run here, so I didn't check whether a key pressed before the page hydrates is lost.
+- `npm test` takes about 40 s now, most of it the 200 streams.
+- The CSP allows inline scripts. Next's bootstrap needs them unless every page gets a nonce, and a nonce would make the prerendered demo dynamic.
+- The new index (`20261014120000_dry_run_id_index.sql`) has to be pushed to any real database. None exists yet.
+- A browser that saved demo state before the streak fix opens a second ticket for the same streak on its next run. Reset demo clears it.
+
+**How AI was used.** The review ran as a separate Claude Code session from the one that built the console, so it read the code cold. Every fix, in the review and after it, came with a test that failed on the old code first, and each commit message says what that test showed.
+
 ## Numbers
 
-Counted when this page was written.
+Counted after the second review, 14 Oct 2026.
 
 | | |
 |---|---|
-| Commits | 37 here, 2 on ziplime's `feat/dry-run-orders` |
-| Unit and integration tests (vitest) | 361 in 21 files, 2 skipped on purpose (one needs a real Postgres) |
-| Browser tests (Playwright) | 54 in the main suite (3 skipped by design), 2 in the ingest suite |
-| Forwarder tests (pytest) | 19 |
+| Commits | 51 here, 2 on ziplime's `feat/dry-run-orders` |
+| Unit and integration tests (vitest) | 437 in 25 files, 2 skipped on purpose (one needs a real Postgres) |
+| Browser tests (Playwright) | 66 in the main suite (4 run on one screen size only), 2 in the ingest suite |
+| Forwarder tests (pytest) | 23 |
 | ziplime dry-run tests | 13 test functions in `test_lime_dry_run.py` |
 | Seed data | 503 dry-run lines written by the engine, 14 deployments, 135 sessions, 10 accounts, 30 signups, 7 tickets |
 | Pages | 8 |
