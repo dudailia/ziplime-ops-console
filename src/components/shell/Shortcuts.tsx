@@ -60,6 +60,11 @@ export function Shortcuts() {
       }
     };
     window.addEventListener("keydown", onKey);
+    // Keys pressed before this listener existed, queued by the script in layout.tsx.
+    const w = window as Window & { __earlyKeys?: string[] | null };
+    const early = w.__earlyKeys;
+    w.__earlyKeys = null;
+    for (const key of early ?? []) window.dispatchEvent(new KeyboardEvent("keydown", { key }));
     return () => window.removeEventListener("keydown", onKey);
   }, [router, act, tour.status]);
 

@@ -50,7 +50,9 @@ export const viewport: Viewport = {
 // default; "light" and "auto" are opt-in. The html element already says "dark",
 // so without script (or without storage) the page is dark.
 // Also marks the page as scripted, so count-ups can hide their first frame.
-const THEME_SCRIPT = `document.documentElement.classList.add("js");try{var t=localStorage.getItem("ziplime-ops-console:theme");if(t==="light"||t==="auto")document.documentElement.dataset.theme=t}catch(e){}`;
+// Also queues keys pressed before React attaches its listener (on a 6x slower CPU the
+// page paints up to 348 ms earlier). Shortcuts replays the queue once, then sets it to null.
+const THEME_SCRIPT = `document.documentElement.classList.add("js");try{var t=localStorage.getItem("ziplime-ops-console:theme");if(t==="light"||t==="auto")document.documentElement.dataset.theme=t}catch(e){}window.__earlyKeys=[];addEventListener("keydown",function(e){var q=window.__earlyKeys,x=e.target;if(!q||q.length>7||e.metaKey||e.ctrlKey||e.altKey||(x&&(x.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(x.tagName))))return;q.push(e.key)});`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

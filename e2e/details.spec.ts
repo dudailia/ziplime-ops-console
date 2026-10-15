@@ -109,3 +109,27 @@ test("without a database the ingest and ops routes refuse cleanly, with no inter
   expect(approve.status()).toBe(503);
   expect(await approve.json()).toEqual({ error: "needs_database" });
 });
+
+test("a ? pressed before the page hydrates still opens the sheet, on a 6x slower CPU", async ({ page, isMobile, browserName }) => {
+  test.skip(isMobile || browserName !== "chromium", "hardware keyboard, CDP throttling");
+  // Measured on a 6x slower CPU: the page paints 18 to 348 ms before React attaches
+  // its keydown listener. Holding the scripts back makes that window certain.
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 6 });
+  for (const path of ["/", "/ops", "/portal"]) {
+    let release!: () => void;
+    const held = new Promise<void>((r) => (release = r));
+    await page.route(/\/_next\/static\/chunks\/.*\.js/, async (route) => {
+      await held;
+      await route.continue();
+    });
+    await page.goto(path, { waitUntil: "commit" });
+    await expect(page.locator("main")).toBeVisible();
+    await page.keyboard.press("?");
+    release();
+    await expect(page.getByRole("dialog", { name: "Keyboard shortcuts" }), path).toBeVisible({ timeout: 15_000 });
+    await page.keyboard.press("Escape");
+    await page.unroute(/\/_next\/static\/chunks\/.*\.js/);
+  }
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
+});
