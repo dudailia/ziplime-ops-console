@@ -107,6 +107,7 @@ Keyboard: `?` shows every shortcut. `t` starts or resumes the tour, `g` then a l
 npm test               # vitest: 468 tests in 26 files, 2 skipped on purpose (one needs a real Postgres); about 15 s. Run it on every change.
 npm run test:full      # the same, with the old-versus-new ingest store on all 200 streams, not 20: 475 tests, about 75 s. Run it before a merge or after touching src/lib/ingest/store.ts.
 npm run test:forwarder # pytest: 23 forwarder tests
+npm run test:link-check # node --test: 27 offline tests for tools/link-check (fixtures, no network)
 npm run test:e2e       # Playwright over the production build, desktop and a 390 px phone: 68 tests (4 run on one size only)
 npm run test:ingest    # the end-to-end ingest test on a fresh database: 2 tests
 npm run bench:ingest   # what one 500-line webhook batch costs at 0, 10,000 and 19,500 stored lines
@@ -123,6 +124,7 @@ What they cover:
 - **Ingest store, old against new** (`src/lib/ingest/store.diff.test.ts`): the store before 14 Oct 2026 and the current one on 20 random streams in `npm test` and 200 in `npm run test:full` (out of order, overlaps, replays, gaps, holes filled later, late cancels, rejected lines). After every batch both databases must match row for row and return the same response, and a 10-line batch on 2,000 stored lines must read under 100 rows.
 - **The guard against real phrasings** (`src/lib/guard.corpus.test.ts`): 34 kinds of advice and return promises it must catch, 23 support sentences it must pass, and every text the console writes itself, which must never trip it.
 - **Browser checks beyond the walk-through**: axe on every page in both themes (`e2e/a11y.spec.ts`), the Content-Security-Policy with zero violations on every page (`e2e/csp.spec.ts`), and the build's traced files (`e2e/trace.spec.ts`).
+- **Link check** (`tools/link-check/lib.test.mjs`): link extraction, robots.txt rules, the moved-page guess, the Discord invite check, soft 404s and a whole offline run. How the tool works: `tools/link-check/README.md`.
 - **Onboarding and ops auth**: one key per approval, 409 the second time, the server-side guard, key rotation, Basic auth, same-origin, JSON only.
 - **Forwarder** (`forwarder/test_forwarder.py`, against a real local HTTP server): batching by lines and bytes, the held-back half line, resume, retry with the same body, no retry on 401, gap rewind, rotation (with a warning naming the old file's unsent bytes), a shrunk file, a private secret file.
 - **End to end** (`e2e-ingest/ingest.spec.ts`): the real seed generator writes a file from the engine, a signup is approved in the UI, the real forwarder sends the file, and the account page and every portal session match counts taken from the file with plain `JSON.parse`. Then: a second run sends nothing, a resend stores nothing, a tampered signature and an old timestamp get 401, a malformed line is rejected and shown, `data/seed` is untouched. It passed three runs in a row, each on a new database.

@@ -72,7 +72,6 @@ The change was gated on `store.diff.test.ts`, which runs the old store and the n
 
 **Still open:**
 
-- The keyboard test the review saw fail once on a cold server passed every run here, so I didn't check whether a key pressed before the page hydrates is lost.
 - The CSP allows inline scripts. Next's bootstrap needs them unless every page gets a nonce, and a nonce would make the prerendered demo dynamic.
 - The new index (`20261014120000_dry_run_id_index.sql`) has to be pushed to any real database. None exists yet.
 
@@ -85,6 +84,10 @@ The change was gated on `store.diff.test.ts`, which runs the old store and the n
 - A browser holding demo state from before the streak fix would open the same streak twice. The saved-state version is 2 now, so that state loads as the seed.
 - The docs said `npm test` takes about 40 s; it took a minute. Rerunning the suites after the fixes then showed PGlite setup hooks timing out under that load, 2 runs in 4. `npm test` runs 20 of the 200 streams now (about 15 s); `npm run test:full` runs all of them.
 - Wrong numbers in the docs: the old guard missed 24 of 25 phrasings, not 18 of 21, and `PUBLISH.md` showed `ai-status` without its `reason`.
+
+**After that ship.** A key pressed in the first moments after load was lost. On a CPU slowed 6x, the page paints 18 to 348 ms before React attaches its keyboard listener, and a `?` pressed in that window did nothing. The fixed theme script in the page head now also queues up to 8 keys, and the shortcuts replay them once they're listening. The test holds the scripts back on the slowed CPU and presses `?` on the painted page; it failed before.
+
+**The first 90-day task: a link check.** `tools/link-check/` checks the links on five public Limex start pages, one level deep, with Node and `fetch` only. It reads and obeys every `robots.txt`, sends one request per second per host, and sends HEAD before GET. Discord invites go to Discord's invite API, because a dead invite's page still answers 200. The first run found one thing a status check cannot see. www.limex.com answers every path with 200 and the same app shell, so `/privacy` looks alive while the browser shows "404". The tool asks each host for a made-up path, and a link that gets that same page and is missing from the sitemap is listed as probably broken, to confirm in a browser. Reports are git-ignored: a list of another company's broken links doesn't belong in a public repo.
 
 **How AI was used.** The review ran as a separate Claude Code session from the one that built the console, so it read the code cold. Every fix, in the review and after it, came with a test that failed on the old code first, and each commit message says what that test showed.
 
