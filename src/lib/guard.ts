@@ -29,10 +29,20 @@ export const CATEGORY_LABEL: Record<GuardCategory, string> = {
 type Pattern = { category: GuardCategory; re: RegExp; label: string };
 
 // Adverbs and hedges that sit between "you should" and the verb ("you should
-// definitely buy"). Short and closed, so a sentence about settings never matches.
+// definitely buy"). Short and closed.
 const HEDGE = "(?:(?:definitely|probably|really|seriously|certainly|just|also|still|maybe|perhaps|now|consider|think about|go ahead and|start)\\s+){0,3}";
-const TRADE_VERB = "(?:buy(?:ing)?|sell(?:ing)?|hold(?:ing)?|short(?:ing)?|dump(?:ing)?|load(?:ing)? up on|add(?:ing)? to|trim(?:ming)?|exit(?:ing)?)";
+// "add to", "trim" and "exit" are also everyday words ("exit the forwarder", "trim the
+// allowlist"), so they count only with a holding after them. Tickers are matched
+// case-sensitively in TICKER_ADVICE below, since every pattern here is /i.
+const HOLDING = "(?:(?:your|the|this|that|a|some|those|these) )?(?:\\w+ )?(?:positions?|stakes?|holdings?|shares)\\b";
+const TRADE_VERB = `(?:buy(?:ing)?|sell(?:ing)?|hold(?:ing)?(?! (?:off|on)\\b)|short(?:ing)?|dump(?:ing)?|load(?:ing)? up on|(?:add(?:ing)? to|trim(?:ming)?|exit(?:ing)?) ${HOLDING})`;
+const ADVICE_LEAD = "\\byou(?:'d| would)? (?:should|ought to|need to|must|might want to|may want to|want to) ";
+// Who a price move is about. Closed, so "your refusal rate will drop" never matches.
+const MARKET_SUBJECT = "\\b(?:prices?|stocks?|shares|markets?|index|indices|equit(?:y|ies)|valuations?|crypto|bitcoin)";
 const MOVE_VERB = "(?:go (?:up|down|higher|lower)|move (?:up|down|higher|lower)|head (?:up|down|higher|lower)|rise|fall|rally|drop|climb|surge|soar|crash|tank|rebound|recover|pop)";
+const MOVE_PREDICTION = `(?:will (?:(?:likely|probably|definitely|surely|soon)\\s+)?${MOVE_VERB}|(?:is|are|looks?|seems?) (?:going|likely|expected|set|poised|about|due|ready) to ${MOVE_VERB})\\b`;
+// "It will go up" is a prediction only when the sentence is about the market.
+const PRONOUN_MOVE = `\\b(?:it|they)\\s+${MOVE_PREDICTION}(?=[^.!?\\n]*\\b(?:earnings|prices?|stocks?|shares|markets?|dividends?|guidance|the (?:open|close)|trading)\\b)`;
 const PERCENT = "\\b\\d+(?:\\.\\d+)?\\s?%";
 
 const BASE: Pattern[] = [
@@ -43,9 +53,10 @@ const BASE: Pattern[] = [
   {
     category: "returns",
     label: "will make or earn",
-    re: /(?:\b(?:will|should|could|can|would|going to)|'ll|’ll) (?:\w+ )?(?:make|earn|net) (?:you |them )?(?:money|a profit|profits?|returns?|gains?|a killing|\$\s?\d|\d)|(?:\bwill|'ll|’ll) (?:\w+ )?profit\b/gi,
+    re: /(?:\b(?:will|should|could|can|would|going to)|'ll|’ll) (?:\w+ )?(?:make|earn|net) (?:you |them )?(?:money|a profit|profits?|returns?|gains?|a killing|\$\s?\d|\d+(?:\.\d+)?\s?%)|(?:\bwill|'ll|’ll) (?:\w+ )?profit\b/gi,
   },
-  { category: "returns", label: "assured profit", re: /\b(?:assured|sure|certain|easy) (?:profits?|returns?|gains?|money|thing|bet|win)\b/gi },
+  // "Sure thing, I'll look" and "an easy win: set X" are support talk, so no bare "sure thing" or "win".
+  { category: "returns", label: "assured profit", re: /\b(?:assured|sure|certain|easy) (?:profits?|returns?|gains?|money)\b|\ba (?:sure|certain) (?:thing|bet)\b/gi },
   { category: "returns", label: "double your money", re: /\b(?:double|triple|grow|multiply) (?:your|their) (?:money|account|capital|investment)\b/gi },
   {
     category: "returns",
@@ -57,7 +68,7 @@ const BASE: Pattern[] = [
   },
   { category: "returns", label: "outperform", re: /\boutperform(?:s|ed|ing)?\b/gi },
   { category: "returns", label: "beat the market", re: /\bbeat(?:s|ing)? the (?:market|index|S&P|SPY)\b/gi },
-  { category: "advice", label: "you should buy/sell/hold", re: new RegExp(`\\byou(?:'d| would)? (?:should|ought to|need to|must|might want to|may want to|want to) ${HEDGE}${TRADE_VERB}\\b`, "gi") },
+  { category: "advice", label: "you should buy/sell/hold", re: new RegExp(`${ADVICE_LEAD}${HEDGE}${TRADE_VERB}`, "gi") },
   {
     category: "advice",
     label: "I recommend buying/selling",
@@ -74,7 +85,7 @@ const BASE: Pattern[] = [
     category: "advice",
     label: "will go up/down",
     re: new RegExp(
-      `\\bwill (?:(?:likely|probably|definitely|surely|soon)\\s+)?${MOVE_VERB}\\b|\\b(?:is|are|'s|’s|looks?|seems?) (?:going|likely|expected|set|poised|about|due|ready) to ${MOVE_VERB}\\b`,
+      `${MARKET_SUBJECT}\\s+${MOVE_PREDICTION}|${PRONOUN_MOVE}`,
       "gi",
     ),
   },
@@ -86,6 +97,18 @@ const BASE: Pattern[] = [
     category: "other-clients",
     label: "our clients",
     re: /\b(?:(?:many|most|some|several|all|plenty|lots|a lot|a few|none) of )?our (?:other )?(?:clients|customers|traders|users|investors|members)\b/gi,
+  },
+];
+
+// Case-sensitive: a ticker is capitals ("NVDA will rally", "you should trim TSLA").
+// "I" is not a ticker ("I will drop the old file").
+const TICKER = "\\b(?!I\\b)[A-Z]{1,5}\\b(?:'s|’s)?(?: (?:stock|shares|price))?";
+const TICKER_ADVICE: Pattern[] = [
+  { category: "advice", label: "will go up/down", re: new RegExp(`${TICKER}\\s+${MOVE_PREDICTION}`, "g") },
+  {
+    category: "advice",
+    label: "you should buy/sell/hold",
+    re: new RegExp(`\\b[Yy]ou(?:'d| would)? (?:should|ought to|need to|must|might want to|may want to|want to) ${HEDGE}(?:add(?:ing)? to|trim(?:ming)?|exit(?:ing)?) (?!I\\b)[A-Z]{1,5}\\b`, "g"),
   },
 ];
 
@@ -122,7 +145,7 @@ function clientPatterns(terms: readonly string[]): Pattern[] {
 }
 
 export function guard(text: string, options: GuardOptions = {}): { ok: boolean; hits: GuardHit[] } {
-  const patterns = [...BASE, ...(options.intake ? INTAKE : []), ...clientPatterns(options.otherClients ?? [])];
+  const patterns = [...BASE, ...TICKER_ADVICE, ...(options.intake ? INTAKE : []), ...clientPatterns(options.otherClients ?? [])];
   const hits: GuardHit[] = [];
   for (const p of patterns) {
     for (const m of text.matchAll(p.re)) {

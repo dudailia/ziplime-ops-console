@@ -104,7 +104,7 @@ Keyboard: `?` shows every shortcut. `t` starts or resumes the tour, `g` then a l
 ## Tests
 
 ```
-npm test               # vitest: 437 tests in 25 files, 2 skipped on purpose (one needs a real Postgres); about 40 s
+npm test               # vitest: 437 tests in 25 files, 2 skipped on purpose (one needs a real Postgres); about a minute
 npm run test:forwarder # pytest: 23 forwarder tests
 npm run test:e2e       # Playwright over the production build, desktop and a 390 px phone: 66 tests (4 run on one size only)
 npm run test:ingest    # the end-to-end ingest test on a fresh database: 2 tests
@@ -120,7 +120,7 @@ What they cover:
 - **Contract** (`src/lib/data/contract.test.ts`): the same checks on the static source and on PGlite seeded through the ingest path.
 - **Ingest** (`src/lib/ingest/ingest.test.ts`): the shared signature vector, strict headers, every line outcome, replay, gap, each refusal, no internals in a 500, no secret in the audit log. A concurrency test runs when `TEST_DATABASE_URL` points at a real Postgres.
 - **Ingest store, old against new** (`src/lib/ingest/store.diff.test.ts`): the store before 14 Oct 2026 and the current one on 200 random streams (out of order, overlaps, replays, gaps, holes filled later, late cancels, rejected lines). After every batch both databases must match row for row and return the same response, and a 10-line batch on 2,000 stored lines must read under 100 rows.
-- **The guard against real phrasings** (`src/lib/guard.corpus.test.ts`): 25 kinds of advice and return promises it must catch, 10 support sentences it must pass, and every text the console writes itself, which must never trip it.
+- **The guard against real phrasings** (`src/lib/guard.corpus.test.ts`): 34 kinds of advice and return promises it must catch, 23 support sentences it must pass, and every text the console writes itself, which must never trip it.
 - **Browser checks beyond the walk-through**: axe on every page in both themes (`e2e/a11y.spec.ts`), the Content-Security-Policy with zero violations on every page (`e2e/csp.spec.ts`), and the build's traced files (`e2e/trace.spec.ts`).
 - **Onboarding and ops auth**: one key per approval, 409 the second time, the server-side guard, key rotation, Basic auth, same-origin, JSON only.
 - **Forwarder** (`forwarder/test_forwarder.py`, against a real local HTTP server): batching by lines and bytes, the held-back half line, resume, retry with the same body, no retry on 401, gap rewind, rotation (with a warning naming the old file's unsent bytes), a shrunk file, a private secret file.
@@ -207,7 +207,7 @@ Motion has a job or doesn't happen: the hero terminal types one real engine line
 - **Health and readiness use the same window**: each deployment's last 5 sessions (`RECENT_SESSIONS`), health as of the manifest's `asOf` (2026-10-12) so the colours don't drift. With readiness on 3 sessions, Jonas Weber's breakout passed "no recent refusals" in the portal while the CRM had it on watch for the same refusals; now both agree.
   - **Needs help**: 20% or more of orders refused, or 2 or more Lime rejections.
   - **Watch**: 5% or more refused, 1 Lime rejection, a stale run, `validate_orders=False`, or a reason with no built-in explanation.
-- **The guard is a phrase check, not a compliance system.** The UI says that wherever it runs. Until 14 Oct 2026 it caught only the textbook forms and let 18 of 21 everyday phrasings through; `guard.corpus.test.ts` now holds the phrasings it must catch. A phrasing not in that list can still get past it, which is why a person approves every reply.
+- **The guard is a phrase check, not a compliance system.** The UI says that wherever it runs. Until 14 Oct 2026 it caught only the textbook forms and let 24 of 25 everyday phrasings through; `guard.corpus.test.ts` now holds the phrasings it must catch and the support sentences it must pass. A phrasing not in that list can still get past it, which is why a person approves every reply.
 
 ## Demo script (3 minutes)
 

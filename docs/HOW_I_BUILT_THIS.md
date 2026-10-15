@@ -42,7 +42,7 @@ Claude Code wrote most of the code, from plans I approved. Each stage was a plan
 
 After the build, a separate Claude Code session audited the live deploy (`3747839`) as a reviewer, not as its author. It reproduced every finding before fixing it, fixed seven bugs in four commits and listed five things it left open. A third session applied those commits on my Mac, checked them, fixed the open items, and found one more test problem.
 
-**The guard was the worst finding.** It is the check that stops a reply giving investment advice or promising returns, and it knew only the textbook forms. Of 21 everyday phrasings, such as "You should definitely buy more AAPL", "We recommend buying the dip", "You'll make 20% per year" and "zero risk", it let 18 through. The patterns now allow a short closed list of hedges and cover recommend, suggest and advise, price predictions, percent-per-period returns and no-risk promises. `guard.corpus.test.ts` holds 25 phrasings it must catch and 10 support sentences it must pass, and it runs the guard over every text the console writes itself, none of which may trip it. On the production build, the first sentence above blocks Approve (`docs/screenshots/audit/guard-blocks-approve.png`).
+**The guard was the worst finding.** It is the check that stops a reply giving investment advice or promising returns, and it knew only the textbook forms. Of 25 everyday phrasings, such as "You should definitely buy more AAPL", "We recommend buying the dip", "You'll make 20% per year" and "zero risk", it let 24 through. The patterns now allow a short closed list of hedges and cover recommend, suggest and advise, price predictions, percent-per-period returns and no-risk promises. `guard.corpus.test.ts` holds 34 phrasings it must catch and 23 support sentences it must pass, and it runs the guard over every text the console writes itself, none of which may trip it. On the production build, the first sentence above blocks Approve (`docs/screenshots/audit/guard-blocks-approve.png`). A review before shipping then found that the wider patterns blocked ordinary support sentences, such as "Your refusal rate will drop once you raise the cap" and "You need to exit the forwarder first". Now a price prediction needs a market subject (a ticker, "the stock", "prices"), and "trim", "exit" and "add to" count only with a holding after them.
 
 **The other bugs, each with a test that failed first:**
 
@@ -73,7 +73,7 @@ The change was gated on `store.diff.test.ts`, which runs the old store and the n
 **Still open:**
 
 - The keyboard test the review saw fail once on a cold server passed every run here, so I didn't check whether a key pressed before the page hydrates is lost.
-- `npm test` takes about 40 s now, most of it the 200 streams.
+- `npm test` takes about a minute now, most of it the 200 streams.
 - The CSP allows inline scripts. Next's bootstrap needs them unless every page gets a nonce, and a nonce would make the prerendered demo dynamic.
 - The new index (`20261014120000_dry_run_id_index.sql`) has to be pushed to any real database. None exists yet.
 - A browser that saved demo state before the streak fix opens a second ticket for the same streak on its next run. Reset demo clears it.

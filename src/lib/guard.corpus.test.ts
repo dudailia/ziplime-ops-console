@@ -1,7 +1,8 @@
 // The guard against real phrasings, both ways. The first list is advice and
-// return promises a reviewer would expect it to catch; before 14 Oct 2026 it
-// let 18 of these 21 through. The second half runs the guard over every piece
-// of text the console writes itself, which must never trip it.
+// return promises a reviewer would expect it to catch; the guard before 14 Oct
+// 2026 let 24 of the first 25 through. The second list is support sentences it
+// must pass. The last part runs the guard over every piece of text the console
+// writes itself, which must never trip it.
 
 import { describe, expect, it } from "vitest";
 import { otherClients } from "./crm";
@@ -41,6 +42,16 @@ const CAUGHT: [string, GuardCategory][] = [
   ["Other investors saw the same refusal.", "other-clients"],
   ["Many of our clients set this to 50.", "other-clients"],
   ["Our traders usually raise the cap.", "other-clients"],
+  // Kept caught while the patterns were narrowed for the sentences above.
+  ["You should trim your TSLA position.", "advice"],
+  ["You need to exit your shares before Friday.", "advice"],
+  ["You should trim TSLA.", "advice"],
+  ["You might want to add to NVDA here.", "advice"],
+  ["AAPL's price will rise after earnings.", "advice"],
+  ["The market is expected to fall.", "advice"],
+  ["It's a sure bet.", "returns"],
+  ["Easy money.", "returns"],
+  ["This should make you $500 a month.", "returns"],
 ];
 
 describe("guard: advice and promises in the words people actually use", () => {
@@ -61,6 +72,20 @@ describe("guard: support sentences about settings stay clean", () => {
     "We can't say whether the strategy will work.",
     "The order count is capped at 12 a session.",
     "The engine can't fail open: no quote, no order.",
+    // Found by the pre-ship review of 14 Oct: all of these blocked Approve.
+    "Sure thing, I'll look at the logs today.",
+    "Your refusal rate will drop once you raise the cap.",
+    "Refusals are likely to drop after you add TSLA to the allowlist.",
+    "The order count is expected to rise when you widen the allowlist.",
+    "Skips will fall once the strategy rebalances less often.",
+    "You need to exit the forwarder before you edit the state file.",
+    "You may want to hold off on raising ZIPLIME_MAX_ORDER_NOTIONAL_USD.",
+    "You should also trim the allowlist to the symbols you trade.",
+    "You need to add to ZIPLIME_ALLOWED_SYMBOLS whatever the strategy trades.",
+    "That's an easy win: set ZIPLIME_ALLOW_SELL=true.",
+    "This change should make 2 of the refusals go away.",
+    "I will drop the old file once the new one is in.",
+    "It will go down once you raise the cap.",
   ])("%s", (text) => {
     expect(guard(text).hits).toEqual([]);
   });
