@@ -5,6 +5,7 @@
 import type { Sql } from "../db/db";
 import type { LineResult } from "../data/types";
 import { isParseError, ownClock, parseRecord, type Unplaced } from "../dryrun/parse";
+import { dbJson, dbText } from "../db/text";
 import { sha256Hex } from "./signature";
 import { LIMITS, type IngestRequest, type IngestResponse } from "./types";
 
@@ -86,6 +87,7 @@ export async function storeBatch(sql: Sql, input: StoreInput): Promise<StoreOutc
   const locked = await sql.query<{ next_line: number }>("select next_line from public.deployments where id = $1 for update", [dep]);
   if (locked.length === 0) return { kind: "unknown_deployment" };
   const nextLine = Number(locked[0].next_line);
+  const file = request.file === null ? null : dbText(request.file);
 
   // The same body again: return what the first call returned, store nothing.
   const prior = await sql.query<{ id: string; result: IngestResponse }>(
@@ -97,7 +99,7 @@ export async function storeBatch(sql: Sql, input: StoreInput): Promise<StoreOutc
     await sql.query(
       `insert into public.ingest_batches (id, deployment_id, status, file, body_sha256, first_line, line_count, replay_of, result)
        values ($1, $2, 'replay', $3, $4, $5, $6, $7, $8)`,
-      [batchId, dep, request.file, bodySha, request.first_line, request.lines.length, prior[0].id, JSON.stringify(response)],
+      [batchId, dep, file, bodySha, request.first_line, request.lines.length, prior[0].id, dbJson(response)],
     );
     await audit(sql, actor, "ingest.replay", dep, { batch_id: batchId, replay_of: prior[0].id }, requestId);
     return { kind: "replay", response };
@@ -108,7 +110,7 @@ export async function storeBatch(sql: Sql, input: StoreInput): Promise<StoreOutc
     await sql.query(
       `insert into public.ingest_batches (id, deployment_id, status, file, body_sha256, first_line, line_count, result)
        values ($1, $2, 'gap', $3, $4, $5, $6, $7)`,
-      [batchId, dep, request.file, bodySha, request.first_line, request.lines.length, JSON.stringify(body)],
+      [batchId, dep, file, bodySha, request.first_line, request.lines.length, dbJson(body)],
     );
     await audit(sql, actor, "ingest.rejected", dep, { batch_id: batchId, error: "gap", expected_at_most: nextLine }, requestId);
     return { kind: "gap", expectedAtMost: nextLine };
@@ -158,7 +160,7 @@ export async function storeBatch(sql: Sql, input: StoreInput): Promise<StoreOutc
   await sql.query(
     `insert into public.ingest_batches (id, deployment_id, status, file, body_sha256, first_line, line_count, result)
      values ($1, $2, 'stored', $3, $4, $5, $6, '{}')`,
-    [batchId, dep, request.file, bodySha, request.first_line, request.lines.length],
+    [batchId, dep, file, bodySha, request.first_line, request.lines.length],
   );
 
   // Each new line goes in on its own ET date. A cancel's session is settled below.
@@ -169,7 +171,7 @@ export async function storeBatch(sql: Sql, input: StoreInput): Promise<StoreOutc
     const r = resultAt.get(p.line)!;
     if (p.record) {
       const session = ownClock(p.record).session;
-      const ok = await attempt(sql, INSERT_ACCEPTED, [dep, batchId, p.line, p.raw, p.hash, ...columns(p.record), session]);
+      const ok = await attempt(sql, INSERT_ACCEPTED, [dep, batchId, p.line, dbText(p.raw), p.hash, ...columns(p.record), session]);
       if (ok) {
         touched.add(session);
         if (p.record.event === "place" || p.record.event === "cancel") orderIds.add(p.record.dry_run_id);
@@ -180,7 +182,7 @@ export async function storeBatch(sql: Sql, input: StoreInput): Promise<StoreOutc
       p.reason = DB_REFUSED;
     }
     // A rejected line is kept, so the rebuilt file shows the same error the trader's file does.
-    await attempt(sql, INSERT_REJECTED, [dep, batchId, p.line, p.raw, p.hash, p.reason]);
+    await attempt(sql, INSERT_REJECTED, [dep, batchId, p.line, dbText(p.raw), p.hash, dbText(p.reason ?? "")]);
   }
 
   // A cancel belongs to the session of the latest earlier place with its
@@ -238,7 +240,7 @@ export async function storeBatch(sql: Sql, input: StoreInput): Promise<StoreOutc
   };
   await sql.query(
     "update public.ingest_batches set accepted = $2, duplicate = $3, rejected = $4, ignored = $5, result = $6 where id = $1",
-    [batchId, response.accepted, response.duplicate, response.rejected, response.ignored, JSON.stringify(response)],
+    [batchId, response.accepted, response.duplicate, response.rejected, response.ignored, dbJson(response)],
   );
   await audit(sql, actor, "ingest.stored", dep, { batch_id: batchId, accepted: response.accepted, duplicate: response.duplicate, rejected: response.rejected }, requestId);
   return { kind: "stored", response };
@@ -249,7 +251,7 @@ export async function audit(sql: Sql, actor: string, action: string, target: str
     actor,
     action,
     target,
-    JSON.stringify(detail),
+    dbJson(detail),
     requestId,
   ]);
 }

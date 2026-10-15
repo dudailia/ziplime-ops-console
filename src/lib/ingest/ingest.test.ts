@@ -319,3 +319,37 @@ describe("concurrency", () => {
     }
   });
 });
+
+// Found by ingest.fuzz.test.ts (night run, 15 Oct 2026). Postgres text and jsonb
+// can't hold a NUL character or half a surrogate pair; each of these answered 500.
+describe("characters Postgres can't store", () => {
+  const FOUND = "fuzz-found";
+  beforeAll(async () => {
+    await db.tx(async (sql) => {
+      await sql.query("insert into public.deployments (id, account_id, strategy, validate_orders) values ($1, 'kofi-mensah', 'Fuzz finds', true)", [FOUND]);
+      await sql.query("insert into private.ingest_keys (deployment_id, secret) values ($1, $2)", [FOUND, SECRET]);
+    });
+  });
+  const stored = (line: number) =>
+    db.tx((sql) => sql.query<{ status: string; raw_line: string }>("select status, raw_line from public.dry_run_events where deployment_id = $1 and line_no = $2", [FOUND, line]));
+
+  it("a line with a NUL character is stored as rejected, with the NUL shown as U+FFFD", async () => {
+    // The shrunk counterexample: a real engine line with a NUL in front.
+    const body = ok(await call({ file: null, first_line: 1, lines: ["0", "\u0000" + ENGINE[0]] }, { dep: FOUND }));
+    expect(body.results[1]).toMatchObject({ line: 2, status: "rejected" });
+    const [row] = await stored(2);
+    expect(row.status).toBe("rejected");
+    expect(row.raw_line).toBe("�" + ENGINE[0]);
+  });
+
+  it("half a surrogate pair in a line is stored as rejected, not a 500", async () => {
+    const body = ok(await call({ file: null, first_line: 3, lines: ["\ud800" + ENGINE[1].slice(1)] }, { dep: FOUND }));
+    expect(body.results[0].status).toBe("rejected");
+    expect((await stored(3))[0].status).toBe("rejected");
+  });
+
+  it("a file name with a NUL or half a surrogate pair is still stored", async () => {
+    ok(await call({ file: "run\u0000.jsonl", first_line: 4, lines: [ENGINE[2]] }, { dep: FOUND }));
+    ok(await call({ file: "run\udfff.jsonl", first_line: 5, lines: [ENGINE[3]] }, { dep: FOUND }));
+  });
+});

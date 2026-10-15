@@ -4,6 +4,7 @@
 
 import { randomUUID } from "node:crypto";
 import type { Db, Sql } from "../db/db";
+import { dbJson } from "../db/text";
 import { DUMMY_SECRET, parseHeaders, sha256Hex, signatureMatches, timestampFresh, type Headers } from "./signature";
 import { storeBatch, type StoreOutcome } from "./store";
 import { LIMITS, type IngestHttpResult, type IngestRequest } from "./types";
@@ -30,7 +31,7 @@ async function rejectedBatch(sql: Sql, dep: string, status: "stale" | "bad_reque
     dep,
     status,
     bodySha,
-    JSON.stringify(body),
+    dbJson(body),
   ]);
   await sql.query("insert into public.audit_log (actor, action, target, detail, request_id) values ($1, 'ingest.rejected', $2, $3, $4)", [
     actor,

@@ -1,0 +1,4 @@
+# file: /Users/iliaduda/Projects/limex-ziplime/ops-console/forwarder/ziplime_forwarder.py
+# hypothesis_version: 6.140.0
+
+[b'\n', b'.', 0.5, 1.0, 2.0, 30.0, 60.0, 409, 429, 500, 502, 503, 504, 1000, 900000, ',', '--batch-lines', '--file', '--interval', '--max-tries', '--once', '--secret-file', '--state', '--url', '.tmp', '0123456789abcdef', ':', 'Content-Type', 'POST', 'User-Agent', 'X-Ziplime-Signature', 'X-Ziplime-Timestamp', '__main__', 'accepted', 'application/json', 'ascii', 'duplicate', 'expected_at_most', 'file', 'first_line', 'ignored', 'lines', 'rb', 'reason', 'received', 'rejected', 'replace', 'replay', 'results', 'status', 'store_true', 'utf-8', 'v1=', 'w', 'ziplime-forwarder/1']

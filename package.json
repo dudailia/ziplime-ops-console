@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:full": "STORE_DIFF_SEEDS=200 vitest run",
+    "test:full": "STORE_DIFF_SEEDS=200 FUZZ_RANDOM=1 vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "seed": "PYTHONDONTWRITEBYTECODE=1 ../ziplime/.venv/bin/python scripts/generate_seed.py",
@@ -43,6 +43,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
+    "fast-check": "4.10.2",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.2.7"
