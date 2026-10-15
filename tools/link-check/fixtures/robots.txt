@@ -1,0 +1,15 @@
+# comment
+User-agent: SomeOtherBot
+Disallow: /
+
+User-agent: *
+Disallow: /private/
+Disallow: /*.pdf$
+Allow: /private/open
+Crawl-delay: 3
+Sitemap: https://example.com/sitemap.xml
+
+User-agent: ziplime-link-check
+User-agent: AnotherBot
+Disallow: /tools/
+Allow: /tools/public

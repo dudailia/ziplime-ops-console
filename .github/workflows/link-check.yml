@@ -1,0 +1,29 @@
+name: Link check
+
+# Manual only. The report is uploaded as a workflow artifact, never committed.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  link-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Unit tests (offline)
+        run: node --test tools/link-check/*.test.mjs
+      - name: Check the links
+        run: node tools/link-check/check.mjs --out tools/link-check/reports/link-check.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: link-check-report
+          path: tools/link-check/reports/
+          retention-days: 7
+          if-no-files-found: warn

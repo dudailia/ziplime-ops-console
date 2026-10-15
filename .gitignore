@@ -48,3 +48,6 @@ yarn-error.log*
 # General Sans: fetched from Fontshare at build time, never committed (ITF FFL, see DESIGN.md)
 /src/app/fonts/*.woff2
 /src/app/fonts/*.woff
+
+# link-check reports: the repo is public, reports stay out of git
+/tools/link-check/reports/
