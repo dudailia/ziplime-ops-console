@@ -4,6 +4,24 @@ import type { NextConfig } from "next";
 // prerenders every page from the seed, a database build renders on request.
 const CONSOLE_DATA_MODE = process.env.DATABASE_URL ? "database" : "static";
 
+// Production only: next dev evaluates code with eval() for fast refresh and
+// React's debugging, which this policy would block.
+const CSP = [
+  "default-src 'self'",
+  // 'unsafe-inline' because Next's App Router bootstraps with inline scripts
+  // (self.__next_f.push(...)) and the theme script in layout.tsx is inline.
+  // A nonce would make every page dynamic, and the static demo prerenders.
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self'",
+  "connect-src 'self'",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+].join("; ");
+
 const nextConfig: NextConfig = {
   env: { CONSOLE_DATA_MODE },
   // Loaded from node_modules at runtime: PGlite ships WebAssembly and data files.
@@ -18,6 +36,7 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          ...(process.env.NODE_ENV === "production" ? [{ key: "Content-Security-Policy", value: CSP }] : []),
         ],
       },
     ];
