@@ -13,12 +13,14 @@ The GitHub Actions workflow `Link check` runs it on demand (`workflow_dispatch`,
 ## What it does
 
 - Reads the links on each start page: `<a href>`, `rel=canonical`, `og:url`, and JSON-LD `url` and `sameAs`. No crawling past that.
-- Reads and obeys every host's `robots.txt` (RFC 9309: the group naming `ziplime-link-check`, else `*`; longest match wins; a 5xx or no answer means stay out). One request per second per host, or the host's `Crawl-delay` if longer. Timeout 10 s.
-- HEAD first. On an error status it sends one GET and goes by that, because some servers answer HEAD wrongly and 405 or 501 means HEAD is not allowed.
+- Reads and obeys every host's `robots.txt` (RFC 9309: the group naming `ziplime-link-check`, else `*`; longest match wins; patterns compared percent-encoded; a 5xx or no answer means stay out). One request per second per host, or the host's `Crawl-delay` if longer, for every request, the GET retry included. Timeout 10 s.
+- Redirects are followed by hand, at most 5, and every hop gets the same robots.txt check and delay as the first request. A hop into a disallowed path is listed under "Not checked".
+- Never requests loopback, private (RFC 1918, CGNAT, IPv6 unique local) or link-local addresses, or `localhost`, directly or through a redirect. It checks the address as written, not what a name resolves to, so a public name that points inside a network is not caught.
+- HEAD first. On an error status, or a HEAD that fails outright, it sends one GET and goes by that, because some servers answer HEAD wrongly and 405 or 501 means HEAD is not allowed.
 - 401, 403, 429 and 999 are "could not verify", not broken: those are usually bot walls.
 - Discord invites go to `https://discord.com/api/v10/invites/<code>`. The invite page answers 200 for a dead invite.
 - Soft 404s: each host gets one request for a made-up path. If it answers 200, the host serves everything. A link that returns the same bytes and is not in the host's sitemap is listed as probably broken. A client-side app can still render such a path, so check those in a browser.
-- For each broken link it guesses where the page went: a known live URL or sitemap entry on the same site whose last path segment matches (`/privacy` to `/legal/privacy`).
+- For each broken link it guesses where the page went: a known live URL or sitemap entry on the same site whose last path segment matches (`/privacy` to `/legal/privacy`). "Same site" is the last two host labels, or three under a shared suffix such as `github.io`, `vercel.app` or `co.uk` (a short list in the code, not the full Public Suffix List).
 
 ## Reports stay out of git
 

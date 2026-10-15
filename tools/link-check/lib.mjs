@@ -9,6 +9,8 @@ export const TIMEOUT_MS = 10_000;
 export const MIN_DELAY_MS = 1_000;
 const MAX_DELAY_MS = 60_000;
 const MAX_SITEMAPS_PER_HOST = 5;
+const MAX_REDIRECTS = 5;
+const REDIRECTS = new Set([301, 302, 303, 307, 308]);
 
 // Statuses that usually mean "a bot wall answered", not "the page is gone".
 const UNVERIFIED_STATUSES = new Set([401, 403, 429, 999]);
@@ -57,7 +59,7 @@ export function extractLinks(html, pageUrl) {
     .replace(/<(script|style|template)\b[\s\S]*?<\/\1\s*>/gi, "");
 
   let base = pageUrl;
-  const baseTag = clean.match(/<base\b([^>]*)>/i);
+  const baseTag = clean.match(/<base\b((?:"[^"]*"|'[^']*'|[^'">])*)>/i);
   if (baseTag) {
     const href = parseAttrs(baseTag[1]).href;
     if (href) {
@@ -69,7 +71,7 @@ export function extractLinks(html, pageUrl) {
 
   const links = [];
   const seen = new Set();
-  for (const m of clean.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a\s*>/gi)) {
+  for (const m of clean.matchAll(/<a\b((?:"[^"]*"|'[^']*'|[^'">])*)>([\s\S]*?)<\/a\s*>/gi)) {
     const attrs = parseAttrs(m[1]);
     if (!("href" in attrs)) continue;
     const raw = attrs.href.trim();
@@ -101,11 +103,11 @@ export function extractLinks(html, pageUrl) {
 
   // Links a visitor never clicks but search engines follow.
   const extra = [];
-  for (const m of clean.matchAll(/<link\b([^>]*)>/gi)) {
+  for (const m of clean.matchAll(/<link\b((?:"[^"]*"|'[^']*'|[^'">])*)>/gi)) {
     const a = parseAttrs(m[1]);
     if ((a.rel ?? "").toLowerCase().split(/\s+/).includes("canonical") && a.href) extra.push([a.href, "canonical", "canonical"]);
   }
-  for (const m of clean.matchAll(/<meta\b([^>]*)>/gi)) {
+  for (const m of clean.matchAll(/<meta\b((?:"[^"]*"|'[^']*'|[^'">])*)>/gi)) {
     const a = parseAttrs(m[1]);
     if ((a.property ?? "").toLowerCase() === "og:url" && a.content) extra.push([a.content, "og:url", "og:url"]);
   }
@@ -192,9 +194,13 @@ export function robotsFor(parsed, userAgent) {
   };
 }
 
+/** RFC 9309 2.2.2: compare in percent-encoded form, with %XX in one case. */
+const encodePath = (s) =>
+  s.replace(/%[0-9A-Fa-f]{2}|[^A-Za-z0-9\-._~!$&'()*+,;=:@/?]/g, (m) => (m.length === 3 && m[0] === "%" ? m.toUpperCase() : encodeURIComponent(m)));
+
 function patternRegex(pattern) {
   const anchored = pattern.endsWith("$");
-  const body = (anchored ? pattern.slice(0, -1) : pattern)
+  const body = encodePath(anchored ? pattern.slice(0, -1) : pattern)
     .split("*")
     .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
     .join(".*");
@@ -202,7 +208,8 @@ function patternRegex(pattern) {
 }
 
 /** Longest matching pattern wins; on a tie Allow wins; no match means allowed. */
-export function isAllowed(rules, path) {
+export function isAllowed(rules, rawPath) {
+  const path = encodePath(rawPath);
   let best = null;
   for (const rule of rules) {
     if (!patternRegex(rule.pattern).test(path)) continue;
@@ -212,17 +219,25 @@ export function isAllowed(rules, path) {
   return best ? best.allow : true;
 }
 
-/** A 4xx robots.txt means no rules; a 5xx or no answer means stay out (RFC 9309, 2.3.1). */
-export async function fetchRobots(origin, fetchImpl = fetch, timeoutMs = TIMEOUT_MS) {
+/**
+ * A 4xx robots.txt means no rules; a 5xx or no answer means stay out (RFC 9309, 2.3.1).
+ * Redirects are followed by hand, at most 5 (RFC 9309, 2.3.1.2), and `beforeHop(url)` runs
+ * before each request: it can wait for the host's turn, or return false to stop (then: stay out).
+ */
+export async function fetchRobots(origin, fetchImpl = fetch, timeoutMs = TIMEOUT_MS, { beforeHop = async () => true } = {}) {
   const disallowAll = { rules: [{ allow: false, pattern: "/" }], crawlDelay: null, sitemaps: [], unreachable: true };
   let res;
+  let url = `${origin}/robots.txt`;
   try {
-    res = await fetchImpl(`${origin}/robots.txt`, {
-      method: "GET",
-      headers: headers("text/plain"),
-      redirect: "follow",
-      signal: AbortSignal.timeout(timeoutMs),
-    });
+    for (let hop = 0; ; hop++) {
+      if (!(await beforeHop(url))) return disallowAll;
+      res = await fetchImpl(url, { method: "GET", headers: headers("text/plain"), redirect: "manual", signal: AbortSignal.timeout(timeoutMs) });
+      const location = REDIRECTS.has(res.status) ? res.headers?.get?.("location") : null;
+      if (!location) break;
+      await res.body?.cancel().catch(() => {});
+      if (hop >= MAX_REDIRECTS) return disallowAll;
+      url = new URL(location, url).href;
+    }
   } catch {
     return disallowAll;
   }
@@ -234,7 +249,14 @@ export async function fetchRobots(origin, fetchImpl = fetch, timeoutMs = TIMEOUT
 
 // ---------- the moved-page guess ----------
 
-const siteOf = (host) => host.split(".").slice(-2).join(".");
+// Suffixes where different owners sit side by side (a short list, not the full Public Suffix List).
+const SHARED_SUFFIXES = ["github.io", "vercel.app", "netlify.app", "pages.dev", "web.app", "firebaseapp.com", "herokuapp.com", "azurewebsites.net", "cloudfront.net", "co.uk", "org.uk", "ac.uk", "com.au", "co.jp", "com.br", "co.nz", "co.in"];
+/** The registrable part of a host: the last two labels, or three under a shared suffix. */
+const siteOf = (host) => {
+  const labels = host.split(".");
+  const suffix = SHARED_SUFFIXES.find((x) => host.endsWith(`.${x}`));
+  return labels.slice(-(suffix ? suffix.split(".").length + 1 : 2)).join(".");
+};
 const segmentsOf = (url) => url.pathname.split("/").filter(Boolean).map((s) => s.toLowerCase());
 const siteKey = (href) => {
   const u = new URL(href);
@@ -312,6 +334,26 @@ export async function checkDiscordInvite(code, fetchImpl = fetch, timeoutMs = TI
   return { verdict: "unverified", status: res.status, detail: message };
 }
 
+// ---------- addresses never to request ----------
+
+/** Loopback, private, link-local and similar: never requested, so a page can't point the tool inside a network. */
+export function isPrivateHost(hostname) {
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local") || h.endsWith(".internal")) return true;
+  const v4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (v4) {
+    const [a, b] = [Number(v4[1]), Number(v4[2])];
+    return a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || a >= 224;
+  }
+  if (h.includes(":")) {
+    if (h === "::" || h === "::1") return true;
+    if (/^f[cd]/.test(h) || /^fe[89ab]/.test(h)) return true; // fc00::/7 unique local, fe80::/10 link-local
+    const mapped = h.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+    if (mapped) return isPrivateHost(mapped[1]);
+  }
+  return false;
+}
+
 // ---------- checking one URL ----------
 
 function errorStatus(err) {
@@ -322,30 +364,31 @@ function errorStatus(err) {
 const verdictFor = (status) => (status < 400 ? "ok" : UNVERIFIED_STATUSES.has(status) ? "unverified" : "broken");
 
 /**
- * HEAD first. Any error status gets one GET: a 405 or 501 means HEAD is not allowed, and some
- * servers answer HEAD wrongly, so a link is only called broken on what GET says.
+ * HEAD first. Any error status, or a HEAD that fails outright, gets one GET: a 405 or 501 means
+ * HEAD is not allowed, and some servers answer HEAD wrongly, so a link is only called broken on
+ * what GET says. `send(method)` makes the request; run() passes one that obeys robots.txt and
+ * the per-host delay on every request and every redirect hop.
  */
-export async function checkUrl(url, fetchImpl = fetch, timeoutMs = TIMEOUT_MS) {
-  const request = async (method) => {
-    const res = await fetchImpl(url, {
-      method,
-      headers: headers(),
-      redirect: "follow",
-      signal: AbortSignal.timeout(timeoutMs),
+export async function checkUrl(url, fetchImpl = fetch, timeoutMs = TIMEOUT_MS, { send } = {}) {
+  const request =
+    send ??
+    (async (method) => {
+      const res = await fetchImpl(url, { method, headers: headers(), redirect: "follow", signal: AbortSignal.timeout(timeoutMs) });
+      return { res, finalUrl: res.url || url };
     });
-    if (method === "GET") await res.body?.cancel().catch(() => {});
-    return res;
-  };
+  let head;
   try {
-    let res = await request("HEAD");
-    let method = "HEAD";
-    if (res.status >= 400) {
-      res = await request("GET");
-      method = "GET";
-    }
-    return { verdict: verdictFor(res.status), status: res.status, method, finalUrl: res.url || url };
+    head = await request("HEAD");
+    if (head.skipped) return { verdict: "skipped", reason: head.skipped };
+    if (head.res.status < 400) return { verdict: verdictFor(head.res.status), status: head.res.status, method: "HEAD", finalUrl: head.finalUrl };
+  } catch {}
+  try {
+    const got = await request("GET");
+    if (got.skipped) return { verdict: "skipped", reason: got.skipped };
+    await got.res.body?.cancel().catch(() => {});
+    return { verdict: verdictFor(got.res.status), status: got.res.status, method: "GET", finalUrl: got.finalUrl };
   } catch (err) {
-    return { verdict: "broken", status: errorStatus(err), method: "HEAD", finalUrl: url };
+    return { verdict: "broken", status: errorStatus(err), method: "GET", finalUrl: url };
   }
 }
 
@@ -386,28 +429,47 @@ export async function run(
   const delayFor = (robots) => Math.min(MAX_DELAY_MS, Math.max(MIN_DELAY_MS, (robots.crawlDelay ?? 0) * 1000));
 
   const robotsOf = (origin) => {
+    if (isPrivateHost(new URL(origin).hostname)) return Promise.resolve({ rules: [{ allow: false, pattern: "/" }], crawlDelay: null, sitemaps: [], unreachable: true });
     if (!robotsCache.has(origin)) {
-      const host = new URL(origin).host;
-      robotsCache.set(
-        origin,
-        sched.wait(host, MIN_DELAY_MS).then(() => fetchRobots(origin, fetchImpl, timeoutMs)),
-      );
+      const beforeHop = async (href) => {
+        const u = new URL(href);
+        if ((u.protocol !== "http:" && u.protocol !== "https:") || isPrivateHost(u.hostname)) return false;
+        await sched.wait(u.host, MIN_DELAY_MS);
+        return true;
+      };
+      robotsCache.set(origin, fetchRobots(origin, fetchImpl, timeoutMs, { beforeHop }));
     }
     return robotsCache.get(origin);
   };
 
+  /**
+   * Every request but robots.txt itself goes through here: no private address, robots.txt obeyed,
+   * the per-host delay, and redirects followed by hand (at most 5) so each hop gets the same.
+   * Returns { res, finalUrl }, or { skipped: reason } when a rule says not to ask.
+   */
+  const politeFetch = async (url, method, accept = "*/*") => {
+    let current = url;
+    for (let hop = 0; ; hop++) {
+      const u = new URL(current);
+      const via = hop ? `redirects to ${current}, ` : "";
+      if (u.protocol !== "http:" && u.protocol !== "https:") return { skipped: `${via}not an http(s) address` };
+      if (isPrivateHost(u.hostname)) return { skipped: `${via}a private address` };
+      const robots = await robotsOf(u.origin);
+      if (!isAllowed(robots.rules, u.pathname + u.search)) {
+        return { skipped: robots.unreachable ? `${via}robots.txt unreachable` : hop ? `${via}which robots.txt disallows` : "disallowed by robots.txt" };
+      }
+      await sched.wait(u.host, delayFor(robots));
+      const res = await fetchImpl(current, { method, headers: headers(accept), redirect: "manual", signal: AbortSignal.timeout(timeoutMs) });
+      const location = REDIRECTS.has(res.status) ? res.headers?.get?.("location") : null;
+      if (!location) return { res, finalUrl: current };
+      await res.body?.cancel().catch(() => {});
+      if (hop >= MAX_REDIRECTS) throw Object.assign(new Error("too many redirects"), { code: "too many redirects" });
+      current = new URL(location, current).href;
+    }
+  };
   const politeGet = async (url, accept) => {
-    const u = new URL(url);
-    const robots = await robotsOf(u.origin);
-    if (!isAllowed(robots.rules, u.pathname + u.search)) return { skipped: true, unreachable: robots.unreachable };
-    await sched.wait(u.host, delayFor(robots));
-    const res = await fetchImpl(url, {
-      method: "GET",
-      headers: headers(accept),
-      redirect: "follow",
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    return { res };
+    const got = await politeFetch(url, "GET", accept);
+    return got.skipped ? { skipped: got.skipped } : got;
   };
 
   const sitemapCache = new Map(); // origin -> Promise<string[]>
@@ -441,48 +503,47 @@ export async function run(
   const sitemapUrls = [];
   const links = new Map(); // url -> { url, text, pages: [] }
 
-  await Promise.all(
+  // Load the start pages at once (they are on different hosts), then read them in list order,
+  // so "Found on" and the report order don't depend on which page answered first.
+  const loaded = await Promise.all(
     startPages.map(async (page) => {
       log(`page ${page}`);
       let got;
       try {
         got = await politeGet(page, "text/html");
       } catch (err) {
-        pageErrors.push({ page, status: errorStatus(err) });
-        return;
+        return { page, error: errorStatus(err) };
       }
-      if (got.skipped) {
-        pageErrors.push({ page, status: got.unreachable ? "robots.txt unreachable" : "disallowed by robots.txt" });
-        return;
-      }
+      if (got.skipped) return { page, error: got.skipped };
       if (got.res.status >= 400) {
         await got.res.body?.cancel().catch(() => {});
-        pageErrors.push({ page, status: got.res.status });
-        return;
+        return { page, error: got.res.status };
       }
-      const found = extractLinks(await got.res.text(), got.res.url || page);
-      pages.push({ page, links: found.length });
-      for (const link of found) {
-        if (link.kind === "placeholder") {
-          placeholders.push({ page, raw: link.raw, text: link.text });
-          continue;
-        }
-        const entry = links.get(link.url) ?? { url: link.url, text: link.text, source: link.source, pages: [], order: Infinity };
-        entry.pages.push(page);
-        links.set(link.url, entry);
-      }
-
+      const found = extractLinks(await got.res.text(), got.finalUrl);
       // Sitemaps feed the moved-page guess and the soft-404 check. One level of sitemap index, capped.
-      sitemapUrls.push(...(await sitemapsOf(new URL(page).origin)));
+      const sitemap = await sitemapsOf(new URL(page).origin);
+      return { page, found, sitemap };
     }),
   );
-
-  // First-seen order follows the start page list, then page order.
   let order = 0;
-  for (const page of startPages) {
-    for (const entry of links.values()) if (entry.pages[0] === page && entry.order === Infinity) entry.order = order++;
+  for (const { page, error, found, sitemap } of loaded) {
+    if (error !== undefined) {
+      pageErrors.push({ page, status: error });
+      continue;
+    }
+    pages.push({ page, links: found.length });
+    sitemapUrls.push(...sitemap);
+    for (const link of found) {
+      if (link.kind === "placeholder") {
+        placeholders.push({ page, raw: link.raw, text: link.text });
+        continue;
+      }
+      const entry = links.get(link.url) ?? { url: link.url, text: link.text, source: link.source, pages: [], order: order++ };
+      entry.pages.push(page);
+      links.set(link.url, entry);
+    }
   }
-  const entries = [...links.values()].sort((a, b) => a.order - b.order);
+  const entries = [...links.values()];
 
   const findings = [];
   const skipped = [];
@@ -498,19 +559,24 @@ export async function run(
   await Promise.all(
     [...byHost.entries()].map(async ([host, list]) => {
       for (const { entry, code, target } of list) {
-        const robots = await robotsOf(target.origin);
-        if (!isAllowed(robots.rules, target.pathname + target.search)) {
-          skipped.push({
-            url: entry.url,
-            page: entry.pages[0],
-            reason: robots.unreachable ? "robots.txt unreachable" : "disallowed by robots.txt",
-            order: entry.order,
-          });
-          continue;
-        }
-        await sched.wait(host, delayFor(robots));
+        const skip = (reason) => skipped.push({ url: entry.url, page: entry.pages[0], reason, order: entry.order });
         log(`check ${entry.url}`);
-        const result = code ? await checkDiscordInvite(code, fetchImpl, timeoutMs) : await checkUrl(entry.url, fetchImpl, timeoutMs);
+        let result;
+        if (code) {
+          const robots = await robotsOf(target.origin);
+          if (!isAllowed(robots.rules, target.pathname)) {
+            skip(robots.unreachable ? "robots.txt unreachable" : "disallowed by robots.txt");
+            continue;
+          }
+          await sched.wait(host, delayFor(robots));
+          result = await checkDiscordInvite(code, fetchImpl, timeoutMs);
+        } else {
+          result = await checkUrl(entry.url, fetchImpl, timeoutMs, { send: (method) => politeFetch(entry.url, method) });
+          if (result.verdict === "skipped") {
+            skip(result.reason);
+            continue;
+          }
+        }
         findings.push({ ...result, url: entry.url, text: entry.text, source: entry.source, page: entry.pages[0], pages: entry.pages, order: entry.order, discord: Boolean(code) });
       }
     }),
@@ -638,8 +704,9 @@ export function renderReport(result, { date }) {
     "## How this was checked",
     "",
     "- Depth 1: the links on the start pages, nothing further. Sitemaps named in robots.txt were read to guess where a page moved and to spot soft 404s.",
-    `- Every host's robots.txt was read and obeyed. One request per second per host, or the host's Crawl-delay if longer. User-Agent: \`${USER_AGENT}\`.`,
-    "- HEAD first. On an error status, one GET decides. Timeout 10 s.",
+    `- Every host's robots.txt was read and obeyed, on every redirect hop too (followed by hand, at most 5). One request per second per host, or the host's Crawl-delay if longer. User-Agent: \`${USER_AGENT}\`.`,
+    "- Private, loopback and link-local addresses were never requested.",
+    "- HEAD first. On an error status or a failed HEAD, one GET decides. Timeout 10 s.",
     "- Each host was asked once for a made-up path. Where that answered 200, a link serving the identical page and missing from the sitemap is listed as probably broken.",
     "- Links come from `<a href>`, `rel=canonical`, `og:url` and JSON-LD `url` and `sameAs`.",
     "- Discord invites were checked with `https://discord.com/api/v10/invites/<code>`, because the invite page answers 200 for a dead invite.",

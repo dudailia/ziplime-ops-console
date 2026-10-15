@@ -27,7 +27,7 @@ function fakeFetch(routes) {
   const calls = [];
   const impl = async (url, init = {}) => {
     const method = init.method ?? "GET";
-    calls.push({ url: String(url), method, headers: init.headers ?? {}, signal: init.signal });
+    calls.push({ url: String(url), method, headers: init.headers ?? {}, signal: init.signal, init });
     const route = routes[`${method} ${url}`] ?? routes[String(url)];
     if (route === undefined) return new Response("not found", { status: 404 });
     if (typeof route === "function") return route();
@@ -378,4 +378,200 @@ test("run reports a start page it could not load", async () => {
   const { impl } = fakeFetch({ "https://site.test/robots.txt": 404, "GET https://site.test/home": 500 });
   const result = await run(["https://site.test/home"], { fetchImpl: impl, sleep: async () => {}, now: () => 0 });
   assert.deepEqual(result.pageErrors.map((p) => [p.page, p.status]), [["https://site.test/home", 500]]);
+});
+
+// ---------- pre-ship review, 15 Oct: politeness on every request, redirects, edge cases ----------
+
+// Virtual time: a sleep resolves when the clock reaches its deadline, and the clock moves to the
+// next deadline only once everything else has settled (setImmediate runs after the microtasks).
+// So hosts sleeping side by side don't add up, the way they don't in real time.
+function virtualClock() {
+  let t = 0;
+  const timers = [];
+  const tick = () => {
+    if (timers.length) {
+      timers.sort((a, b) => a.at - b.at);
+      const next = timers.shift();
+      t = Math.max(t, next.at);
+      next.resolve();
+    }
+    if (!clock.stopped) setImmediate(tick);
+  };
+  const clock = { now: () => t, sleep: (ms) => new Promise((resolve) => timers.push({ at: t + ms, resolve })), stopped: false };
+  setImmediate(tick);
+  return clock;
+}
+
+// A fetch that stamps every request with the virtual time it started at.
+function timed(routes) {
+  const vc = virtualClock();
+  const t = () => vc.now();
+  const clock = { now: vc.now, sleep: vc.sleep };
+  const { impl, calls } = fakeFetch(routes);
+  // Stamped when the request starts: fakeFetch records the call before its first await.
+  const stamped = (url, init) => {
+    const res = impl(url, init);
+    calls.at(-1).at = t();
+    return res;
+  };
+  return { clock, impl: stamped, calls, stop: () => (vc.stopped = true) };
+}
+
+function assertSpaced(calls, minMs) {
+  const byHost = new Map();
+  for (const c of calls) {
+    const host = new URL(c.url).host;
+    const prev = byHost.get(host);
+    if (prev !== undefined) assert.ok(c.at - prev >= minMs(host), `${c.method} ${c.url} came ${c.at - prev} ms after the previous request to ${host}`);
+    byHost.set(host, c.at);
+  }
+}
+
+test("every request to one host waits for the delay, the GET retry and Crawl-delay included", async () => {
+  const { clock, impl, calls, stop } = timed({
+    "https://site.test/robots.txt": 404,
+    "GET https://site.test/home": { body: '<a href="/gone">x</a><a href="/ok">y</a><a href="https://slow.test/a">z</a><a href="https://slow.test/b">w</a>' },
+    "https://site.test/gone": 404,
+    "HEAD https://site.test/ok": 200,
+    "https://slow.test/robots.txt": { body: "User-agent: *\nCrawl-delay: 3" },
+    "HEAD https://slow.test/a": 200,
+    "HEAD https://slow.test/b": 200,
+  });
+  await run(["https://site.test/home"], { fetchImpl: impl, ...clock, probePath: "/probe" });
+  stop();
+  assert.ok(calls.some((c) => c.method === "GET" && c.url === "https://site.test/gone"), "the GET retry happened");
+  assertSpaced(calls, (host) => (host === "slow.test" ? 3000 : 1000));
+});
+
+test("a redirect is followed by hand: robots.txt and the delay apply to every hop", async () => {
+  const { clock, impl, calls, stop } = timed({
+    "https://a.test/robots.txt": 404,
+    "https://c.test/robots.txt": { body: "User-agent: *\nDisallow: /private" },
+    "GET https://a.test/home": { body: '<a href="/x">1</a><a href="/y">2</a><a href="/moved">3</a>' },
+    "https://a.test/x": { status: 302, headers: { location: "https://c.test/private" } },
+    "https://a.test/y": { status: 301, headers: { location: "https://c.test/private/2" } },
+    "https://a.test/moved": { status: 308, headers: { location: "/new" } },
+    "HEAD https://a.test/new": 200,
+  });
+  const result = await run(["https://a.test/home"], { fetchImpl: impl, ...clock, probePath: "/probe" });
+  stop();
+  assert.ok(calls.every((c) => !c.url.startsWith("https://c.test/private")), "c.test disallows /private");
+  assert.ok(calls.every((c) => c.init?.redirect !== "follow"));
+  assert.deepEqual(
+    result.skipped.map((s) => [s.url, s.reason]),
+    [
+      ["https://a.test/x", "redirects to https://c.test/private, which robots.txt disallows"],
+      ["https://a.test/y", "redirects to https://c.test/private/2, which robots.txt disallows"],
+    ],
+  );
+  const moved = result.findings.find((f) => f.url === "https://a.test/moved");
+  assert.equal(moved.verdict, "ok");
+  assert.equal(moved.finalUrl, "https://a.test/new");
+  assertSpaced(calls, () => 1000);
+});
+
+test("a redirect loop stops after 5 hops and is reported broken", async () => {
+  const { clock, impl, calls, stop } = timed({
+    "https://a.test/robots.txt": 404,
+    "GET https://a.test/home": { body: '<a href="/loop">1</a>' },
+    "https://a.test/loop": { status: 302, headers: { location: "/loop" } },
+  });
+  const result = await run(["https://a.test/home"], { fetchImpl: impl, ...clock, probePath: "/probe" });
+  stop();
+  const loop = result.findings.find((f) => f.url === "https://a.test/loop");
+  assert.equal(loop.verdict, "broken");
+  assert.equal(loop.status, "too many redirects");
+  assert.ok(calls.filter((c) => c.url === "https://a.test/loop").length <= 12);
+});
+
+test("a HEAD that throws gets one GET before the link is called broken", async () => {
+  const calls = [];
+  const impl = async (url, init) => {
+    calls.push(init.method);
+    if (init.method === "HEAD") throw new TypeError("fetch failed", { cause: { code: "ECONNRESET" } });
+    return new Response("ok");
+  };
+  const r = await checkUrl("https://a.test/page", impl);
+  assert.equal(r.verdict, "ok");
+  assert.deepEqual(calls, ["HEAD", "GET"]);
+});
+
+test("robots.txt patterns are percent-encoded before matching (RFC 9309, 2.2.2)", () => {
+  const r = robotsFor(parseRobots("User-agent: *\nDisallow: /café\nDisallow: /a%3cb"), "ziplime-link-check/1.0");
+  assert.equal(isAllowed(r.rules, new URL("https://a.test/café/menu").pathname), false);
+  assert.equal(isAllowed(r.rules, "/a%3Cb"), false, "hex case does not matter");
+  assert.equal(isAllowed(r.rules, "/cafe"), true);
+});
+
+test("private, loopback and link-local addresses are never requested, directly or by redirect", async () => {
+  const { clock, impl, calls, stop } = timed({
+    "https://a.test/robots.txt": 404,
+    "GET https://a.test/home": {
+      body: [
+        "http://169.254.169.254/latest/meta-data/",
+        "http://127.0.0.1:8080/admin",
+        "http://localhost/x",
+        "http://10.1.2.3/",
+        "http://192.168.0.1/",
+        "http://172.20.0.1/",
+        "http://[::1]/",
+        "http://[fd00::1]/",
+        "http://[fe80::1]/",
+        "/hop",
+      ]
+        .map((h) => `<a href="${h}">x</a>`)
+        .join(""),
+    },
+    "https://a.test/hop": { status: 302, headers: { location: "http://169.254.169.254/latest/" } },
+  });
+  const result = await run(["https://a.test/home"], { fetchImpl: impl, ...clock, probePath: "/probe" });
+  stop();
+  assert.deepEqual(calls.map((c) => new URL(c.url).host).filter((h) => h !== "a.test"), []);
+  assert.equal(result.skipped.filter((s) => /private address/.test(s.reason)).length, 10);
+});
+
+test("guessMoved keeps tenants of a shared suffix apart", () => {
+  assert.equal(guessMoved("https://limex.github.io/privacy", ["https://someone-else.github.io/legal/privacy"]), null);
+  assert.equal(guessMoved("https://a.vercel.app/privacy", ["https://b.vercel.app/privacy-policy"]), null);
+  assert.equal(guessMoved("https://www.example.co.uk/privacy", ["https://other.co.uk/privacy"]), null);
+  assert.equal(guessMoved("https://www.example.co.uk/privacy", ["https://shop.example.co.uk/legal/privacy"]), "https://shop.example.co.uk/legal/privacy");
+});
+
+test("extractLinks reads a tag with > inside a quoted attribute", () => {
+  const links = extractLinks(`<a title="2 > 1" href="/x">x</a><a data-x='a>b' href="/y">y</a>`, "https://a.test/");
+  assert.deepEqual(links.map((l) => l.url), ["https://a.test/x", "https://a.test/y"]);
+});
+
+test("'Found on' follows the start page list, not which page answered first", async () => {
+  let t = 0;
+  const impl = async (url, init) => {
+    const u = String(url);
+    if (u === "https://a.test/robots.txt") {
+      await new Promise((r) => setTimeout(r, 30)); // a.test answers late
+      return new Response("", { status: 404 });
+    }
+    if (u.endsWith("/robots.txt")) return new Response("", { status: 404 });
+    if (u.endsWith("/home")) return new Response('<a href="https://shared.test/page">x</a>');
+    if (u === "https://shared.test/page" && init.method === "HEAD") return new Response(null, { status: 200 });
+    return new Response("", { status: 404 });
+  };
+  const result = await run(["https://a.test/home", "https://b.test/home"], { fetchImpl: impl, now: () => t, sleep: async (ms) => void (t += ms), probePath: "/probe" });
+  const f = result.findings.find((x) => x.url === "https://shared.test/page");
+  assert.equal(f.page, "https://a.test/home");
+  assert.deepEqual(f.pages, ["https://a.test/home", "https://b.test/home"]);
+});
+
+test("a robots.txt redirect is followed by hand, and never to a private address", async () => {
+  const { impl, calls } = fakeFetch({
+    "https://a.test/robots.txt": { status: 301, headers: { location: "https://b.test/robots.txt" } },
+    "https://b.test/robots.txt": { body: "User-agent: *\nDisallow: /x" },
+    "https://c.test/robots.txt": { status: 302, headers: { location: "http://127.0.0.1/robots.txt" } },
+  });
+  const a = await fetchRobots("https://a.test", impl);
+  assert.equal(isAllowed(a.rules, "/x"), false);
+  const hops = [];
+  const c = await fetchRobots("https://c.test", impl, 1000, { beforeHop: async (u) => (hops.push(u), !u.includes("127.0.0.1")) });
+  assert.equal(c.unreachable, true);
+  assert.deepEqual(hops, ["https://c.test/robots.txt", "http://127.0.0.1/robots.txt"]);
+  assert.ok(calls.every((x) => x.init.redirect === "manual" && !x.url.includes("127.0.0.1")));
 });

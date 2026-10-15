@@ -26,5 +26,5 @@ const result = await run(START_PAGES, { log: quiet ? () => {} : (line) => consol
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, renderReport(result, { date }));
 
-const broken = result.findings.filter((f) => f.verdict === "broken").length;
-console.log(`${result.checked} links checked, ${broken} broken, ${result.placeholders.length} placeholder. Report: ${out}`);
+const count = (v) => result.findings.filter((f) => f.verdict === v).length;
+console.log(`${result.checked} links checked, ${count("broken")} broken, ${count("soft404")} probably broken, ${result.placeholders.length} placeholder. Report: ${out}`);
