@@ -64,6 +64,14 @@ describe("saved state", () => {
     expect(revive(null)).toBeNull();
   });
 
+  it("drops state saved before the streak-ticket id change, so it loads as the seed", () => {
+    // Version 1 held ticket A-<deployment>-streak. Kept, the next rules run would open
+    // A-<deployment>-streak-<date> beside it: the same streak twice (pre-ship review, 14 Oct).
+    const old = { ...run([approve(maya.id)]), v: 1, createdTickets: [{ id: "A-wen-rebalance-streak" }] };
+    expect(revive(JSON.stringify(old))).toBeNull();
+    expect(initialState().v).toBe(2);
+  });
+
   it("resets to the seed", () => {
     expect(run([approve(maya.id), { type: "reset" }])).toEqual(initialState());
   });

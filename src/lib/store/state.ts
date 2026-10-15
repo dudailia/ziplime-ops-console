@@ -42,7 +42,8 @@ export const REVIEWER = "Demo reviewer";
 export type Reply = { text: string; source: ReplySource; by: string; updatedAt: string };
 
 export type State = {
-  v: 1;
+  // 2 since 14 Oct 2026: streak tickets carry the run's first session date, so version-1 state is dropped.
+  v: 2;
   /** Claude's answers for reasons with no built-in rule, keyed by reason string. */
   explainCache: Record<string, string>;
   /** Accounts created by approving a Beta signup. */
@@ -79,7 +80,7 @@ export type Action =
   | { type: "rules/run"; run: Run; tickets: Ticket[]; activity: Activity[] };
 
 export function initialState(): State {
-  return { v: 1, explainCache: {}, extraAccounts: [], activity: [], intake: {}, createdTickets: [], replies: {}, sent: {},
+  return { v: 2, explainCache: {}, extraAccounts: [], activity: [], intake: {}, createdTickets: [], replies: {}, sent: {},
     rules: { "refusal-streak": true, "broker-rejection": true, stale: true, "ready-for-live": true },
     runs: [],
   };
@@ -192,7 +193,7 @@ export function revive(raw: string | null): State | null {
   if (!raw) return null;
   try {
     const value = JSON.parse(raw) as Partial<State>;
-    if (value?.v !== 1) return null;
+    if (value?.v !== 2) return null;
     return { ...initialState(), ...value } as State;
   } catch {
     return null;
