@@ -133,3 +133,57 @@ test("a ? pressed before the page hydrates still opens the sheet, on a 6x slower
   }
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
 });
+
+// Pre-ship review, 15 Oct: the early-key queue's filters, each with the scripts held back.
+async function holdScripts(page: import("@playwright/test").Page, path: string) {
+  let release!: () => void;
+  const held = new Promise<void>((r) => (release = r));
+  await page.route(/\/_next\/static\/chunks\/.*\.js/, async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.goto(path, { waitUntil: "commit" });
+  await expect(page.locator("main")).toBeVisible();
+  return async () => {
+    release();
+    // Shortcuts sets the queue to null once it has replayed it.
+    await page.waitForFunction(() => (window as Window & { __earlyKeys?: unknown }).__earlyKeys === null, null, { timeout: 15_000 });
+    await page.waitForTimeout(300);
+  };
+}
+
+test("early keys: g then a on the page is replayed as a two-key shortcut", async ({ page, isMobile }) => {
+  test.skip(isMobile, "hardware keyboard only");
+  const hydrate = await holdScripts(page, "/");
+  await page.keyboard.press("g");
+  await page.keyboard.press("a");
+  await hydrate();
+  await expect(page).toHaveURL(/\/ops$/);
+});
+
+test("early keys: typing into a search box before hydration is not replayed as shortcuts", async ({ page, isMobile }) => {
+  test.skip(isMobile, "hardware keyboard only");
+  const hydrate = await holdScripts(page, "/ops");
+  await page.locator("[data-search]").first().focus();
+  await page.keyboard.type("gu");
+  await hydrate();
+  await expect(page).toHaveURL(/\/ops$/);
+});
+
+test("early keys: a key with a modifier is not queued", async ({ page, isMobile }) => {
+  test.skip(isMobile, "hardware keyboard only");
+  const hydrate = await holdScripts(page, "/");
+  await page.keyboard.press("Control+?");
+  await hydrate();
+  await expect(page.getByRole("dialog", { name: "Keyboard shortcuts" })).toBeHidden();
+});
+
+test("early keys: at most 8 are queued", async ({ page, isMobile }) => {
+  test.skip(isMobile, "hardware keyboard only");
+  const hydrate = await holdScripts(page, "/");
+  for (let i = 0; i < 8; i++) await page.keyboard.press("x");
+  await page.keyboard.press("g");
+  await page.keyboard.press("a");
+  await hydrate();
+  await expect(page).toHaveURL(/\/$/);
+});
