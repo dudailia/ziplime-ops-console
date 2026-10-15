@@ -46,7 +46,7 @@ After the build, a separate Claude Code session audited the live deploy (`374783
 
 **The other bugs, each with a test that failed first:**
 
-- Claude on the public demo. The demo has no sign-in, so the AI routes are open to anyone, and only a sentence in `docs/PUBLISH.md` kept the key off Vercel. Found by reading the routes. A static build on Vercel now keeps AI off even with a key, and the AI routes take only JSON from the console's own origin.
+- Claude on the public demo. The demo has no sign-in, so the AI routes are open to anyone, and only a sentence in `docs/PUBLISH.md` kept the key off Vercel. Found by reading the routes. A static build now keeps AI off even with a key, on Vercel or any other host, and the AI routes take only JSON from the console's own origin.
 - Skip reasons with an exponent. The engine writes a fraction with Python's `:g`, which gives `4e-05` below 0.0001, and the skip pattern had no exponent, so float noise turned a healthy deployment amber. Found by reading the engine source.
 - Accessibility. axe on every page in both themes found an unlabelled file input, a sideways-scrolling session clock the keyboard couldn't reach, and top bars outside any landmark. All fixed; `e2e/a11y.spec.ts` runs axe on every page.
 - A phone layout shift of 0.13 on the portal against the test's own 0.05 limit, because the loading skeleton was shorter than the screen. Found by the existing test.
@@ -73,10 +73,18 @@ The change was gated on `store.diff.test.ts`, which runs the old store and the n
 **Still open:**
 
 - The keyboard test the review saw fail once on a cold server passed every run here, so I didn't check whether a key pressed before the page hydrates is lost.
-- `npm test` runs 20 of the streams and takes about 15 s; `npm run test:full` runs all 200 in about 75 s.
 - The CSP allows inline scripts. Next's bootstrap needs them unless every page gets a nonce, and a nonce would make the prerendered demo dynamic.
 - The new index (`20261014120000_dry_run_id_index.sql`) has to be pushed to any real database. None exists yet.
-- A browser that saved demo state before the streak fix opens a second ticket for the same streak on its next run. Reset demo clears it.
+
+**Before shipping, one more review.** A fresh Claude Code session that had not seen the work read the whole diff since the live deploy and looked for bugs, security holes, missing tests and claims the code doesn't back up. It found no blocker and seven things, all fixed here with a test that failed first:
+
+- The wider guard blocked 11 ordinary support sentences ("Your refusal rate will drop once you raise the cap"). Narrowed, as described above.
+- The public-demo gate knew only Vercel. A static build served with `next start` or Docker with a key set was open. It fails closed on every host now.
+- No test called the AI routes themselves, so deleting the origin check from one would pass every suite. `src/app/api/ai-routes.test.ts` calls each route.
+- After a failed drop, a file opened with the button left the old error on screen.
+- A browser holding demo state from before the streak fix would open the same streak twice. The saved-state version is 2 now, so that state loads as the seed.
+- The docs said `npm test` takes about 40 s; it took a minute. Rerunning the suites after the fixes then showed PGlite setup hooks timing out under that load, 2 runs in 4. `npm test` runs 20 of the 200 streams now (about 15 s); `npm run test:full` runs all of them.
+- Wrong numbers in the docs: the old guard missed 24 of 25 phrasings, not 18 of 21, and `PUBLISH.md` showed `ai-status` without its `reason`.
 
 **How AI was used.** The review ran as a separate Claude Code session from the one that built the console, so it read the code cold. Every fix, in the review and after it, came with a test that failed on the old code first, and each commit message says what that test showed.
 
@@ -86,7 +94,7 @@ Counted after the second review, 14 Oct 2026.
 
 | | |
 |---|---|
-| Commits | 51 here, 2 on ziplime's `feat/dry-run-orders` |
+| Commits | 58 here, 2 on ziplime's `feat/dry-run-orders` |
 | Unit and integration tests (vitest) | 475 in 26 files with `npm run test:full` (468 in `npm test`, which runs 20 of the 200 ingest streams), 2 skipped on purpose (one needs a real Postgres) |
 | Browser tests (Playwright) | 68 in the main suite (4 run on one screen size only), 2 in the ingest suite |
 | Forwarder tests (pytest) | 23 |
