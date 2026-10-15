@@ -11,23 +11,23 @@ describe("normalize", () => {
   });
 
   it("turns look-alike letters Latin and drops invisible characters", () => {
-    const t = "guаr​antеe";
+    const t = "gu\u0430r\u200bant\u0435e";
     const n = normalize(t);
     expect(n.text).toBe("guarantee");
     expect(back(t, n, 0, n.text.length)).toBe(t);
   });
 
-  it("collapses every run of spaces and breaks into one space that maps to the whole run", () => {
-    const t = "You \t\r\n  should buy";
+  it("collapses a run of whitespace to one space, or one line break if it holds one, mapping to the whole run", () => {
+    const t = "You \t\r\n  should\u00a0buy";
     const n = normalize(t);
-    expect(n.text).toBe("You should buy");
+    expect(n.text).toBe("You\nshould buy");
     expect(back(t, n, 3, 4)).toBe(" \t\r\n  ");
   });
 
   it("decomposes fullwidth letters, ligatures and accents", () => {
-    expect(normalize("ｇｕａｒｄ").text).toBe("guard");
-    expect(normalize("proﬁt").text).toBe("profit");
-    expect(normalize("gúarantée").text).toBe("guarantee");
+    expect(normalize("\uff47\uff55\uff41\uff52\uff44").text).toBe("guard");
+    expect(normalize("pro\ufb01t").text).toBe("profit");
+    expect(normalize("gu\u0301arant\u00e9e").text).toBe("guarantee");
   });
 
   it("joins words spelled out with one separator, and nothing else", () => {

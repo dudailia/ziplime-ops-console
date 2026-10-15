@@ -104,9 +104,9 @@ Keyboard: `?` shows every shortcut. `t` starts or resumes the tour, `g` then a l
 ## Tests
 
 ```
-npm test               # vitest: 468 tests in 26 files, 2 skipped on purpose (one needs a real Postgres); about 15 s. Run it on every change.
+npm test               # vitest: 572 tests in 32 files, 2 skipped on purpose (one needs a real Postgres); about 15 s. Run it on every change.
 npm run test:full      # the same, with the old-versus-new ingest store on all 200 streams, not 20, and the property tests on a fresh random seed (printed; replay with FUZZ_SEED=<n>). Run it before a merge or after touching src/lib/ingest/store.ts.
-npm run test:forwarder # pytest: 23 forwarder tests
+npm run test:forwarder # pytest: 24 forwarder tests, plus 1 more with hypothesis installed (pip install -r forwarder/requirements-test.txt)
 npm run test:link-check # node --test: 37 offline tests for tools/link-check (fixtures, no network)
 npm run test:e2e       # Playwright over the production build, desktop and a 390 px phone: 78 tests (9 run on one size only)
 npm run test:ingest    # the end-to-end ingest test on a fresh database: 2 tests

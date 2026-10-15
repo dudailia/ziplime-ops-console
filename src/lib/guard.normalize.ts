@@ -33,20 +33,26 @@ const MARK = /^\p{M}$/u;
 const SPACE = /^\s$/u;
 const DASH = /^[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]$/u;
 
+const LINE_BREAK = /^[\n\r\u0085\u2028\u2029]$/u;
+
 // Three or more single letters joined by the same separator: "g-u-a-r-a-n-t-e-e", "r i s k".
 const SPELLED = /(?<![\p{L}\p{N}])\p{L}([-._* ])\p{L}(?![\p{L}\p{N}])(?:\1\p{L}(?![\p{L}\p{N}]))+/gu;
 
+/**
+ * Built in arrays and joined once: string += with an endsWith check made this
+ * quadratic (385,000 characters took 2.4 s, pre-ship review of 15 Oct).
+ * A run of whitespace becomes one space, or one "\n" if it holds a line
+ * break, so a line break still ends a sentence for the patterns.
+ */
 export function normalize(original: string): Normalized {
-  let text = "";
+  const units: string[] = []; // one UTF-16 unit per entry
   const from: number[] = [];
   const to: number[] = [];
   const push = (s: string, start: number, end: number) => {
-    for (const ch of s) {
-      text += ch;
-      for (let k = 0; k < ch.length; k++) {
-        from.push(start);
-        to.push(end);
-      }
+    for (let k = 0; k < s.length; k++) {
+      units.push(s[k]);
+      from.push(start);
+      to.push(end);
     }
   };
 
@@ -57,41 +63,52 @@ export function normalize(original: string): Normalized {
     i = end;
     if (INVISIBLE.test(cp) || MARK.test(cp)) continue;
     if (SPACE.test(cp)) {
-      if (text.endsWith(" ")) {
-        to[to.length - 1] = end; // the one space stands for the whole run
+      const last = units.length - 1;
+      if (last >= 0 && (units[last] === " " || units[last] === "\n")) {
+        if (LINE_BREAK.test(cp)) units[last] = "\n";
+        to[last] = end; // the one space stands for the whole run
         continue;
       }
-      push(" ", start, end);
+      push(LINE_BREAK.test(cp) ? "\n" : " ", start, end);
       continue;
     }
     if (DASH.test(cp)) {
       push("-", start, end);
       continue;
     }
-    const decomposed = cp.normalize("NFKD");
-    for (const part of decomposed) {
+    for (const part of cp.normalize("NFKD")) {
       if (MARK.test(part) || INVISIBLE.test(part)) continue;
       push(LOOKALIKE[part] ?? part, start, end);
     }
   }
 
-  // Spelled-out words: drop the separators inside each run.
+  let text = units.join("");
+  // Spelled-out words: drop the separators inside each run. Letters and
+  // separators alternate by code point, so walk code points, not units
+  // (a letter outside the BMP is two units).
   if (SPELLED.test(text)) {
     SPELLED.lastIndex = 0;
-    const keep = new Array<boolean>(text.length).fill(true);
+    const keep = new Array<boolean>(units.length).fill(true);
     for (const m of text.matchAll(SPELLED)) {
-      for (let k = m.index! + 1; k < m.index! + m[0].length; k += 2) keep[k] = false;
+      let at = m.index!;
+      let n = 0;
+      for (const ch of m[0]) {
+        if (n % 2 === 1) for (let k = 0; k < ch.length; k++) keep[at + k] = false;
+        at += ch.length;
+        n++;
+      }
     }
-    let t = "";
     const f: number[] = [];
     const e: number[] = [];
-    for (let k = 0; k < text.length; k++) {
+    const kept: string[] = [];
+    for (let k = 0; k < units.length; k++) {
       if (!keep[k]) continue;
-      t += text[k];
+      kept.push(units[k]);
       f.push(from[k]);
       e.push(to[k]);
     }
-    return { text: t, from: f, to: e };
+    text = kept.join("");
+    return { text, from: f, to: e };
   }
   return { text, from, to };
 }

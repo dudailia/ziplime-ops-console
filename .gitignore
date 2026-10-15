@@ -51,3 +51,6 @@ yarn-error.log*
 
 # link-check reports: the repo is public, reports stay out of git
 /tools/link-check/reports/
+
+# hypothesis (forwarder property tests) keeps a local cache with absolute paths
+.hypothesis/
