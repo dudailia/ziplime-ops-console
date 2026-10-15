@@ -8,6 +8,10 @@
 // server (DATABASE_URL=pglite:<new dir>): it approves a signup, sends a signed
 // batch with one broken line, and shoots the onboarding key and the Ingest
 // panel. Reduced motion, so every shot is the final state.
+//
+//   SHOTS_ONLY=about node scripts/screenshots.mjs static http://localhost:3311
+//
+// retakes only the pages named (comma-separated), and skips the tour and link preview.
 
 import { createHmac } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -34,6 +38,10 @@ const PAGES = {
   automations: "/ops/automations",
   about: "/about",
 };
+
+const ONLY = process.env.SHOTS_ONLY ? new Set(process.env.SHOTS_ONLY.split(",")) : null;
+// The /about shots open on the latest section, not the top of the page.
+const ANCHOR = { about: "A second review, 14 Oct 2026" };
 
 const browser = await chromium.launch();
 const problems = [];
@@ -75,9 +83,15 @@ if (mode === "static") {
     for (const viewport of ["desktop", "phone"]) {
       const { ctx, page } = await context(theme, viewport);
       for (const [name, path] of Object.entries(PAGES)) {
+        if (ONLY && !ONLY.has(name)) continue;
         await page.goto(base + path);
         await settle(page);
+        if (ANCHOR[name]) await page.getByRole("heading", { name: ANCHOR[name] }).evaluate((el) => el.scrollIntoView({ block: "start" }));
         await shoot(page, `${name}${suffix(theme, viewport)}`);
+      }
+      if (ONLY) {
+        await ctx.close();
+        continue;
       }
       // The tour's first three steps.
       await page.goto(base + "/");
@@ -94,9 +108,11 @@ if (mode === "static") {
       await ctx.close();
     }
   }
-  const og = await fetch(`${base}/opengraph-image`);
-  writeFileSync(join(OUT, "og.png"), Buffer.from(await og.arrayBuffer()));
-  console.log("  og.png");
+  if (!ONLY) {
+    const og = await fetch(`${base}/opengraph-image`);
+    writeFileSync(join(OUT, "og.png"), Buffer.from(await og.arrayBuffer()));
+    console.log("  og.png");
+  }
 } else {
   // Database mode: approve Maya Chen's signup and keep the key it shows once.
   const { ctx, page } = await context("dark", "desktop");
