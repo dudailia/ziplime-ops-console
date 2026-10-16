@@ -1,22 +1,9 @@
-// Seed data, bundled at build time. The .jsonl files are the engine's own
-// output (scripts/generate_seed.py); accounts.json is hand-written. Pages read
-// it through the data source (lib/data), never from here directly.
+// Seed data, bundled at build time; accounts.json is hand-written. The .jsonl
+// files, the engine's own output (scripts/generate_seed.py), are in ./files,
+// which only the server imports: pages get them through WithFiles. Pages read
+// all of it through the data source (lib/data), never from here directly.
 import accountsJson from "../../../data/seed/accounts.json";
 import manifestJson from "../../../data/seed/manifest.json";
-import harborMomentum from "../../../data/seed/dryruns/harbor-momentum.jsonl?raw";
-import harborEtfCore from "../../../data/seed/dryruns/harbor-etf-core.jsonl?raw";
-import priyaGrowth from "../../../data/seed/dryruns/priya-growth.jsonl?raw";
-import tomasMeanrev from "../../../data/seed/dryruns/tomas-meanrev.jsonl?raw";
-import tomasPairs from "../../../data/seed/dryruns/tomas-pairs.jsonl?raw";
-import wenRebalance from "../../../data/seed/dryruns/wen-rebalance.jsonl?raw";
-import gretaSector from "../../../data/seed/dryruns/greta-sector.jsonl?raw";
-import kofiRebal from "../../../data/seed/dryruns/kofi-rebal.jsonl?raw";
-import sofiaSwing from "../../../data/seed/dryruns/sofia-swing.jsonl?raw";
-import aaronTrend from "../../../data/seed/dryruns/aaron-trend.jsonl?raw";
-import nadiaIntraday from "../../../data/seed/dryruns/nadia-intraday.jsonl?raw";
-import nadiaIndexTest from "../../../data/seed/dryruns/nadia-index-test.jsonl?raw";
-import jonasBreakout from "../../../data/seed/dryruns/jonas-breakout.jsonl?raw";
-import jonasEtf from "../../../data/seed/dryruns/jonas-etf.jsonl?raw";
 import type { PlanKey } from "../plans";
 
 export type RiskEnv = Partial<Record<
@@ -69,22 +56,3 @@ export const TRADING_DAYS = manifest.sessions;
 
 export const SEED_ACCOUNTS = accountsJson.accounts as Account[];
 export const DEPLOYMENTS: Deployment[] = manifest.deployments;
-
-// One static import per seed file. A test checks this list against the manifest.
-export const RAW: Record<string, string> = {
-  "harbor-momentum": harborMomentum,
-  "harbor-etf-core": harborEtfCore,
-  "priya-growth": priyaGrowth,
-  "tomas-meanrev": tomasMeanrev,
-  "tomas-pairs": tomasPairs,
-  "wen-rebalance": wenRebalance,
-  "greta-sector": gretaSector,
-  "kofi-rebal": kofiRebal,
-  "sofia-swing": sofiaSwing,
-  "aaron-trend": aaronTrend,
-  "nadia-intraday": nadiaIntraday,
-  "nadia-index-test": nadiaIndexTest,
-  "jonas-breakout": jonasBreakout,
-  "jonas-etf": jonasEtf,
-};
-

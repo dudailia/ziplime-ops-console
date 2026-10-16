@@ -330,6 +330,12 @@ kbd.kbd {
 .page-in {
   animation: page-in 160ms var(--ease-out) both;
 }
+/* Not on a first load: there it only held the first full paint behind script
+   evaluation (Lighthouse's largest paint, 15 Oct 2026). FirstLoad clears the
+   mark on the first page change. */
+html[data-first-load] .page-in {
+  animation: none;
+}
 @keyframes page-in {
   from {
     opacity: 0;
@@ -587,4 +593,11 @@ mark.guard-hit {
   .row:hover {
     background-color: var(--sunk);
   }
+}
+
+/* A page's server-rendered default view (components/ui/DefaultView.tsx) is for
+   addresses without a query. On a deep link the browser renders the right view
+   once its scripts run; hiding the default until then avoids a flash of it. */
+html[data-query] [data-default-view] {
+  visibility: hidden;
 }

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useDataset } from "../data/DatasetProvider";
-import { intakeStatus } from "../intake/status";
+import { waitingSignups } from "../intake/status";
 import type { Ticket } from "../inbox";
 import { ticketStatus } from "../inbox/status";
 import { allTickets } from "./state";
@@ -19,10 +19,7 @@ export function useNavBadges(): { intake: number; inbox: number } {
   const { state } = useStore();
   const ds = useDataset();
   return useMemo(() => {
-    const intake = ds.signups.filter((s) => {
-      const st = intakeStatus(ds, state, s);
-      return st === "review" || st === "flagged";
-    }).length;
+    const intake = waitingSignups(ds, state);
     const inbox = allTickets(ds, state).filter((t) => ticketStatus(ds, state, t) !== "replied").length;
     return { intake, inbox };
   }, [ds, state]);

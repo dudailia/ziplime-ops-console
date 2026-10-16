@@ -34,6 +34,16 @@ export function decisionOf(ds: Dataset, state: State, id: string) {
   return ds.decisions[id] ?? state.intake[id]?.decision;
 }
 
+/**
+ * Signups waiting for a person: "review" and "flagged" both, which is every
+ * signup without a decision. The nav badge on every page used to get this
+ * from intakeStatus, running the guard over 30 welcome emails per render
+ * (about 160 ms on Lighthouse's slow phone, 15 Oct 2026).
+ */
+export function waitingSignups(ds: Dataset, state: State): number {
+  return ds.signups.filter((s) => !decisionOf(ds, state, s.id)).length;
+}
+
 export function intakeStatus(ds: Dataset, state: State, s: Signup): IntakeStatus {
   const decision = decisionOf(ds, state, s.id);
   if (decision) return decision.kind;

@@ -1,5 +1,6 @@
 "use client";
 
+import { DefaultView, NO_PARAMS } from "@/components/ui/DefaultView";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
@@ -298,10 +299,25 @@ function Detail({ s }: { s: Signup }) {
   );
 }
 
-export function IntakeView() {
+type Params = Pick<URLSearchParams, "get" | "toString">;
+
+/** Intake for the address the browser is on. */
+export function IntakeFromAddress() {
+  return <IntakeView params={useSearchParams()} />;
+}
+
+/** Intake with no query: what the server renders (see DefaultView). */
+export function IntakeDefault() {
+  return (
+    <DefaultView>
+      <IntakeView params={NO_PARAMS} />
+    </DefaultView>
+  );
+}
+
+function IntakeView({ params }: { params: Params }) {
   const { state } = useStore();
   const ds = useDataset();
-  const params = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const [filter, setFilter] = useState<IntakeStatus | "all" | "high">("all");

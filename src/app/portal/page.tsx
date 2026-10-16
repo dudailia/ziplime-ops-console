@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { PageSkeleton } from "@/components/ui/Skeleton";
-import { PortalView } from "@/components/portal/PortalView";
+import { PortalDefault, PortalFromAddress } from "@/components/portal/PortalView";
 
 export const metadata: Metadata = { title: "Dry-run review" };
 
 export default function PortalPage() {
   return (
-    <Suspense fallback={<PageSkeleton label="Loading the dry-run file…" />}>
-      <PortalView />
+    // The server renders the view with no query; the browser swaps in the one for its address.
+    <Suspense fallback={<PortalDefault />}>
+      <PortalFromAddress />
     </Suspense>
   );
 }

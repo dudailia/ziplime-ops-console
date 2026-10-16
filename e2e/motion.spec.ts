@@ -9,8 +9,12 @@ test.describe("with reduced motion", () => {
     await expect(page.locator(".countup").first()).toHaveAttribute("data-state", "done");
     const mark = page.locator(".clock-mark").first();
     expect(await mark.evaluate((el) => getComputedStyle(el).animationName)).toBe("none");
+    // A first load paints at once; a page change still fades, gently.
     const main = page.locator(".page-in").first();
-    expect(await main.evaluate((el) => getComputedStyle(el).animationName)).toBe("fade-in");
+    expect(await main.evaluate((el) => getComputedStyle(el).animationName)).toBe("none");
+    await page.getByRole("link", { name: "Open the portal" }).click();
+    await expect(page).toHaveURL(/\/portal/);
+    expect(await page.locator(".page-in").first().evaluate((el) => getComputedStyle(el).animationName)).toBe("fade-in");
   });
 });
 
@@ -31,8 +35,18 @@ test.describe("with motion", () => {
     await expect(page.locator(".countup").first()).toHaveAttribute("data-state", "done");
   });
 
-  test("page changes finish within 250 ms", async ({ page }) => {
+  test("a first load paints at once, without the fade", async ({ page }) => {
+    // The fade marks a page change. On a first load it only delayed the first full
+    // paint behind script evaluation (Lighthouse's largest paint, 15 Oct 2026).
     await page.goto("/ops");
+    expect(await page.locator(".page-in").first().evaluate((el) => getComputedStyle(el).animationName)).toBe("none");
+  });
+
+  test("page changes fade in, and finish within 250 ms", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("link", { name: "Open the portal" }).click();
+    await expect(page).toHaveURL(/\/portal/);
+    expect(await page.locator(".page-in").first().evaluate((el) => getComputedStyle(el).animationName)).toBe("page-in");
     const d = await page.locator(".page-in").first().evaluate((el) => {
       const s = getComputedStyle(el);
       return parseFloat(s.animationDuration) * (s.animationDuration.endsWith("ms") ? 1 : 1000);

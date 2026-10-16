@@ -1,5 +1,7 @@
 "use client";
 
+import { DefaultView, NO_PARAMS } from "@/components/ui/DefaultView";
+import { WithFiles } from "@/lib/data/WithFiles";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -237,12 +239,27 @@ function Detail({ ticket }: { ticket: Ticket }) {
   );
 }
 
-export function InboxView() {
+type Params = Pick<URLSearchParams, "get" | "toString">;
+
+/** The inbox for the address the browser is on. */
+export function InboxFromAddress() {
+  return <InboxView params={useSearchParams()} />;
+}
+
+/** The inbox with no query: what the server renders (see DefaultView). */
+export function InboxDefault() {
+  return (
+    <DefaultView>
+      <InboxView params={NO_PARAMS} />
+    </DefaultView>
+  );
+}
+
+function InboxView({ params }: { params: Params }) {
   const { state } = useStore();
   const ds = useDataset();
   const tickets = useTickets();
   const accounts = useAccounts();
-  const params = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const accountFilter = params.get("account");
@@ -347,7 +364,14 @@ export function InboxView() {
           </ul>
         </div>
         <div id="ticket-detail" className="min-w-0 scroll-mt-4 lg:col-span-8">
-          {selected ? <Detail key={selected.id} ticket={selected} /> : <p className="text-[13px] text-ink-2">Pick a ticket.</p>}
+          {selected ? (
+            // The ticket's account summary and linked lines read only that account's files.
+            <WithFiles ids={ds.deployments.filter((d) => d.account === selected.accountId).map((d) => d.id)}>
+              <Detail key={selected.id} ticket={selected} />
+            </WithFiles>
+          ) : (
+            <p className="text-[13px] text-ink-2">Pick a ticket.</p>
+          )}
         </div>
       </div>
     </div>

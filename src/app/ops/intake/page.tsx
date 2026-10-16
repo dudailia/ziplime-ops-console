@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { PageSkeleton } from "@/components/ui/Skeleton";
-import { IntakeView } from "@/components/ops/IntakeView";
+import { IntakeDefault, IntakeFromAddress } from "@/components/ops/IntakeView";
 
 export const metadata: Metadata = { title: "Beta intake" };
 
 export default function IntakePage() {
   return (
-    <Suspense fallback={<PageSkeleton label="Loading signups…" />}>
-      <IntakeView />
+    // The server renders the view with no query; the browser swaps in the one for its address.
+    <Suspense fallback={<IntakeDefault />}>
+      <IntakeFromAddress />
     </Suspense>
   );
 }

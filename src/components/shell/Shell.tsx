@@ -263,6 +263,16 @@ function Brand() {
   );
 }
 
+/** Clears <html data-first-load> on the first page change, so later pages fade in (globals.css). */
+function FirstLoad() {
+  const pathname = usePathname();
+  const [first] = useState(pathname);
+  useEffect(() => {
+    if (pathname !== first) document.documentElement.removeAttribute("data-first-load");
+  }, [pathname, first]);
+  return null;
+}
+
 export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[224px_minmax(0,1fr)]">
@@ -334,6 +344,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <TourLayer />
       </Suspense>
       <Shortcuts />
+      <FirstLoad />
     </div>
   );
 }
