@@ -26,9 +26,18 @@ function load(key: string): State | null {
   }
 }
 
+// Set while saved state differs from the seed. The inline script in layout.tsx
+// reads it before the first paint: a server-rendered default view shows the
+// seed, so for such a visitor it is swapped for a skeleton (DefaultView).
+const CHANGED = ":changed";
+const SEED_JSON = JSON.stringify(initialState());
+
 function save(key: string, state: State) {
   try {
-    window.localStorage.setItem(key, JSON.stringify(state));
+    const json = JSON.stringify(state);
+    window.localStorage.setItem(key, json);
+    if (json === SEED_JSON) window.localStorage.removeItem(key + CHANGED);
+    else window.localStorage.setItem(key + CHANGED, "1");
   } catch {
     // Private mode or storage full: the demo still works, it just won't remember.
   }
@@ -68,6 +77,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const resetDemo = useCallback(() => {
     try {
       window.localStorage.removeItem(key);
+      window.localStorage.removeItem(key + CHANGED);
     } catch {}
     setUploads([]);
     dispatch({ type: "reset" });

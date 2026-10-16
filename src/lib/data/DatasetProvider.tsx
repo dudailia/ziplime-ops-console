@@ -11,7 +11,7 @@ const DatasetContext = createContext<Dataset>(STATIC_BASE);
  * Hands every page the dataset. The static demo passes nothing and uses the
  * bundled seed without its dry-run files (STATIC_BASE); a page that reads
  * files wraps itself in WithFiles. Database mode passes what the server
- * loaded, files included, so WithFiles has nothing to fetch there.
+ * loaded, files included, and pageFiles hands WithFiles null there.
  */
 export function DatasetProvider({ dataset, children }: { dataset: Dataset | null; children: ReactNode }) {
   const value = dataset ?? STATIC_BASE;

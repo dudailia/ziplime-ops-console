@@ -4,7 +4,8 @@ import { expect, test } from "@playwright/test";
 // dry-run files in a shared JavaScript chunk, and three pages sent only a
 // skeleton, painting their content after the scripts ran. Lighthouse's
 // simulated phone charged both to the largest paint. Now a page gets the files
-// it reads in its own payload (WithFiles), and none in any script.
+// it reads in its own payload (WithFiles: the inline flight data of its HTML),
+// and no script chunk carries one.
 
 const PAGES = ["/", "/portal", "/ops", "/ops/accounts/wen-li", "/ops/intake", "/ops/inbox", "/ops/automations", "/about"];
 // A raw engine line, as the file has it ("recorded_at": "2026-..."), plain or

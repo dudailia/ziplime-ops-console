@@ -6,7 +6,9 @@ import { PageSkeleton } from "./Skeleton";
 // the address-driven one replaces it in the browser; with no query they match.
 // With a query, the inline script in layout.tsx marks <html data-query>: the
 // default view is hidden and a skeleton shows instead, so a deep link never
-// flashes the wrong content. FirstLoad clears the mark on the first page change.
+// flashes the wrong content; <html data-saved> does the same for a visitor whose
+// saved demo state differs from the seed. FirstLoad clears both on the first
+// page change.
 
 export const NO_PARAMS = new URLSearchParams();
 

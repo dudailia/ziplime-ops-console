@@ -1,8 +1,10 @@
 // The seed's dry-run files, the engine's own output (scripts/generate_seed.py).
-// Server only: the static data source, the /seed/dryruns route and WithFiles'
-// server branch import this. Kept out of the browser bundle (15 Oct 2026):
-// every page used to download all 14 files before its first paint.
+// Server only: the static data source (static.ts) and pageFiles.ts import this,
+// and "server-only" fails the build if a client module ever does. Kept out of
+// the browser bundle (15 Oct 2026): every page used to download all 14 files
+// in a script before its first paint.
 
+import "server-only";
 import harborMomentum from "../../../data/seed/dryruns/harbor-momentum.jsonl?raw";
 import harborEtfCore from "../../../data/seed/dryruns/harbor-etf-core.jsonl?raw";
 import priyaGrowth from "../../../data/seed/dryruns/priya-growth.jsonl?raw";

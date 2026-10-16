@@ -276,6 +276,7 @@ function FirstLoad() {
     if (pathname === first) return;
     document.documentElement.removeAttribute("data-first-load");
     document.documentElement.removeAttribute("data-query");
+    document.documentElement.removeAttribute("data-saved");
   }, [pathname, first]);
   return null;
 }
