@@ -597,7 +597,8 @@ mark.guard-hit {
 
 /* A page's server-rendered default view (components/ui/DefaultView.tsx) is for
    addresses without a query. On a deep link the browser renders the right view
-   once its scripts run; hiding the default until then avoids a flash of it. */
-html[data-query] [data-default-view] {
-  visibility: hidden;
+   once its scripts run; until then a skeleton stands in for the default. */
+html[data-query] [data-default-view],
+html:not([data-query]) [data-deep-link-skeleton] {
+  display: none;
 }

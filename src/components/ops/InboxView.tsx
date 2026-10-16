@@ -1,7 +1,6 @@
 "use client";
 
 import { DefaultView, NO_PARAMS } from "@/components/ui/DefaultView";
-import { WithFiles } from "@/lib/data/WithFiles";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -249,7 +248,7 @@ export function InboxFromAddress() {
 /** The inbox with no query: what the server renders (see DefaultView). */
 export function InboxDefault() {
   return (
-    <DefaultView>
+    <DefaultView label="Loading tickets…">
       <InboxView params={NO_PARAMS} />
     </DefaultView>
   );
@@ -364,14 +363,7 @@ function InboxView({ params }: { params: Params }) {
           </ul>
         </div>
         <div id="ticket-detail" className="min-w-0 scroll-mt-4 lg:col-span-8">
-          {selected ? (
-            // The ticket's account summary and linked lines read only that account's files.
-            <WithFiles ids={ds.deployments.filter((d) => d.account === selected.accountId).map((d) => d.id)}>
-              <Detail key={selected.id} ticket={selected} />
-            </WithFiles>
-          ) : (
-            <p className="text-[13px] text-ink-2">Pick a ticket.</p>
-          )}
+          {selected ? <Detail key={selected.id} ticket={selected} /> : <p className="text-[13px] text-ink-2">Pick a ticket.</p>}
         </div>
       </div>
     </div>

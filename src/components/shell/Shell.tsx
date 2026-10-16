@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Suspense, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { Suspense, useEffect, useLayoutEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useAiStatus } from "@/lib/ai/useAiStatus";
 import { useStore } from "@/lib/store/StoreProvider";
 import { useNavBadges } from "@/lib/store/selectors";
@@ -263,12 +263,19 @@ function Brand() {
   );
 }
 
-/** Clears <html data-first-load> on the first page change, so later pages fade in (globals.css). */
+/**
+ * Clears the first-load marks on the first page change: <html data-first-load>, so
+ * later pages fade in (globals.css), and <html data-query>, so later pages show
+ * their own views (DefaultView). A layout effect runs before the new page paints,
+ * so the first change fades from its first frame.
+ */
 function FirstLoad() {
   const pathname = usePathname();
   const [first] = useState(pathname);
-  useEffect(() => {
-    if (pathname !== first) document.documentElement.removeAttribute("data-first-load");
+  useLayoutEffect(() => {
+    if (pathname === first) return;
+    document.documentElement.removeAttribute("data-first-load");
+    document.documentElement.removeAttribute("data-query");
   }, [pathname, first]);
   return null;
 }

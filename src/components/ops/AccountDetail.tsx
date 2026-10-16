@@ -1,6 +1,5 @@
 "use client";
 
-import { WithFiles } from "@/lib/data/WithFiles";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
@@ -104,19 +103,7 @@ function DeploymentCard({ s }: { s: DeploymentSummary }) {
   );
 }
 
-/** The account page reads only its own deployments' files. */
 export function AccountDetail() {
-  const params = useParams<{ id: string }>();
-  const ds = useDataset();
-  const ids = ds.deployments.filter((d) => d.account === params.id).map((d) => d.id);
-  return (
-    <WithFiles ids={ids}>
-      <AccountDetailLoaded />
-    </WithFiles>
-  );
-}
-
-function AccountDetailLoaded() {
   const params = useParams<{ id: string }>();
   const accounts = useAccounts();
   const ds = useDataset();

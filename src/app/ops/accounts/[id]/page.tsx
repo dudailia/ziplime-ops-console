@@ -5,6 +5,8 @@ import { AccountDetail } from "@/components/ops/AccountDetail";
 import { connection } from "next/server";
 import { BUILD_MODE, serverDataset } from "@/lib/data/server";
 import { STATIC_DATASET } from "@/lib/data/static";
+import { deploymentIdsOf, pageFiles } from "@/lib/data/pageFiles";
+import { WithFiles } from "@/lib/data/WithFiles";
 
 export async function generateMetadata({ params }: PageProps<"/ops/accounts/[id]">): Promise<Metadata> {
   const { id } = await params;
@@ -27,11 +29,19 @@ async function RequestTime() {
   return null;
 }
 
-export default function AccountPage() {
+// The account page reads only its own deployments' files.
+async function AccountFiles({ params, children }: { params: PageProps<"/ops/accounts/[id]">["params"]; children: React.ReactNode }) {
+  const { id } = await params;
+  return <WithFiles files={pageFiles(deploymentIdsOf(id))}>{children}</WithFiles>;
+}
+
+export default function AccountPage({ params }: PageProps<"/ops/accounts/[id]">) {
   return (
     <>
       <Suspense fallback={<PageSkeleton label="Loading the account…" />}>
-        <AccountDetail />
+        <AccountFiles params={params}>
+          <AccountDetail />
+        </AccountFiles>
       </Suspense>
       {BUILD_MODE === "database" && (
         <Suspense>

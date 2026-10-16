@@ -1,7 +1,6 @@
 "use client";
 
 import { DefaultView, NO_PARAMS } from "@/components/ui/DefaultView";
-import { WithFiles } from "@/lib/data/WithFiles";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -59,27 +58,13 @@ export function PortalFromAddress() {
 /** The portal with no query: what the server renders (see DefaultView). */
 export function PortalDefault() {
   return (
-    <DefaultView>
+    <DefaultView label="Loading the dry-run file…">
       <PortalView params={NO_PARAMS} />
     </DefaultView>
   );
 }
 
-/** Reads only the selected deployment's file. */
 function PortalView({ params }: { params: Params }) {
-  const ds = useDataset();
-  const { uploads } = useStore();
-  const d = params.get("d") ?? DEFAULT_DEPLOYMENT;
-  const upload = d.startsWith(UPLOAD_PREFIX) && uploads.some((u) => u.source === d.slice(UPLOAD_PREFIX.length));
-  const id = upload ? null : (deploymentById(ds, d) ?? deploymentById(ds, DEFAULT_DEPLOYMENT) ?? ds.deployments[0]).id;
-  return (
-    <WithFiles ids={id ? [id] : []}>
-      <PortalLoaded params={params} />
-    </WithFiles>
-  );
-}
-
-function PortalLoaded({ params }: { params: Params }) {
   const router = useRouter();
   const pathname = usePathname();
   const { uploads, addUpload } = useStore();

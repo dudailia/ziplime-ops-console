@@ -309,7 +309,7 @@ export function IntakeFromAddress() {
 /** Intake with no query: what the server renders (see DefaultView). */
 export function IntakeDefault() {
   return (
-    <DefaultView>
+    <DefaultView label="Loading signups…">
       <IntakeView params={NO_PARAMS} />
     </DefaultView>
   );
